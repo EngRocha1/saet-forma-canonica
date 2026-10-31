@@ -3,246 +3,143 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Forma canônica — SAET</title>
+<title>Forma canônica — SAET · XV CBPE / PPGEE-UFPI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&display=swap" rel="stylesheet"/>
 <style>
-  :root { --paper:#f3efe6; --ink:#1c1915; --muted:#6b645b; --rule:#d9d1c3; --oxide:#9a3412; --panel:#faf7f2; }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--paper); color:var(--ink); font:15px/1.5 "IBM Plex Sans", system-ui, sans-serif; }
-  main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; }
-  h1 { font-family: "Source Serif 4", Georgia, serif; font-weight: 500; font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 6px 0 8px; letter-spacing: -0.02em; }
-  .kicker { letter-spacing: .16em; text-transform: uppercase; color: var(--oxide); font-size: 12px; }
-  .lede { color: var(--muted); max-width: 68ch; }
-  .layout { display:grid; grid-template-columns: 280px 1fr; gap: 22px; margin-top: 22px; }
-  aside, figure { background: var(--panel); border: 1px solid var(--rule); }
-  aside { padding: 14px; }
-  figure { margin: 0 0 16px; padding: 12px; }
-  figcaption { font-family: "Source Serif 4", Georgia, serif; }
-  figcaption p { font-family: "IBM Plex Sans", sans-serif; color: var(--muted); font-size: 12px; margin: 2px 0 8px; }
-  button { min-height: 44px; width: 100%; text-align: left; padding: 8px 10px; margin: 4px 0; border: 0; background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
-  button.on { background: var(--oxide); color: var(--paper); }
-  label { display:block; font-size: 12px; color: var(--muted); margin-top: 8px; }
-  label span { float: right; color: var(--ink); }
-  input[type=range] { width: 100%; accent-color: var(--oxide); height: 28px; }
-  dl { display:grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 12px; border-top: 1px solid var(--rule); margin-top: 12px; padding-top: 10px; }
-  dt { color: var(--muted); } dd { margin: 0; }
-  .note { font-size: 12px; color: var(--muted); }
-  .pair { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  canvas { width: 100%; height: auto; background: var(--panel); display:block; }
-  .prose { border: 1px solid var(--rule); background: var(--panel); padding: 14px 16px; font-size: 14px; color: var(--muted); }
-  .prose h2 { font-family: "Source Serif 4", Georgia, serif; color: var(--ink); font-weight: 500; font-size: 1.15rem; margin: 0 0 8px; }
-  @media (max-width: 860px) { .layout, .pair { grid-template-columns: 1fr; } }
+:root{--paper:#f3efe6;--ink:#1c1915;--muted:#6b645b;--rule:#d9d1c3;--oxide:#9a3412;--panel:#faf7f2;--term:#12100e;--termfg:#d4cfc4;--ok:#6ee7a8;--warn:#fbbf24}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1440px;margin:0 auto;padding:20px 12px 48px}
+h1{font-family:"Source Serif 4",Georgia,serif;font-weight:500;font-size:clamp(1.45rem,3.2vw,2.05rem);margin:4px 0 6px;letter-spacing:-.02em}
+.kicker{letter-spacing:.14em;text-transform:uppercase;color:var(--oxide);font-size:11px}
+.lede{color:var(--muted);max-width:78ch;font-size:13.5px}
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr) 320px;gap:14px;margin-top:16px;align-items:start}
+aside,figure,.term-wrap{background:var(--panel);border:1px solid var(--rule)}
+aside{padding:12px;position:sticky;top:8px}
+.term-wrap{position:sticky;top:8px;display:flex;flex-direction:column;max-height:calc(100vh - 24px);overflow:hidden}
+figure{margin:0 0 12px;padding:10px}
+figcaption{font-family:"Source Serif 4",Georgia,serif;font-size:13.5px}
+figcaption p{font-family:"IBM Plex Sans",sans-serif;color:var(--muted);font-size:11.5px;margin:2px 0 6px}
+button{min-height:40px;width:100%;text-align:left;padding:7px 9px;margin:3px 0;border:0;background:var(--paper);color:var(--ink);font:inherit;cursor:pointer}
+button.on{background:var(--oxide);color:var(--paper)}
+label{display:block;font-size:11.5px;color:var(--muted);margin-top:7px}
+label span{float:right;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--oxide);height:26px}
+dl{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:11.5px;border-top:1px solid var(--rule);margin-top:10px;padding-top:8px}
+dt{color:var(--muted)}dd{margin:0}
+.note{font-size:11.5px;color:var(--muted)}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+canvas{width:100%;height:auto;background:var(--panel);display:block}
+.prose{border:1px solid var(--rule);background:var(--panel);padding:12px 14px;font-size:13px;color:var(--muted)}
+.prose h2{font-family:"Source Serif 4",Georgia,serif;color:var(--ink);font-weight:500;font-size:1.05rem;margin:0 0 6px}
+.term-head{background:var(--ink);color:var(--paper);padding:8px 10px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.term-head .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px}
+.term{background:var(--term);color:var(--termfg);font:11px/1.4 "IBM Plex Mono",ui-monospace,monospace;padding:10px;overflow:auto;flex:1;min-height:180px;white-space:pre-wrap;word-break:break-word}
+.term-block{border-top:1px solid var(--rule);padding:8px 10px;font-size:11.5px}
+.term-block h3{margin:0 0 4px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.term-block p{margin:0 0 6px;color:var(--muted);font-size:11.5px}
+table.jac{width:100%;border-collapse:collapse;font:10px/1.2 "IBM Plex Mono",monospace}
+table.jac th,table.jac td{border:1px solid var(--rule);padding:2px 3px;text-align:right}
+table.jac th{background:var(--paper);color:var(--muted);font-weight:500}
+#c-conv{width:100%;height:110px;background:var(--term);display:block}
+.meta{font-size:11px;color:var(--muted);border-top:1px solid var(--rule);padding-top:8px;margin-top:6px}
+.meta b{color:var(--ink)}
+@media(max-width:1100px){.layout{grid-template-columns:240px 1fr}.term-wrap{grid-column:1/-1;position:static;max-height:none}}
+@media(max-width:720px){.layout,.pair{grid-template-columns:1fr}aside{position:static}}
 </style>
 </head>
 <body>
 <main>
-  <p class="kicker">PPGEE-UFPI · laboratório numérico</p>
-  <h1>Forma canônica da EDP transiente</h1>
-  <p class="lede">Euler implícito, Robin nas extremidades e Newton–Raphson quando k depende de T. O método devolve o campo T(z, t): perfis, espaço-tempo e isoterma. Não uma nuvem de partículas.</p>
-  <div class="layout">
-    <aside>
-      <div id="presets"></div>
-      <p class="note" id="note"></p>
-      <label>Tempo final <span id="v-hours"></span><input id="hours" type="range" min="1" max="96" step="1" value="48"/></label>
-      <label>T de carga <span id="v-tc"></span><input id="tc" type="range" min="200" max="1000" step="10" value="1000"/></label>
-      <label>T ambiente <span id="v-ta"></span><input id="ta" type="range" min="15" max="45" step="1" value="37"/></label>
-      <label>h topo <span id="v-ht"></span><input id="ht" type="range" min="5" max="400" step="5" value="80"/></label>
-      <label>h base <span id="v-hb"></span><input id="hb" type="range" min="1" max="40" step="1" value="5"/></label>
-      <label id="lab-u">Velocidade u <span id="v-u"></span><input id="u" type="range" min="0.05" max="1.2" step="0.05" value="0.35"/></label>
-      <dl>
-        <div><dt>α</dt><dd id="s-a"></dd></div>
-        <div><dt>Bi topo</dt><dd id="s-bi"></dd></div>
-        <div><dt>√(α t)</dt><dd id="s-p"></dd></div>
-        <div><dt>T topo / base</dt><dd id="s-tb"></dd></div>
-      </dl>
-    </aside>
-    <div>
-      <figure><figcaption>(a) Perfis T(z)<p>z = 0 é o topo. Cada curva é um instante.</p></figcaption><canvas id="c-prof" width="720" height="320"></canvas></figure>
-      <figure><figcaption>(b) Diagrama espaço-tempo<p>Tempo na horizontal, altura na vertical, topo em cima.</p></figcaption><canvas id="c-st" width="720" height="240"></canvas></figure>
-      <div class="pair">
-        <figure><figcaption>(c) Isoterma média<p>Profundidade da temperatura intermediária.</p></figcaption><canvas id="c-iso" width="360" height="240"></canvas></figure>
-        <figure><figcaption>(d) Fronteiras de Robin<p>Topo e base. Sem Dirichlet.</p></figcaption><canvas id="c-b" width="360" height="240"></canvas></figure>
-      </div>
-      <section class="prose">
-        <h2>O que cada peça faz</h2>
-        <ul>
-          <li><b style="color:var(--ink)">Espaço.</b> Volumes finitos só em z. Neumann em r = 0 não é um nó: o modelo é axial.</li>
-          <li><b style="color:var(--ink)">Tempo.</b> Euler implícito. Estável com passo longo.</li>
-          <li><b style="color:var(--ink)">Robin.</b> Fluxo h(T∞ − T) no topo e na base. Nenhum nó tem temperatura fixa.</li>
-          <li><b style="color:var(--ink)">Newton e Jacobiana.</b> Entram quando k = k(T). Com k constante o sistema já é linear.</li>
-          <li><b style="color:var(--ink)">Termoclina de 12 m.</b> Não nasce da condução na hematita (√(αt) ≈ 0,3 m em 48 h). Nasce do termo u∂T/∂z do leito regenerativo.</li>
-        </ul>
-      </section>
-    </div>
-  </div>
+<p class="kicker">XV CBPE · PPGEE-UFPI · forma canônica</p>
+<h1>EDP transiente · Euler, Robin, Newton–Raphson</h1>
+<p class="lede">Recorte numérico alinhado ao artigo de otimização geométrica, econômica e termofísica de SAET (bateria de Carnot). O solver devolve o campo T(z,t): perfis, espaço-tempo e isoterma. À direita: log de convergência, Jacobiana e dados institucionais.</p>
+<div class="layout">
+<aside>
+<div id="presets"></div>
+<p class="note" id="note"></p>
+<label>Tempo final <span id="v-hours"></span><input id="hours" type="range" min="1" max="96" step="1" value="48"/></label>
+<label>T de carga <span id="v-tc"></span><input id="tc" type="range" min="200" max="1000" step="10" value="1000"/></label>
+<label>T ambiente <span id="v-ta"></span><input id="ta" type="range" min="15" max="45" step="1" value="37"/></label>
+<label>h topo <span id="v-ht"></span><input id="ht" type="range" min="5" max="400" step="5" value="80"/></label>
+<label>h base <span id="v-hb"></span><input id="hb" type="range" min="1" max="40" step="1" value="5"/></label>
+<label id="lab-u">Velocidade u <span id="v-u"></span><input id="u" type="range" min="0.05" max="1.2" step="0.05" value="0.35"/></label>
+<dl>
+<div><dt>α</dt><dd id="s-a"></dd></div>
+<div><dt>Bi topo</dt><dd id="s-bi"></dd></div>
+<div><dt>√(α t)</dt><dd id="s-p"></dd></div>
+<div><dt>T topo / base</dt><dd id="s-tb"></dd></div>
+</dl>
+</aside>
+<div>
+<figure><figcaption>(a) Perfis T(z)<p>z = 0 é o topo. Cada curva é um instante.</p></figcaption><canvas id="c-prof" width="720" height="320"></canvas></figure>
+<figure><figcaption>(b) Diagrama espaço-tempo<p>Tempo na horizontal, altura na vertical, topo em cima.</p></figcaption><canvas id="c-st" width="720" height="240"></canvas></figure>
+<div class="pair">
+<figure><figcaption>(c) Isoterma média<p>Profundidade da temperatura intermediária.</p></figcaption><canvas id="c-iso" width="360" height="240"></canvas></figure>
+<figure><figcaption>(d) Fronteiras de Robin<p>Topo e base. Sem Dirichlet.</p></figcaption><canvas id="c-b" width="360" height="240"></canvas></figure>
+</div>
+<section class="prose">
+<h2>O que cada peça faz (seção 2.10 do artigo)</h2>
+<ul>
+<li><b style="color:var(--ink)">Espaço.</b> Discretização axial (Galerkin / volumes). Neumann em r = 0 não é nó: o modelo é 1D axial.</li>
+<li><b style="color:var(--ink)">Tempo.</b> Euler implícito — estabilidade incondicional com passo longo.</li>
+<li><b style="color:var(--ink)">Robin.</b> Fluxo h(T∞ − T) (+ radiação na auditoria) no topo e na base. Nenhum nó com T fixa (Dirichlet).</li>
+<li><b style="color:var(--ink)">Newton e Jacobiana.</b> Resolvem não-linearidades k(T) e 4σεT³. Convergência quadrática do residual atesta o solver.</li>
+<li><b style="color:var(--ink)">Termoclina de 12 m.</b> Não nasce só da condução na hematita (√(αt) ≈ 0,3 m em 48 h). Nasce do termo u∂T/∂z do leito regenerativo (Schumann).</li>
+</ul>
+</section>
+</div>
+<div class="term-wrap">
+<div class="term-head"><span><span class="dot"></span>Terminal · Newton–Raphson</span><span id="term-status">AUDITORIA</span></div>
+<div class="term" id="term-log">Aguardando simulação…</div>
+<div class="term-block">
+<h3>Convergência quadrática · ||R||</h3>
+<canvas id="c-conv" width="300" height="110"></canvas>
+<p id="conv-note">Razão ||R||_{k+1}/||R||_k² tende a constante quando a Jacobiana está correta.</p>
+</div>
+<div class="term-block">
+<h3>Amostra Jacobiana J[0:5,0:5]</h3>
+<div id="jac-table"></div>
+</div>
+<div class="term-block">
+<h3>Elementos Ke e Ce (Galerkin)</h3>
+<div id="ke-ce" class="term" style="min-height:auto;max-height:90px;padding:6px;font-size:10px"></div>
+</div>
+<div class="term-block">
+<h3>XV CBPE · UFPI · orientação</h3>
+<p><b style="color:var(--ink)">Artigo:</b> Otimização geométrica, econômica e termofísica para SAET (baterias de Carnot).</p>
+<p><b style="color:var(--ink)">Autor:</b> Tarcísio Dias da Rocha — mestrando PPGEE-UFPI.</p>
+<p><b style="color:var(--ink)">Orientador:</b> Prof. Dr. Marcos Antônio Tavares Lira — Professor Associado, DEE/UFPI.</p>
+<p><b style="color:var(--ink)">Congresso:</b> XV CBPE, 04–06 nov 2026. Recorte da dissertação; na submissão, double-blind omitiu nomes/instituição.</p>
+<p class="meta">Caso de referência do artigo: R = 6 m, H = 12 m (h = 2r), hematita, T₀ = 25 °C, carga 1000 °C no nó 0, ar 37 °C, solo 25 °C, vento 3,5 m/s, malha de 10 nós no texto, Δt = 1500 s. Isolamento lateral: 15 cm refratário + 1 m perlita + 15 cm refratário. CCs: Robin nas fronteiras; Neumann por simetria em r = 0. Lei 15.269/2025.</p>
+</div>
+</div>
+</div>
 </main>
 <script>
-const PRESETS = {
-  regenerativo: { label:"Leito regenerativo — termoclina", mode:"regenerativo", rho:3120, cp:650, k0:1.2, ak:0, L:12, u:0.35,
-    note:"Schumann: ∂T/∂t + u ∂T/∂z = α ∂²T/∂z². A onda marcha por advecção do fluido." },
-  hematita: { label:"Hematita seca — condução real", mode:"difusao", rho:3120, cp:650, k0:1.2, ak:0.0005, L:12, u:0,
-    note:"α ≈ 5,9×10⁻⁷ m²/s. Em 48 h o calor conduz ~0,3 m. A base fria é física, não um gráfico quebrado." },
-  silica: { label:"Areia de sílica — condução", mode:"difusao", rho:1650, cp:800, k0:0.4, ak:0.0008, L:12, u:0,
-    note:"Condutividade menor. A frente difusiva fica colada ao topo." },
-  didatica: { label:"Didática — difusão visível", mode:"difusao", rho:800, cp:500, k0:8, ak:0, L:1, u:0,
-    note:"Leito de 1 m e α alto, só para a família T(z) se abrir. Não é a hematita de 12 m." }
-};
-let preset = "regenerativo";
-function kOf(T,k0,ak){ return Math.max(0.05, k0 + ak*T); }
-function solveTri(sub,diag,sup,rhs){
-  const n=diag.length, c=Array(n), d=Array(n);
-  c[0]=sup[0]/diag[0]; d[0]=rhs[0]/diag[0];
-  for(let i=1;i<n;i++){ const m=diag[i]-sub[i]*c[i-1]; c[i]=i<n-1?sup[i]/m:0; d[i]=(rhs[i]-sub[i]*d[i-1])/m; }
-  const x=Array(n); x[n-1]=d[n-1];
-  for(let i=n-2;i>=0;i--) x[i]=d[i]-c[i]*x[i+1];
-  return x;
-}
-function norm(r){ let s=0; for(const v of r) s+=v*v; return Math.sqrt(s); }
-function diffuseStep(Told,p,dz,dt){
-  const n=Told.length, rhoCp=p.rho*p.cp; let T=Told.slice(), residual=0;
-  for(let iter=0; iter<12; iter++){
-    const k=T.map(t=>kOf(t,p.k0,p.ak));
-    const R=Array(n).fill(0), sub=Array(n).fill(0), diag=Array(n).fill(0), sup=Array(n).fill(0);
-    const flux=i=>{ const kip=0.5*(k[i]+k[i+1]); return {kip, q:-kip*(T[i+1]-T[i])/dz}; };
-    const dq=i=>{ const kip=0.5*(k[i]+k[i+1]); const dT=T[i+1]-T[i]; const dk=0.5*p.ak;
-      return { dQi:-(dk*dT)/dz + kip/dz, dQip:-(dk*dT)/dz - kip/dz }; };
-    { const w=dz/2, q=flux(0).q, qRob=p.hTop*(p.Tcharge-T[0]);
-      R[0]=rhoCp*(T[0]-Told[0])/dt - (qRob-q)/w;
-      const {dQi,dQip}=dq(0);
-      diag[0]=rhoCp/dt - (-p.hTop)/w + dQi/w; sup[0]=dQip/w; }
-    for(let i=1;i<n-1;i++){
-      const qL=flux(i-1).q, qR=flux(i).q;
-      R[i]=rhoCp*(T[i]-Told[i])/dt - (qL-qR)/dz;
-      const Lft=dq(i-1), Rgt=dq(i);
-      sub[i]=-Lft.dQi/dz; diag[i]=rhoCp/dt - Lft.dQip/dz + Rgt.dQi/dz; sup[i]=Rgt.dQip/dz;
-    }
-    { const w=dz/2, qL=flux(n-2).q, qOut=p.hBot*(T[n-1]-p.Tamb);
-      R[n-1]=rhoCp*(T[n-1]-Told[n-1])/dt - (qL-qOut)/w;
-      const Lft=dq(n-2);
-      sub[n-1]=-Lft.dQi/w; diag[n-1]=rhoCp/dt - Lft.dQip/w - (-p.hBot)/w; }
-    residual=norm(R);
-    if(residual<1e-4) break;
-    const delta=solveTri(sub,diag,sup,R.map(v=>-v));
-    for(let i=0;i<n;i++) T[i]+=delta[i];
-  }
-  return {T, residual};
-}
-function regenStep(Told,p,dz,dt){
-  const n=Told.length, alpha=p.k0/(p.rho*p.cp), u=p.u/3600, Fo=alpha*dt/dz/dz, Cr=u*dt/dz;
-  const sub=Array(n).fill(0), diag=Array(n).fill(0), sup=Array(n).fill(0), rhs=Array(n).fill(0);
-  const biT=p.hTop*dz/Math.max(p.k0,1e-6), biB=p.hBot*dz/Math.max(p.k0,1e-6);
-  diag[0]=1+2*Fo*(1+biT); sup[0]=-2*Fo; rhs[0]=Told[0]+2*Fo*biT*p.Tcharge;
-  for(let i=1;i<n-1;i++){ sub[i]=-Cr-Fo; diag[i]=1+Cr+2*Fo; sup[i]=-Fo; rhs[i]=Told[i]; }
-  sub[n-1]=-2*Fo; diag[n-1]=1+2*Fo*(1+biB); rhs[n-1]=Told[n-1]+2*Fo*biB*p.Tamb;
-  return {T:solveTri(sub,diag,sup,rhs), residual:0};
-}
-function simulate(p){
-  const n=81, z=Array.from({length:n},(_,i)=>i*p.L/(n-1)), dz=z[1], steps=140, dt=p.hours*3600/steps;
-  let T=Array(n).fill(25);
-  const frames=[{tH:0,T:T.slice(),residual:0}];
-  for(let s=1;s<=steps;s++){
-    const next=p.mode==="regenerativo"?regenStep(T,p,dz,dt):diffuseStep(T,p,dz,dt);
-    T=next.T;
-    if(s%4===0||s===steps) frames.push({tH:s*dt/3600, T:T.slice(), residual:next.residual});
-  }
-  const alpha=p.k0/(p.rho*p.cp);
-  return {z, frames, alpha, bi:(p.hTop*(p.L/2))/p.k0, pen:Math.sqrt(alpha*p.hours*3600)};
-}
-function isoDepth(z,T,level){
-  for(let i=0;i<T.length-1;i++){
-    const a=T[i], b=T[i+1];
-    if((a-level)*(b-level)<=0 && a!==b) return z[i]+((a-level)/(a-b))*(z[i+1]-z[i]);
-  }
-  return T[0]<level?0:z.at(-1);
-}
+const PRESETS={regenerativo:{label:"Leito regenerativo — termoclina",mode:"regenerativo",rho:3120,cp:650,k0:1.2,ak:0,L:12,u:0.35,note:"Schumann: ∂T/∂t + u ∂T/∂z = α ∂²T/∂z². A onda marcha por advecção do fluido."},hematita:{label:"Hematita seca — condução real",mode:"difusao",rho:3120,cp:650,k0:1.2,ak:0.0005,L:12,u:0,note:"α ≈ 5,9×10⁻⁷ m²/s. Em 48 h o calor conduz ~0,3 m. A base fria é física, não um gráfico quebrado."},silica:{label:"Areia de sílica — condução",mode:"difusao",rho:1650,cp:800,k0:0.4,ak:0.0008,L:12,u:0,note:"Condutividade menor. A frente difusiva fica colada ao topo."},didatica:{label:"Didática — difusão visível",mode:"difusao",rho:800,cp:500,k0:8,ak:0,L:1,u:0,note:"Leito de 1 m e α alto, só para a família T(z) se abrir. Não é a hematita de 12 m."}};
+let preset="regenerativo";const C2K=273.15;
+function kOf(T,k0,ak){return Math.max(0.05,k0+ak*T)}
+function solveTri(sub,diag,sup,rhs){const n=diag.length,c=Array(n),d=Array(n);c[0]=sup[0]/diag[0];d[0]=rhs[0]/diag[0];for(let i=1;i<n;i++){const m=diag[i]-sub[i]*c[i-1];c[i]=i<n-1?sup[i]/m:0;d[i]=(rhs[i]-sub[i]*d[i-1])/m}const x=Array(n);x[n-1]=d[n-1];for(let i=n-2;i>=0;i--)x[i]=d[i]-c[i]*x[i+1];return x}
+function norm(r){let s=0;for(const v of r)s+=v*v;return Math.sqrt(s)}
+function diffuseStep(Told,p,dz,dt){const n=Told.length,rhoCp=p.rho*p.cp;let T=Told.slice(),residual=0;for(let iter=0;iter<12;iter++){const k=T.map(t=>kOf(t,p.k0,p.ak));const R=Array(n).fill(0),sub=Array(n).fill(0),diag=Array(n).fill(0),sup=Array(n).fill(0);const flux=i=>{const kip=.5*(k[i]+k[i+1]);return{kip,q:-kip*(T[i+1]-T[i])/dz}};const dq=i=>{const kip=.5*(k[i]+k[i+1]);const dT=T[i+1]-T[i];const dk=.5*p.ak;return{dQi:-(dk*dT)/dz+kip/dz,dQip:-(dk*dT)/dz-kip/dz}};{const w=dz/2,q=flux(0).q,qRob=p.hTop*(p.Tcharge-T[0]);R[0]=rhoCp*(T[0]-Told[0])/dt-(qRob-q)/w;const{dQi,dQip}=dq(0);diag[0]=rhoCp/dt-(-p.hTop)/w+dQi/w;sup[0]=dQip/w}for(let i=1;i<n-1;i++){const qL=flux(i-1).q,qR=flux(i).q;R[i]=rhoCp*(T[i]-Told[i])/dt-(qL-qR)/dz;const Lft=dq(i-1),Rgt=dq(i);sub[i]=-Lft.dQi/dz;diag[i]=rhoCp/dt-Lft.dQip/dz+Rgt.dQi/dz;sup[i]=Rgt.dQip/dz}{const w=dz/2,qL=flux(n-2).q,qOut=p.hBot*(T[n-1]-p.Tamb);R[n-1]=rhoCp*(T[n-1]-Told[n-1])/dt-(qL-qOut)/w;const Lft=dq(n-2);sub[n-1]=-Lft.dQi/w;diag[n-1]=rhoCp/dt-Lft.dQip/w-(-p.hBot)/w}residual=norm(R);if(residual<1e-4)break;const delta=solveTri(sub,diag,sup,R.map(v=>-v));for(let i=0;i<n;i++)T[i]+=delta[i]}return{T,residual}}
+function regenStep(Told,p,dz,dt){const n=Told.length,alpha=p.k0/(p.rho*p.cp),u=p.u/3600,Fo=alpha*dt/dz/dz,Cr=u*dt/dz;const sub=Array(n).fill(0),diag=Array(n).fill(0),sup=Array(n).fill(0),rhs=Array(n).fill(0);const biT=p.hTop*dz/Math.max(p.k0,1e-6),biB=p.hBot*dz/Math.max(p.k0,1e-6);diag[0]=1+2*Fo*(1+biT);sup[0]=-2*Fo;rhs[0]=Told[0]+2*Fo*biT*p.Tcharge;for(let i=1;i<n-1;i++){sub[i]=-Cr-Fo;diag[i]=1+Cr+2*Fo;sup[i]=-Fo;rhs[i]=Told[i]}sub[n-1]=-2*Fo;diag[n-1]=1+2*Fo*(1+biB);rhs[n-1]=Told[n-1]+2*Fo*biB*p.Tamb;return{T:solveTri(sub,diag,sup,rhs),residual:0}}
+function auditNewton(Told,p,dz,dt){const n=Told.length,rhoCp=p.rho*p.cp;const ak=Math.abs(p.ak)>0?p.ak:5e-4;const eps=.85,sigma=5.67e-8;let T=Told.map((t,i)=>t+(i===0?40:8));const residuals=[];let jacSample=[],kLocal=p.k0;for(let iter=0;iter<8;iter++){const k=T.map(t=>Math.max(.05,p.k0+ak*t));kLocal=k[0];const R=Array(n).fill(0),sub=Array(n).fill(0),diag=Array(n).fill(0),sup=Array(n).fill(0);const flux=i=>{const kip=.5*(k[i]+k[i+1]);return-kip*(T[i+1]-T[i])/dz};const dq=i=>{const kip=.5*(k[i]+k[i+1]);const dT=T[i+1]-T[i];const dk=.5*ak;return{dQi:-(dk*dT)/dz+kip/dz,dQip:-(dk*dT)/dz-kip/dz}};{const w=dz/2;const Tk=T[0]+C2K;const qRob=p.hTop*(p.Tcharge-T[0])-eps*sigma*(Tk**4-(p.Tamb+C2K)**4);R[0]=rhoCp*(T[0]-Told[0])/dt-(qRob-flux(0))/w;const d=dq(0);const dRad=4*eps*sigma*Tk**3;diag[0]=rhoCp/dt+(p.hTop+dRad)/w+d.dQi/w;sup[0]=d.dQip/w}for(let i=1;i<n-1;i++){R[i]=rhoCp*(T[i]-Told[i])/dt-(flux(i-1)-flux(i))/dz;const Lft=dq(i-1),Rg=dq(i);sub[i]=-Lft.dQi/dz;diag[i]=rhoCp/dt-Lft.dQip/dz+Rg.dQi/dz;sup[i]=Rg.dQip/dz}{const w=dz/2;const qOut=p.hBot*(T[n-1]-p.Tamb);R[n-1]=rhoCp*(T[n-1]-Told[n-1])/dt-(flux(n-2)-qOut)/w;const Lft=dq(n-2);sub[n-1]=-Lft.dQi/w;diag[n-1]=rhoCp/dt-Lft.dQip/w+p.hBot/w}const residual=norm(R);residuals.push(residual);jacSample=[0,1,2,3,4].map(i=>[0,1,2,3,4].map(j=>{if(j===i-1)return sub[i];if(j===i)return diag[i];if(j===i+1)return sup[i];return 0}));if(residual<1e-9)break;const delta=solveTri(sub,diag,sup,R.map(v=>-v));for(let i=0;i<n;i++)T[i]+=delta[i]}const ratios=[];for(let i=0;i<residuals.length-1;i++){const den=residuals[i]*residuals[i];ratios.push(den>0?residuals[i+1]/den:0)}const keS=kLocal/dz,ceS=(rhoCp*dz)/6;return{residuals,ratios,jac:jacSample,ke:[[keS,-keS],[-keS,keS]],ce:[[2*ceS,ceS],[ceS,2*ceS]],kLocal,radTangent:4*eps*sigma*(Told[0]+C2K)**3,elementL:dz,note:Math.abs(p.ak)>0?"k(T) do caso ativo. 4σεT³ entra na diagonal do nó de Robin.":"Transporte linear. Auditoria usa ak=5e-4 para exibir queda quadrática de ||R|| (seção 2.10)."}}
+function simulate(p){const n=81,z=Array.from({length:n},(_,i)=>i*p.L/(n-1)),dz=z[1],steps=140,dt=p.hours*3600/steps;let T=Array(n).fill(25);const frames=[{tH:0,T:T.slice(),residual:0}];for(let s=1;s<=steps;s++){const next=p.mode==="regenerativo"?regenStep(T,p,dz,dt):diffuseStep(T,p,dz,dt);T=next.T;if(s%4===0||s===steps)frames.push({tH:s*dt/3600,T:T.slice(),residual:next.residual})}const alpha=p.k0/(p.rho*p.cp);const audit=auditNewton(frames[Math.max(0,frames.length-2)].T,p,dz,dt);return{z,frames,alpha,bi:(p.hTop*(p.L/2))/p.k0,pen:Math.sqrt(alpha*p.hours*3600),audit,n,dz,dt,steps}}
+function isoDepth(z,T,level){for(let i=0;i<T.length-1;i++){const a=T[i],b=T[i+1];if((a-level)*(b-level)<=0&&a!==b)return z[i]+((a-level)/(a-b))*(z[i+1]-z[i])}return T[0]<level?0:z.at(-1)}
 const COLORS=["#1c1915","#9a3412","#b45309","#3f6212","#1d4e89","#44403c"];
-function read(){
-  const P=PRESETS[preset];
-  return { ...P, hours:+hours.value, Tcharge:+tc.value, Tamb:+ta.value, hTop:+ht.value, hBot:+hb.value, u:+u.value, mode:P.mode };
-}
-function drawAxes(ctx,w,h,pad,x0,x1,y0,y1,xl,yl){
-  ctx.clearRect(0,0,w,h);
-  ctx.strokeStyle="#d9d1c3"; ctx.lineWidth=1; ctx.font="11px IBM Plex Sans"; ctx.fillStyle="#6b645b";
-  for(let i=0;i<=4;i++){
-    const y=pad+(h-2*pad)*i/4;
-    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke();
-    ctx.fillText((y1-(y1-y0)*i/4).toFixed(0), 4, y+4);
-  }
-  ctx.fillText(xl, w/2-20, h-6);
-  ctx.save(); ctx.translate(12, h/2); ctx.rotate(-Math.PI/2); ctx.fillText(yl, 0, 0); ctx.restore();
-  return (x,y)=>[pad+(w-2*pad)*(x-x0)/((x1-x0)||1), pad+(h-2*pad)*(1-(y-y0)/((y1-y0)||1))];
-}
-function render(){
-  const p=read();
-  labU.style.display = p.mode==="regenerativo"?"block":"none";
-  vH.textContent=p.hours+" h"; vTc.textContent=p.Tcharge+" °C"; vTa.textContent=p.Tamb+" °C";
-  vHt.textContent=p.hTop+" W/m²K"; vHb.textContent=p.hBot; vU.textContent=p.u.toFixed(2)+" m/h";
-  note.textContent=p.note;
-  const R=simulate(p);
-  const last=R.frames.at(-1);
-  sA.textContent=R.alpha.toExponential(2)+" m²/s";
-  sBi.textContent=R.bi.toFixed(1);
-  sP.textContent=R.pen.toFixed(2)+" m";
-  sTb.textContent=last.T[0].toFixed(0)+" / "+last.T.at(-1).toFixed(1)+" °C";
-  const fracs=[0,0.08,0.2,0.4,0.7,1];
-  const cp=cProf.getContext("2d");
-  const map=drawAxes(cp, cProf.width, cProf.height, 36, 0, p.L, 0, Math.max(200,p.Tcharge), "z [m]", "T");
-  fracs.forEach((f,k)=>{
-    const fr=R.frames[Math.round(f*(R.frames.length-1))];
-    cp.beginPath(); cp.strokeStyle=COLORS[k]; cp.lineWidth=1.6;
-    R.z.forEach((z,i)=>{ const [x,y]=map(z, fr.T[i]); i?cp.lineTo(x,y):cp.moveTo(x,y); });
-    cp.stroke();
-  });
-  const st=cSt.getContext("2d"), W=cSt.width, H=cSt.height;
-  const img=st.createImageData(W,H);
-  const stops=[[28,58,92],[244,239,230],[180,83,9],[154,52,18],[28,25,23]];
-  for(let y=0;y<H;y++){
-    const zTarget=(y/(H-1))*p.L;
-    let iz=0; while(iz<R.z.length-2 && R.z[iz+1]<zTarget) iz++;
-    const span=R.z[iz+1]-R.z[iz]||1, fz=(zTarget-R.z[iz])/span;
-    for(let x=0;x<W;x++){
-      const fr=R.frames[Math.min(R.frames.length-1, Math.round(x/(W-1)*(R.frames.length-1)))];
-      const T=fr.T[iz]*(1-fz)+fr.T[iz+1]*fz;
-      const t=Math.min(1,Math.max(0,(T-25)/Math.max(1,p.Tcharge-25)));
-      const q=t*(stops.length-1), i0=Math.min(stops.length-2, Math.floor(q)), f=q-i0;
-      const a=stops[i0], b=stops[i0+1], o=(y*W+x)*4;
-      img.data[o]=a[0]+(b[0]-a[0])*f; img.data[o+1]=a[1]+(b[1]-a[1])*f; img.data[o+2]=a[2]+(b[2]-a[2])*f; img.data[o+3]=255;
-    }
-  }
-  st.putImageData(img,0,0);
-  const level=0.5*(p.Tcharge+25);
-  const iso=R.frames.map(f=>({t:f.tH, z:isoDepth(R.z,f.T,level)}));
-  const ci=cIso.getContext("2d");
-  const mi=drawAxes(ci, cIso.width, cIso.height, 36, 0, p.hours, p.L, 0, "t [h]", "z");
-  ci.beginPath(); ci.strokeStyle="#9a3412"; ci.lineWidth=2;
-  iso.forEach((pt,i)=>{ const [x,y]=mi(pt.t, pt.z); i?ci.lineTo(x,y):ci.moveTo(x,y); });
-  ci.stroke();
-  const cb=cBound.getContext("2d");
-  const mb=drawAxes(cb, cBound.width, cBound.height, 36, 0, p.hours, 0, Math.max(200,p.Tcharge), "t [h]", "T");
-  cb.beginPath(); cb.strokeStyle="#9a3412"; cb.lineWidth=2;
-  R.frames.forEach((f,i)=>{ const [x,y]=mb(f.tH, f.T[0]); i?cb.lineTo(x,y):cb.moveTo(x,y); }); cb.stroke();
-  cb.beginPath(); cb.strokeStyle="#1d4e89";
-  R.frames.forEach((f,i)=>{ const [x,y]=mb(f.tH, f.T.at(-1)); i?cb.lineTo(x,y):cb.moveTo(x,y); }); cb.stroke();
-}
-const box=document.getElementById("presets");
-const note=document.getElementById("note");
-const hours=document.getElementById("hours"), tc=document.getElementById("tc"), ta=document.getElementById("ta");
-const ht=document.getElementById("ht"), hb=document.getElementById("hb"), u=document.getElementById("u");
-const labU=document.getElementById("lab-u");
-const vH=document.getElementById("v-hours"), vTc=document.getElementById("v-tc"), vTa=document.getElementById("v-ta");
-const vHt=document.getElementById("v-ht"), vHb=document.getElementById("v-hb"), vU=document.getElementById("v-u");
-const sA=document.getElementById("s-a"), sBi=document.getElementById("s-bi"), sP=document.getElementById("s-p"), sTb=document.getElementById("s-tb");
-const cProf=document.getElementById("c-prof"), cSt=document.getElementById("c-st"), cIso=document.getElementById("c-iso"), cBound=document.getElementById("c-b");
-for (const key of Object.keys(PRESETS)) {
-  const b=document.createElement("button");
-  b.textContent=PRESETS[key].label; b.className=key===preset?"on":"";
-  b.onclick=()=>{ preset=key; if(PRESETS[key].L<2) hours.value=6; else hours.value=48; u.value=PRESETS[key].u||0.35;
-    for (const btn of box.querySelectorAll("button")) btn.className=""; b.className="on"; render(); };
-  box.appendChild(b);
-}
-for (const el of [hours,tc,ta,ht,hb,u]) el.addEventListener("input", render);
-render();
+function read(){const P=PRESETS[preset];return{mode:P.mode,rho:P.rho,cp:P.cp,k0:P.k0,ak:P.ak,L:P.L,hours:+hours.value,Tcharge:+tc.value,Tamb:+ta.value,hTop:+ht.value,hBot:+hb.value,u:+u.value}}
+function fmt(x,d=2){if(!isFinite(x))return"—";if(Math.abs(x)>=1e3||(Math.abs(x)<1e-2&&x!==0))return x.toExponential(2);return x.toFixed(d)}
+function sci(x){return x.toExponential(2).replace("e","×10^")}
+function drawAxes(ctx,w,h,pad,x0,x1,y0,y1){ctx.clearRect(0,0,w,h);ctx.strokeStyle="#d9d1c3";ctx.fillStyle="#6b645b";ctx.font="11px IBM Plex Sans";ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,h-pad);ctx.lineTo(w-pad,h-pad);ctx.stroke();return{X:v=>pad+(v-x0)/(x1-x0)*(w-2*pad),Y:v=>h-pad-(v-y0)/(y1-y0)*(h-2*pad)}}
+function drawProfiles(res,p){const c=document.getElementById("c-prof"),ctx=c.getContext("2d");const w=c.width,h=c.height,pad=36;let Tmax=p.Tcharge,Tmin=p.Tamb;res.frames.forEach(f=>f.T.forEach(t=>{Tmax=Math.max(Tmax,t);Tmin=Math.min(Tmin,t)}));const ax=drawAxes(ctx,w,h,pad,Tmin-20,Tmax+20,0,p.L);const picks=[0,.2,.4,.6,.8,1].map(f=>res.frames[Math.min(res.frames.length-1,Math.round(f*(res.frames.length-1)))]);picks.forEach((fr,i)=>{ctx.beginPath();ctx.strokeStyle=COLORS[i%COLORS.length];ctx.lineWidth=1.6;fr.T.forEach((t,j)=>{const x=ax.X(t),y=ax.Y(res.z[j]);j?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle=COLORS[i%COLORS.length];ctx.fillText(fr.tH.toFixed(1)+" h",ax.X(fr.T[0])+4,ax.Y(0)+12+i*12)});ctx.fillStyle="#6b645b";ctx.fillText("T (°C)",w/2-20,h-8);ctx.save();ctx.translate(12,h/2);ctx.rotate(-Math.PI/2);ctx.fillText("z (m) topo→base",0,0);ctx.restore()}
+function drawST(res,p){const c=document.getElementById("c-st"),ctx=c.getContext("2d");const w=c.width,h=c.height,pad=36;const nZ=res.z.length,nT=res.frames.length;let Tmax=p.Tcharge,Tmin=25;res.frames.forEach(f=>f.T.forEach(t=>{Tmax=Math.max(Tmax,t);Tmin=Math.min(Tmin,t)}));const cellW=(w-2*pad)/nT,cellH=(h-2*pad)/(nZ-1);for(let j=0;j<nT;j++){for(let i=0;i<nZ;i++){const t=res.frames[j].T[i];const f=(t-Tmin)/Math.max(Tmax-Tmin,1e-9);const r=Math.round(28+f*130),g=Math.round(25+f*40),b=Math.round(21+f*20);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(pad+j*cellW,pad+i*cellH,cellW+.5,cellH+.5)}}ctx.strokeStyle="#d9d1c3";ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);ctx.fillStyle="#6b645b";ctx.font="11px IBM Plex Sans";ctx.fillText("t (h)",w/2-10,h-8);ctx.fillText("0",pad,h-pad+14);ctx.fillText(p.hours+" h",w-pad-28,h-pad+14);ctx.fillText("topo",pad-30,pad+8);ctx.fillText("base",pad-30,h-pad)}
+function drawIso(res,p){const c=document.getElementById("c-iso"),ctx=c.getContext("2d");const w=c.width,h=c.height,pad=36;const level=.5*(p.Tcharge+25);const data=res.frames.map(f=>({t:f.tH,z:isoDepth(res.z,f.T,level)}));const zMax=Math.max(p.L*.05,...data.map(d=>d.z))*1.1;const ax=drawAxes(ctx,w,h,pad,0,p.hours,0,zMax);ctx.beginPath();ctx.strokeStyle="#9a3412";ctx.lineWidth=1.8;data.forEach((d,i)=>{const x=ax.X(d.t),y=ax.Y(d.z);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#6b645b";ctx.fillText("t (h)",w/2-10,h-8);ctx.save();ctx.translate(12,h/2);ctx.rotate(-Math.PI/2);ctx.fillText("z isoterma (m)",0,0);ctx.restore()}
+function drawBound(res,p){const c=document.getElementById("c-b"),ctx=c.getContext("2d");const w=c.width,h=c.height,pad=36;let Tmax=p.Tcharge,Tmin=p.Tamb;res.frames.forEach(f=>{Tmax=Math.max(Tmax,f.T[0],f.T.at(-1));Tmin=Math.min(Tmin,f.T[0],f.T.at(-1))});const ax=drawAxes(ctx,w,h,pad,0,p.hours,Tmin-10,Tmax+10);ctx.beginPath();ctx.strokeStyle="#9a3412";ctx.lineWidth=1.8;res.frames.forEach((f,i)=>{const x=ax.X(f.tH),y=ax.Y(f.T[0]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.beginPath();ctx.strokeStyle="#1d4e89";ctx.lineWidth=1.8;res.frames.forEach((f,i)=>{const x=ax.X(f.tH),y=ax.Y(f.T.at(-1));i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#9a3412";ctx.fillText("topo",pad+8,pad+12);ctx.fillStyle="#1d4e89";ctx.fillText("base",pad+8,pad+26);ctx.fillStyle="#6b645b";ctx.fillText("t (h)",w/2-10,h-8)}
+function drawConv(audit){const c=document.getElementById("c-conv"),ctx=c.getContext("2d");const w=c.width,h=c.height,pad=28;ctx.clearRect(0,0,w,h);const rs=audit.residuals.filter(r=>r>0);if(!rs.length){ctx.fillStyle="#6b645b";ctx.font="11px IBM Plex Mono";ctx.fillText("sem residual",10,20);return}const logs=rs.map(r=>Math.log10(r));const y0=Math.min(...logs)-.5,y1=Math.max(...logs)+.5;const X=i=>pad+(i/Math.max(rs.length-1,1))*(w-2*pad);const Y=v=>h-pad-(v-y0)/(y1-y0)*(h-2*pad);ctx.strokeStyle="#3f3a34";ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,h-pad);ctx.lineTo(w-pad,h-pad);ctx.stroke();ctx.strokeStyle="#6ee7a8";ctx.lineWidth=1.6;ctx.beginPath();logs.forEach((v,i)=>{const x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#6ee7a8";logs.forEach((v,i)=>{ctx.beginPath();ctx.arc(X(i),Y(v),2.5,0,6.28);ctx.fill()});ctx.fillStyle="#a8a29e";ctx.font="10px IBM Plex Mono";ctx.fillText("iter",w/2-10,h-6);ctx.fillText("log₁₀||R||",4,12)}
+function renderTerminal(res,p){const a=res.audit;const last=res.frames.at(-1);let log="";log+="PPGEE-UFPI · SAET canônico · XV CBPE\n";log+="────────────────────────────────────\n";log+=`preset     : ${preset}\n`;log+=`modo       : ${p.mode}\n`;log+=`malha      : n=${res.n}  dz=${fmt(res.dz,4)} m  Δt=${fmt(res.dt,1)} s  steps=${res.steps}\n`;log+=`α          : ${sci(res.alpha)} m²/s\n`;log+=`Bi_topo    : ${fmt(res.bi,3)}\n`;log+=`√(αt)      : ${fmt(res.pen,3)} m\n`;log+=`T_topo/base: ${fmt(last.T[0],1)} / ${fmt(last.T.at(-1),1)} °C\n`;log+=`k_local    : ${fmt(a.kLocal,4)} W/m·K\n`;log+=`4σεT³      : ${fmt(a.radTangent,2)} W/m²·K  (tangente radiação)\n`;log+="────────────────────────────────────\n";log+="Newton–Raphson · residual ||R||\n";a.residuals.forEach((r,i)=>{const tag=r<1e-6?" [OK]":"";log+=`  iter ${i+1}: ${r.toExponential(3)}${tag}\n`});if(a.ratios.length){log+="razão ||R||_{k+1}/||R||_k² (quadra):\n";a.ratios.forEach((q,i)=>log+=`  ρ_${i+1} = ${q.toExponential(3)}\n`)}log+="────────────────────────────────────\n";log+=a.note+"\n";log+="T^{k+1} = T^k − J^{-1} R(T^k)\n";log+="CCs: Robin (topo/base). Neumann r=0 implícito (1D axial).\n";log+="Dirichlet: não usado.\n";document.getElementById("term-log").textContent=log;const ok=a.residuals.length&&a.residuals.at(-1)<1e-6;document.getElementById("term-status").textContent=ok?"CONVERGIU":"AUDITORIA";document.getElementById("term-status").style.color=ok?"#6ee7a8":"#fbbf24";let ht="<table class='jac'><tr><th></th>";for(let j=0;j<5;j++)ht+=`<th>j${j}</th>`;ht+="</tr>";a.jac.forEach((row,i)=>{ht+=`<tr><th>i${i}</th>`;row.forEach(v=>ht+=`<td>${v===0?"·":fmt(v,1)}</td>`);ht+="</tr>"});ht+="</table>";document.getElementById("jac-table").innerHTML=ht;document.getElementById("ke-ce").textContent=`Ke = (k/L)·[[1,-1],[-1,1]]\n   = [[${fmt(a.ke[0][0],2)}, ${fmt(a.ke[0][1],2)}], [${fmt(a.ke[1][0],2)}, ${fmt(a.ke[1][1],2)}]]\nCe = (ρCp L/6)·[[2,1],[1,2]]\n   = [[${fmt(a.ce[0][0],2)}, ${fmt(a.ce[0][1],2)}], [${fmt(a.ce[1][0],2)}, ${fmt(a.ce[1][1],2)}]]\nL_elem = ${fmt(a.elementL,4)} m`;document.getElementById("conv-note").textContent=a.ratios.length?`Última razão ρ = ${a.ratios.at(-1).toExponential(2)}. Queda acelerada de log₁₀||R|| indica ordem 2.`:"Residual já abaixo da tolerância em uma passagem.";drawConv(a)}
+function run(){const p=read();document.getElementById("v-hours").textContent=p.hours+" h";document.getElementById("v-tc").textContent=p.Tcharge+" °C";document.getElementById("v-ta").textContent=p.Tamb+" °C";document.getElementById("v-ht").textContent=p.hTop+" W/m²K";document.getElementById("v-hb").textContent=p.hBot+" W/m²K";document.getElementById("v-u").textContent=p.u+" m/h";document.getElementById("lab-u").style.opacity=p.mode==="regenerativo"?1:.35;document.getElementById("note").textContent=PRESETS[preset].note;const res=simulate(p);document.getElementById("s-a").textContent=sci(res.alpha);document.getElementById("s-bi").textContent=fmt(res.bi,2);document.getElementById("s-p").textContent=fmt(res.pen,3)+" m";const last=res.frames.at(-1);document.getElementById("s-tb").textContent=fmt(last.T[0],0)+" / "+fmt(last.T.at(-1),0);drawProfiles(res,p);drawST(res,p);drawIso(res,p);drawBound(res,p);renderTerminal(res,p)}
+function buildPresets(){const box=document.getElementById("presets");box.innerHTML="";Object.keys(PRESETS).forEach(k=>{const b=document.createElement("button");b.textContent=PRESETS[k].label;if(k===preset)b.className="on";b.onclick=()=>{preset=k;[...box.children].forEach(c=>c.className="");b.className="on";run()};box.appendChild(b)})}
+["hours","tc","ta","ht","hb","u"].forEach(id=>document.getElementById(id).addEventListener("input",run));buildPresets();run();
 </script>
 </body>
 </html>
