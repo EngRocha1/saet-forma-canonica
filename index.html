@@ -214,9 +214,9 @@ function render(){
   const level=0.5*(p.Tcharge+25);
   const iso=R.frames.map(f=>({t:f.tH, z:isoDepth(R.z,f.T,level)}));
   const ci=cIso.getContext("2d");
-  const mi=drawAxes(ci, cIso.width, cIso.height, 36, 0, p.hours, 0, p.L, "t [h]", "z");
+  const mi=drawAxes(ci, cIso.width, cIso.height, 36, 0, p.hours, p.L, 0, "t [h]", "z");
   ci.beginPath(); ci.strokeStyle="#9a3412"; ci.lineWidth=2;
-  iso.forEach((pt,i)=>{ const [x,y]=mi(pt.t, p.L-pt.z); i?ci.lineTo(x,y):ci.moveTo(x,y); });
+  iso.forEach((pt,i)=>{ const [x,y]=mi(pt.t, pt.z); i?ci.lineTo(x,y):ci.moveTo(x,y); });
   ci.stroke();
   const cb=cBound.getContext("2d");
   const mb=drawAxes(cb, cBound.width, cBound.height, 36, 0, p.hours, 0, Math.max(200,p.Tcharge), "t [h]", "T");
