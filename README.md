@@ -6,7 +6,7 @@ Laboratório estático do campo **T(z, t)** de armazenamento térmico em leito f
 
 ## Recursos
 
-- Perfis T(z), espaço-tempo, isoterma e fronteiras de Robin com paleta formal + acentos neon
+- Perfis T(z), espaço-tempo, isoterma e fronteiras de Robin (paleta formal + acentos neon)
 - Trechos e referências do artigo do XV CBPE
 - Terminal com Newton–Raphson, Jacobiana, Ke/Ce
 - **Botão Memória de Cálculo (PDF)** com identificação institucional, fórmulas, substituições, iterações e figuras
