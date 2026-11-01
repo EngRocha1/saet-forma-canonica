@@ -471,44 +471,40 @@ function drawField(){
   var rMax=M.rEdges[M.rEdges.length-1], zMax=M.zEdges[M.zEdges.length-1];
   var Rcore=M.R, Lcore=M.L;
   var Douter=2*rMax, Htot=zMax;
-  /* A/V do núcleo (cilindro): A=2πR(R+L), V=πR²L → A/V = 2/R + 2/L ; ótimo artigo h=2r ⇒ L=2R */
-  var AVn = 2/Rcore + 2/Lcore;
-  var AVopt = 2/Rcore + 2/(2*Rcore); // se L=2R
-  var ratioHL = Lcore/(2*Rcore); // 1.0 = h=D ótimo do artigo (h=2r)
+  var ratioHL=Lcore/(2*Rcore);
+  var AVn=2/Rcore+2/Lcore;
 
-  var padL=44, padT=34, padB=38;
-  var split=Math.floor(W*0.50);
+  var padL=40, padT=32, padB=36;
+  var split=Math.floor(W*0.48);
 
-  /* --- LEFT mesh: aspect ratio proportional to rMax x zMax --- */
-  var maxMeshW=split-padL-12, maxMeshH=H-padT-padB;
+  /* ===== LEFT: 2D mesh r→ right, z→ down; r=0 left (axis) ===== */
+  var maxMeshW=split-padL-10, maxMeshH=H-padT-padB;
   var meshScale=Math.min(maxMeshW/rMax, maxMeshH/zMax);
   var meshW=rMax*meshScale, meshH=zMax*meshScale;
   var meshX0=padL, meshY0=padT;
 
   ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
-  ctx.fillText("Plano (r,z) · núcleo no eixo · isolante na periferia", padL, 16);
+  ctx.fillText("Plano (r,z) · eixo r=0 à esquerda · isolante na parede (direita)", padL, 16);
   ctx.fillStyle="#a8a29e"; ctx.font="10px IBM Plex Sans";
-  ctx.fillText("h/D núcleo="+fmt(ratioHL,2)+(Math.abs(ratioHL-1)<0.08?" · A/V ótimo (h=2r)":" · fora do ótimo h=2r"), padL, 28);
+  ctx.fillText("h/D="+fmt(ratioHL,2)+(Math.abs(ratioHL-1)<0.08?" · A/V ótimo L=2R":" · ajustar L=2R"), padL, 28);
 
   function cellFlux(i,j){
-    var g=idx(i,j,M.nr), k=MAT[M.mat[g]].k;
-    var qr=0, qz=0;
-    if(i>0 && i<M.nr-1){
+    var g=idx(i,j,M.nr), k=MAT[M.mat[g]].k, qr=0, qz=0;
+    if(i>0&&i<M.nr-1)
       qr=-0.5*(kFace(k,MAT[M.mat[idx(i-1,j,M.nr)]].k)+kFace(k,MAT[M.mat[idx(i+1,j,M.nr)]].k))*(T[idx(i+1,j,M.nr)]-T[idx(i-1,j,M.nr)])/(M.rC(i+1)-M.rC(i-1));
-    } else if(i<M.nr-1){
+    else if(i<M.nr-1)
       qr=-kFace(k,MAT[M.mat[idx(i+1,j,M.nr)]].k)*(T[idx(i+1,j,M.nr)]-T[g])/(M.rC(i+1)-M.rC(i));
-    } else if(i>0){
+    else if(i>0)
       qr=-kFace(k,MAT[M.mat[idx(i-1,j,M.nr)]].k)*(T[g]-T[idx(i-1,j,M.nr)])/(M.rC(i)-M.rC(i-1));
-    }
     var kAx=k*(M.mat[g]==="hematita"?(p.keff||1):1);
-    if(j>0 && j<M.nz-1) qz=-kAx*(T[idx(i,j+1,M.nr)]-T[idx(i,j-1,M.nr)])/(M.zC(j+1)-M.zC(j-1));
+    if(j>0&&j<M.nz-1) qz=-kAx*(T[idx(i,j+1,M.nr)]-T[idx(i,j-1,M.nr)])/(M.zC(j+1)-M.zC(j-1));
     else if(j<M.nz-1) qz=-kAx*(T[idx(i,j+1,M.nr)]-T[g])/(M.zC(j+1)-M.zC(j));
     else if(j>0) qz=-kAx*(T[g]-T[idx(i,j-1,M.nr)])/(M.zC(j)-M.zC(j-1));
     return {qr:qr,qz:qz};
   }
   var qMax=1e-12;
   for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
-    var fl=cellFlux(i,j); qMax=Math.max(qMax, Math.hypot(fl.qr,fl.qz));
+    var fl=cellFlux(i,j); qMax=Math.max(qMax,Math.hypot(fl.qr,fl.qz));
   }
   function smartInk(t){
     var fcol=Math.max(0,Math.min(1,(t-tmin)/Math.max(tmax-tmin,1e-9)));
@@ -518,7 +514,7 @@ function drawField(){
     var len=Math.hypot(vx,vy); if(len<1e-15) return;
     var sc=Math.min(cmin*0.34,12)*(0.2+0.8*Math.min(1,len/qMax));
     var ux=vx/len*sc, uy=vy/len*sc;
-    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=1.25;
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=1.2;
     ctx.beginPath(); ctx.moveTo(cx-ux*0.25,cy-uy*0.25); ctx.lineTo(cx+ux*0.75,cy+uy*0.75); ctx.stroke();
     var hx=cx+ux*0.75, hy=cy+uy*0.75, px=-uy*0.3, py=ux*0.3;
     ctx.beginPath(); ctx.moveTo(hx,hy); ctx.lineTo(hx-ux*0.3+px,hy-uy*0.3+py); ctx.lineTo(hx-ux*0.3-px,hy-uy*0.3-py); ctx.closePath(); ctx.fill();
@@ -533,208 +529,198 @@ function drawField(){
     var col=heatColor(T[g],tmin,tmax);
     ctx.fillStyle="rgb("+(col[0]|0)+","+(col[1]|0)+","+(col[2]|0)+")";
     ctx.fillRect(x+0.4,y+0.4,Math.max(ww-0.8,1),Math.max(hh-0.8,1));
-    ctx.strokeStyle=M.mat[g]==="hematita"?"rgba(251,146,60,0.95)":"rgba(34,211,238,0.8)";
+    ctx.strokeStyle=M.mat[g]==="hematita"?"rgba(251,146,60,0.95)":"rgba(34,211,238,0.85)";
     ctx.lineWidth=1.1; ctx.strokeRect(x,y,ww,hh);
     var cx=x+ww/2, cy=y+hh/2, ink=smartInk(T[g]);
     ctx.fillStyle=ink;
-    ctx.beginPath(); ctx.arc(cx,cy-Math.min(hh*0.18,4),Math.min(1.8,cellMin*0.06),0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy-Math.min(hh*0.16,4),Math.min(1.7,cellMin*0.06),0,Math.PI*2); ctx.fill();
     var fs=Math.max(7,Math.min(11,Math.min(ww,hh)*0.24));
     ctx.font="700 "+fs+"px IBM Plex Mono";
     ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.fillText(fmt(T[g],0),cx,cy+fs*0.1);
     var fl=cellFlux(i,j);
-    drawArrow(cx,cy+Math.min(hh*0.22,6),fl.qr,fl.qz,ink,cellMin);
+    drawArrow(cx,cy+Math.min(hh*0.2,6),fl.qr,fl.qz,ink,cellMin);
   }
   ctx.textAlign="left"; ctx.textBaseline="alphabetic";
 
-  // core box on mesh
   var xC0=meshX0, yC0=meshY0+M.zEdges[M.jCore0]*meshScale;
   var xC1=meshX0+M.rEdges[M.iCoreEnd+1]*meshScale, yC1=meshY0+M.zEdges[M.jCoreEnd+1]*meshScale;
   ctx.strokeStyle="#f97316"; ctx.lineWidth=2.5; ctx.strokeRect(xC0,yC0,xC1-xC0,yC1-yC0);
   ctx.strokeStyle="#facc15"; ctx.lineWidth=3;
   ctx.beginPath(); ctx.moveTo(xC0,yC0); ctx.lineTo(xC1,yC0); ctx.stroke();
-  // labels r=0 and r=R and insulation outward
   ctx.fillStyle="#22d3ee"; ctx.font="600 10px IBM Plex Sans";
-  ctx.fillText("r=0 eixo", meshX0, meshY0+meshH+12);
-  ctx.fillStyle="#fdba74"; ctx.fillText("núcleo", xC0+4, yC0+12);
-  ctx.fillStyle="#67e8f9"; ctx.fillText("→ isolante (periferia)", xC1+4, (yC0+yC1)/2);
+  ctx.fillText("r=0", meshX0, meshY0+meshH+12);
+  ctx.fillStyle="#67e8f9"; ctx.fillText("isolante → parede", xC1+2, (yC0+yC1)/2);
+  ctx.fillStyle="#fdba74"; ctx.fillText("NÚCLEO", xC0+3, yC0+12);
 
-  /* ===== RIGHT: ½ cylinder with CORRECT radial layout and H/D proportion =====
-     Axis at left of cut face (r=0). Core then insulation outward to the right.
-     Cylinder aspect: height Htot, diameter Douter — scale so both fit, preserving H/D.
+  /* ===== RIGHT: 3/4 cylinder cutaway — SOLID shell OUTSIDE, cut reveals diametral plane =====
+     Layout like user's sketch: blue cylindrical shell on the LEFT of the 3D figure,
+     open sector facing RIGHT where the T-grid sits.
+     On the grid: LEFT column = axis r=0 (core), RIGHT columns = outer insulation.
   */
-  var panelW=W-split-8, panelH=H-padT-padB;
-  // physical aspect Htot : Douter
-  var aspect = Htot / Douter; // tall if >1
-  // fit ellipse+height in panel
-  var maxD = panelW * 0.72;
-  var maxH = panelH * 0.88;
-  // diameter scale and height scale must match geometry
-  var sc3 = Math.min(maxD/Douter, maxH/Htot);
-  var diamPx = Douter * sc3;
-  var heightPx = Htot * sc3;
-  var rx = diamPx/2;
-  var ry = rx * 0.28;
-  var cx3 = split + panelW*0.55;
-  var topY = padT + (panelH-heightPx)/2 + 8;
-  var botY = topY + heightPx;
+  var panelW=W-split-6, panelH=H-padT-padB;
+  var sc3=Math.min((panelW*0.55)/Douter, (panelH*0.9)/Htot);
+  var diamPx=Douter*sc3, heightPx=Htot*sc3;
+  var rx=diamPx/2, ry=rx*0.30;
+  // Cylinder body sits on the left of the right panel; cut face opens to the right
+  var cx3=split + 16 + rx;  // center of full cylinder
+  var topY=padT+(panelH-heightPx)/2+12;
+  var botY=topY+heightPx;
 
   ctx.fillStyle="#fafaf9"; ctx.font="600 11px IBM Plex Sans";
-  ctx.fillText("½ cilindro · proporção h/D real", split+6, 16);
+  ctx.fillText("Corte ¾ · casca azul = exterior · face = (r,z)", split+6, 16);
   ctx.fillStyle="#a8a29e"; ctx.font="10px IBM Plex Sans";
-  ctx.fillText("D="+fmt(Douter,2)+" m · H="+fmt(Htot,2)+" m · h/D_núcleo="+fmt(ratioHL,2), split+6, 28);
-  var avMsg = Math.abs(ratioHL-1)<0.08
-    ? "A/V ≈ ótimo do artigo (L=2R)"
-    : (ratioHL>1 ? "mais alto que ótimo → mais parede lateral" : "mais baixo que ótimo → mais topo/base");
+  ctx.fillText("Centro=eixo · periferia=isolante · H/D proporcional", split+6, 28);
   ctx.fillStyle=Math.abs(ratioHL-1)<0.08?"#4ade80":"#fbbf24";
   ctx.font="600 10px IBM Plex Sans";
-  ctx.fillText(avMsg+" · A/V_núcleo="+fmt(AVn,3)+" 1/m", split+6, 40);
+  ctx.fillText("h/D="+fmt(ratioHL,2)+" · A/V="+fmt(AVn,3)+" 1/m", split+6, 40);
 
-  // Top ellipse (outer)
-  ctx.beginPath(); ctx.ellipse(cx3, topY, rx, ry, 0, 0, Math.PI*2);
-  ctx.fillStyle="#1e3a5f"; ctx.fill();
-  ctx.strokeStyle="#94a3b8"; ctx.lineWidth=1.5; ctx.stroke();
-
-  // Bottom ellipse
+  // --- Draw SOLID outer shell (left + back of cylinder) as blue half ---
+  // Bottom disk (full ellipse, dark)
   ctx.beginPath(); ctx.ellipse(cx3, botY, rx, ry, 0, 0, Math.PI*2);
-  ctx.fillStyle="#1e3a5f"; ctx.fill();
-  ctx.strokeStyle="#94a3b8"; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle="#1e40af"; ctx.fill();
+  ctx.strokeStyle="#60a5fa"; ctx.lineWidth=1.5; ctx.stroke();
 
-  // Outer generators (right half visible)
-  var nGen=9;
+  // Top disk
+  ctx.beginPath(); ctx.ellipse(cx3, topY, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle="#1e3a8a"; ctx.fill();
+  ctx.strokeStyle="#93c5fd"; ctx.lineWidth=1.5; ctx.stroke();
+
+  // Outer wall: only the LEFT half of the cylinder (angles π/2 to 3π/2) = solid body
+  // Generators on outer surface for θ ∈ [90°, 270°] (back and left)
+  var nGen=12;
   for(var gi=0; gi<=nGen; gi++){
-    var ang=-Math.PI/2 + Math.PI*(gi/nGen);
-    if(Math.cos(ang)<-0.02) continue;
+    // θ from +90° to +270° (left solid half)
+    var ang=Math.PI/2 + Math.PI*(gi/nGen);
     var gx=cx3+rx*Math.cos(ang);
     var gyt=topY+ry*Math.sin(ang);
     var gyb=botY+ry*Math.sin(ang);
     ctx.beginPath(); ctx.moveTo(gx,gyt); ctx.lineTo(gx,gyb);
-    ctx.strokeStyle="rgba(15,23,42,0.9)"; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.strokeStyle="#1e3a8a"; ctx.lineWidth=2.2; ctx.stroke();
   }
+  // Fill the left outer wall as a polygon (approximate)
+  ctx.beginPath();
+  ctx.ellipse(cx3, topY, rx, ry, 0, Math.PI/2, 3*Math.PI/2, false);
+  ctx.ellipse(cx3, botY, rx, ry, 0, 3*Math.PI/2, Math.PI/2, true);
+  ctx.closePath();
+  ctx.fillStyle="rgba(30,64,175,0.55)"; ctx.fill();
+  ctx.strokeStyle="#3b82f6"; ctx.lineWidth=1.5; ctx.stroke();
 
-  // Core radius as inner cylinder guideline on top/bottom
-  var rxCore = Rcore * sc3;
-  ctx.beginPath(); ctx.ellipse(cx3, topY, rxCore, ry*(rxCore/rx), 0, 0, Math.PI*2);
-  ctx.strokeStyle="rgba(249,115,22,0.7)"; ctx.lineWidth=1.2; ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(cx3, botY, rxCore, ry*(rxCore/rx), 0, 0, Math.PI*2);
-  ctx.strokeStyle="rgba(249,115,22,0.5)"; ctx.lineWidth=1; ctx.stroke();
+  // Core radius guide (inner) on top — dashed, shows nucleus boundary inside shell
+  var rxCore=Rcore*sc3;
+  ctx.beginPath(); ctx.ellipse(cx3, topY, rxCore, ry*(rxCore/Math.max(rx,1e-6)), 0, 0, Math.PI*2);
+  ctx.strokeStyle="rgba(249,115,22,0.55)"; ctx.setLineDash([4,3]); ctx.lineWidth=1.2; ctx.stroke();
+  ctx.setLineDash([]);
 
-  /* CUT FACE: r=0 at CENTERLINE of cylinder (cx3), r increases LEFT toward outer? 
-     For half-cylinder open on the LEFT of the figure (cut facing camera):
-     - Axis (r=0) is the left edge of the colored rectangle
-     - Outer wall is the right edge of the colored rectangle toward the curved shell
-     
-     Wait - user said insulation was inverted TO THE CENTER. So previously insulation appeared at center.
-     Correct: axis left, core near left, insulation on the right (toward outer wall of cylinder).
-     In a half-cylinder cut, the cut face shows from axis to outer radius.
+  /* CUT FACE opens to the RIGHT of axis (θ=0 side)
+     Rectangle from axis (cx3) extending RIGHTWARD to outer radius (cx3+rx)
+     Column order: LEFT = r=0 (eixo/núcleo), RIGHT = r=R_outer (isolante)
   */
-  var faceLeft = cx3 - rx;   // outer? NO
-  // Standard engineering cut: looking at diametral plane, axis vertical in center of full cylinder.
-  // Half cylinder: axis on left edge of cut face, periphery on right (into the solid half).
-  faceLeft = cx3 - rx*0.02; // near axis (center of full tank would be left of solid)
-  // Place cut face from axis (left) to outer radius (right), width = rx (radius in px)
-  faceLeft = cx3 - rx;
-  var faceRight = cx3;
-  var faceTop = topY;
-  var faceBot = botY;
-  var faceW = faceRight - faceLeft;
-  var faceH = faceBot - faceTop;
+  var faceLeft=cx3;           // axis
+  var faceRight=cx3+rx;       // outer wall
+  var faceTop=topY, faceBot=botY;
+  var faceW=faceRight-faceLeft, faceH=faceBot-faceTop;
 
-  // Background of cut
-  ctx.fillStyle="rgba(15,23,42,0.35)";
+  // Slight depth shadow behind cut face
+  ctx.fillStyle="rgba(15,23,42,0.4)";
   ctx.fillRect(faceLeft, faceTop, faceW, faceH);
 
-  // Paint cells: i=0 (r=0, AXIS) at faceLeft; i=nr-1 (outer insulation) at faceRight
+  // Temperature field on cut: i=0 at faceLeft (axis), i=nr-1 at faceRight (outer iso)
   for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
     g=idx(i,j,M.nr);
     var fr0=M.rEdges[i]/rMax, fr1=M.rEdges[i+1]/rMax;
     var fz0=M.zEdges[j]/zMax, fz1=M.zEdges[j+1]/zMax;
-    // r=0 → left (axis); r=rMax → right (outer wall / insulation)
-    var fx=faceLeft + fr0*faceW;
-    var fy=faceTop + fz0*faceH;
-    var fw=Math.max((fr1-fr0)*faceW, 0.8), fh=Math.max((fz1-fz0)*faceH, 0.8);
+    var fx=faceLeft+fr0*faceW;
+    var fy=faceTop+fz0*faceH;
+    var fw=Math.max((fr1-fr0)*faceW,0.8), fh=Math.max((fz1-fz0)*faceH,0.8);
     var col2=heatColor(T[g],tmin,tmax);
     ctx.fillStyle="rgb("+(col2[0]|0)+","+(col2[1]|0)+","+(col2[2]|0)+")";
     ctx.fillRect(fx,fy,fw,fh);
-    ctx.strokeStyle="rgba(255,255,255,0.12)"; ctx.lineWidth=0.5; ctx.strokeRect(fx,fy,fw,fh);
+    ctx.strokeStyle="rgba(255,255,255,0.15)"; ctx.lineWidth=0.5; ctx.strokeRect(fx,fy,fw,fh);
+    // small T if room
+    if(fw>14 && fh>12){
+      var ink2=smartInk(T[g]);
+      ctx.fillStyle=ink2; ctx.font="700 8px IBM Plex Mono";
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(fmt(T[g],0), fx+fw/2, fy+fh/2);
+    }
   }
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
 
-  // Core boundary on cut face (r from 0 to R, z core)
-  var fxc0=faceLeft + 0;
-  var fxc1=faceLeft + (M.rEdges[M.iCoreEnd+1]/rMax)*faceW;
-  var fyc0=faceTop + (M.zEdges[M.jCore0]/zMax)*faceH;
-  var fyc1=faceTop + (M.zEdges[M.jCoreEnd+1]/zMax)*faceH;
+  // Core rectangle on cut face
+  var fxc0=faceLeft;
+  var fxc1=faceLeft+(M.rEdges[M.iCoreEnd+1]/rMax)*faceW;
+  var fyc0=faceTop+(M.zEdges[M.jCore0]/zMax)*faceH;
+  var fyc1=faceTop+(M.zEdges[M.jCoreEnd+1]/zMax)*faceH;
   ctx.strokeStyle="#f97316"; ctx.lineWidth=2.2;
-  ctx.strokeRect(fxc0, fyc0, fxc1-fxc0, fyc1-fyc0);
+  ctx.strokeRect(fxc0,fyc0,fxc1-fxc0,fyc1-fyc0);
 
-  // Insulation band annotation (outer radial strip)
-  if(M.iCoreEnd+1 < M.nr){
-    ctx.fillStyle="rgba(34,211,238,0.15)";
-    ctx.fillRect(fxc1, faceTop, faceRight-fxc1, faceH);
-    ctx.strokeStyle="#22d3ee"; ctx.lineWidth=1;
+  // Outer insulation strip highlight (right edge of cut = wall)
+  if(M.iCoreEnd+1<M.nr){
+    ctx.strokeStyle="#22d3ee"; ctx.lineWidth=2;
     ctx.strokeRect(fxc1, faceTop, faceRight-fxc1, faceH);
     ctx.fillStyle="#67e8f9"; ctx.font="600 9px IBM Plex Sans";
     ctx.save();
-    ctx.translate((fxc1+faceRight)/2, faceTop+faceH*0.5);
+    ctx.translate((fxc1+faceRight)/2+1, faceTop+faceH*0.5);
     ctx.rotate(-Math.PI/2);
-    ctx.fillText("isolante", -18, 3);
+    ctx.fillText("isolante (parede)", -28, 0);
     ctx.restore();
   }
 
-  // Edges
-  ctx.strokeStyle="#f8fafc"; ctx.lineWidth=2;
+  // Yellow frame like user sketch
+  ctx.strokeStyle="#facc15"; ctx.lineWidth=2.5;
   ctx.strokeRect(faceLeft, faceTop, faceW, faceH);
+
+  // Axis label at left of cut (center of tank)
   ctx.strokeStyle="#22d3ee"; ctx.lineWidth=2; ctx.setLineDash([4,3]);
   ctx.beginPath(); ctx.moveTo(faceLeft, faceTop); ctx.lineTo(faceLeft, faceBot); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle="#22d3ee"; ctx.font="600 10px IBM Plex Sans";
-  ctx.fillText("eixo r=0", faceLeft+3, faceBot-5);
-  ctx.fillStyle="#f97316"; ctx.fillText("núcleo", fxc0+3, fyc0+11);
-  ctx.fillStyle="#facc15"; ctx.font="600 9px IBM Plex Sans";
-  ctx.fillText("parede externa →", faceRight-70, faceTop+12);
+  ctx.fillText("eixo r=0", faceLeft+4, faceBot-6);
+  ctx.fillStyle="#fdba74"; ctx.fillText("núcleo", fxc0+4, fyc0+12);
+  ctx.fillStyle="#e0f2fe"; ctx.font="600 9px IBM Plex Sans";
+  ctx.fillText("parede →", faceRight-48, faceTop+12);
 
-  // Top ellipse stroke again
-  ctx.beginPath(); ctx.ellipse(cx3, topY, rx, ry, 0, 0, Math.PI*2);
-  ctx.strokeStyle="#cbd5e1"; ctx.lineWidth=1.8; ctx.stroke();
+  // Redraw top/bottom arcs for open side (right) as thin outline only
+  ctx.beginPath(); ctx.ellipse(cx3, topY, rx, ry, 0, -Math.PI/2, Math.PI/2, false);
+  ctx.strokeStyle="#93c5fd"; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(cx3, botY, rx, ry, 0, -Math.PI/2, Math.PI/2, false);
+  ctx.strokeStyle="#60a5fa"; ctx.lineWidth=1.5; ctx.stroke();
 
-  // Dimension lines H and D
+  // Dimensions
   ctx.strokeStyle="#e7e5e4"; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(cx3+rx+10, topY); ctx.lineTo(cx3+rx+10, botY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx3+rx+6, topY); ctx.lineTo(cx3+rx+14, topY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx3+rx+6, botY); ctx.lineTo(cx3+rx+14, botY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx3-rx-8, topY); ctx.lineTo(cx3-rx-8, botY); ctx.stroke();
   ctx.fillStyle="#e7e5e4"; ctx.font="10px IBM Plex Sans";
-  ctx.fillText("H="+fmt(Htot,1)+"m", cx3+rx+16, (topY+botY)/2);
-  ctx.beginPath(); ctx.moveTo(cx3-rx, botY+ry+8); ctx.lineTo(cx3+rx, botY+ry+8); ctx.stroke();
-  ctx.fillText("D="+fmt(Douter,1)+"m", cx3-20, botY+ry+20);
+  ctx.fillText("H="+fmt(Htot,1)+"m", cx3-rx-52, (topY+botY)/2);
+  ctx.beginPath(); ctx.moveTo(cx3-rx, botY+ry+6); ctx.lineTo(cx3+rx, botY+ry+6); ctx.stroke();
+  ctx.fillText("D="+fmt(Douter,1)+"m", cx3-18, botY+ry+18);
 
   // colorbar
   for(var yi=0;yi<90;yi++){
     var tt=tmax-(yi/90)*(tmax-tmin);
     var cc=heatColor(tt,tmin,tmax);
     ctx.fillStyle="rgb("+(cc[0]|0)+","+(cc[1]|0)+","+(cc[2]|0)+")";
-    ctx.fillRect(W-20, padT+yi, 8, 1);
+    ctx.fillRect(W-18, padT+yi, 8, 1);
   }
   ctx.fillStyle="#fafaf9"; ctx.font="10px IBM Plex Sans";
-  ctx.fillText(fmt(tmax,0)+"°C", W-52, padT+8);
-  ctx.fillText(fmt(tmin,0)+"°C", W-52, padT+90);
+  ctx.fillText(fmt(tmax,0)+"°C", W-50, padT+8);
+  ctx.fillText(fmt(tmin,0)+"°C", W-50, padT+90);
 
-  var ok = tCoreMax > tIsoMax + 5;
-  var geomOK = Math.abs(ratioHL-1)<0.08;
-  $("leg-field").innerHTML='<span>t=<b>'+fmt(f.tH,2)+' h</b></span> <span>h/D=<b>'+fmt(ratioHL,2)+'</b> '+(geomOK?'✓ ótimo L=2R':'· A/V não ótimo')+'</span> <span>T_núcleo max=<b>'+fmt(tCoreMax,1)+'</b></span> <span>ΔT_iface='+fmt(dTiface,1)+' K</span>';
+  var ok=tCoreMax>tIsoMax+5;
+  var geomOK=Math.abs(ratioHL-1)<0.08;
+  $("leg-field").innerHTML='<span>t=<b>'+fmt(f.tH,2)+' h</b></span> <span>eixo→centro · isolante→parede</span> <span>h/D=<b>'+fmt(ratioHL,2)+'</b></span> <span>T_núcleo max=<b>'+fmt(tCoreMax,1)+'</b></span>';
   $("s-tmax").textContent=fmt(tCoreMax,1)+" °C";
   $("s-dti").textContent=fmt(dTiface,1)+" K";
   $("s-n").textContent=String(M.nr*M.nz);
   $("s-mesh").textContent=M.nr+"×"+M.nz;
-  $("bound-alert").textContent=(ok?"OK físico · ":"")+"h/D="+fmt(ratioHL,2)+(geomOK?" (A/V ótimo artigo)":" (ajustar L ou R para L=2R)")+" · isolante na periferia";
-  $("bound-alert").style.background=(ok&&geomOK)?"#dcfce7":"#fef9c3";
-  var ib="Orientação: r=0 no eixo · isolante na parede externa\\n";
-  ib+="h/D núcleo = "+fmt(ratioHL,2)+" (ótimo artigo = 1.0 quando L=2R)\\n";
-  ib+="A/V núcleo = "+fmt(AVn,4)+" 1/m · A/V(opt)≈"+fmt(AVopt,4)+"\\n";
-  ib+="D_outer="+fmt(Douter,2)+" H="+fmt(Htot,2)+" (vista 3D proporcional)\\n";
-  ib+="ΔT_iface="+fmt(dTiface,1)+" K\\n";
-  $("iface-box").textContent=ib;
+  $("bound-alert").textContent="Casca azul = exterior · face amarela = corte MEF · isolante na parede lateral";
+  $("bound-alert").style.background="#dcfce7";
+  $("iface-box").textContent=
+    "Revolução: casca externa (azul) · corte revela (r,z)\\n"+
+    "r=0 no eixo (centro) · isolante na parede lateral\\n"+
+    "h/D="+fmt(ratioHL,2)+" · A/V="+fmt(AVn,3)+" 1/m\\n"+
+    "ΔT_iface="+fmt(dTiface,1)+" K\\n";
 }
-
 
 function tipShow(ev, html){
   var tip=$("chart-tip"); if(!tip) return;
