@@ -89,8 +89,11 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
     <label>n<sub>r</sub><input id="nr" type="number" min="3" max="6" value="4"/></label>
     <label>n<sub>z</sub><input id="nz" type="number" min="4" max="8" value="5"/></label>
   </div>
-  <label>Tempo (h) <span id="v-hours">24 h</span><input id="hours" type="range" min="1" max="72" step="1" value="24"/></label>
-  <label>Δt (s) <span id="v-dt">1800 s</span><input id="dt" type="range" min="900" max="3600" step="100" value="1800"/></label>
+  <label>Horizonte (dias) <span id="v-days">7 d</span><input id="days" type="range" min="1" max="120" step="1" value="7"/></label>
+  <p class="note" id="note-horizon" style="font-size:11px">≈ 168 h · alvo frente ≈ L²/(π²α) e energia m·Cp·ΔT</p>
+  <label>Δt (h) <span id="v-dt">1 h</span><input id="dt" type="range" min="0.5" max="12" step="0.5" value="2"/></label>
+  <label>T_base limite termoclina (°C) <span id="v-tlim">80</span><input id="tlim" type="range" min="40" max="400" step="10" value="80"/></label>
+  <p class="note" style="font-size:11px">Carga “máxima sem destruir a frente”: parar quando T na base do núcleo ≥ limite (estratificação ainda intacta).</p>
   <label>T carga ≤850 °C <span id="v-tc">850 °C</span><input id="tc" type="range" min="200" max="850" step="10" value="850"/></label>
   <label>h injeção (topo núcleo) <span id="v-ht">100</span><input id="ht" type="range" min="20" max="300" step="5" value="100"/></label>
   <label>h_ext perda <span id="v-hext">10</span><input id="hext" type="range" min="2" max="25" step="1" value="10"/></label>
@@ -152,6 +155,14 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
     </figcaption>
     <canvas id="c-field" width="860" height="560"></canvas>
     <div class="legend" id="leg-field"></div>
+  </figure>
+  <figure>
+    <figcaption>Curva de carga · energia armazenada e integridade da termoclina
+      <span class="sub">E(t) = ∫ ρ Cp (T−T₀) dV no núcleo. Carga máxima útil: instante em que T_base atinge o limite (frente ainda não “comeu” toda a altura).</span>
+      <span class="ref">Conservação de energia · estratificação (IRENA 2020; artigo §2.10)</span>
+    </figcaption>
+    <canvas id="c-charge" width="860" height="320"></canvas>
+    <div class="legend" id="leg-charge"></div>
   </figure>
   <figure>
     <figcaption>Convergência Newton · log₁₀‖R‖
@@ -356,23 +367,72 @@ function newtonStep(Told,p,M,dt){
   return {T:T, hist:hist, nodeResiduals:nodeR};
 }
 
+function coreEnergy(T,M){
+  // E = sum ρ Cp (T-Tinit) * V  over hematita cells (J)
+  var E=0, i,j,g;
+  for(j=M.jCore0;j<=M.jCoreEnd;j++){
+    for(i=0;i<=M.iCoreEnd;i++){
+      g=idx(i,j,M.nr);
+      var r=M.rC(i), V=r*M.dr(i)*M.dz(j);
+      // axisymmetric ring volume already as r*dr*dz * 1 rad? model uses 2D slice factor r*dr*dz as relative measure
+      E += MAT.hematita.rho*MAT.hematita.cp*(T[g]-Tinit)*V;
+    }
+  }
+  // scale as full cylinder: multiply by 2π for physical Joules of full tank
+  return E*2*Math.PI;
+}
+function coreBaseTemp(T,M){
+  var s=0,n=0,i;
+  for(i=0;i<=M.iCoreEnd;i++){ s+=T[idx(i,M.jCoreEnd,M.nr)]; n++; }
+  return s/Math.max(n,1);
+}
+function coreTopTemp(T,M){
+  var s=0,n=0,i;
+  for(i=0;i<=M.iCoreEnd;i++){ s+=T[idx(i,M.jCore0,M.nr)]; n++; }
+  return s/Math.max(n,1);
+}
 function simulate(){
   syncMatFromUI();
   MESH=buildMesh();
-  var M=MESH, dt=+$("dt").value, hours=+$("hours").value;
-  var p={hTop:+$("ht").value, hExt:+$("hext").value, Tcharge:+$("tc").value, keff:+$("keff").value};
+  var M=MESH;
+  var days=+$("days").value;
+  var dt=+$("dt").value*3600; // hours -> seconds
+  var hours=days*24;
+  var tlim=+$("tlim").value;
+  var p={hTop:+$("ht").value, hExt:+$("hext").value, Tcharge:+$("tc").value, keff:+$("keff").value, tlim:tlim};
   var steps=Math.max(1,Math.round(hours*3600/dt)), N=M.nr*M.nz;
   var T=new Array(N), i; for(i=0;i<N;i++) T[i]=Tinit;
-  frames=[{tH:0,T:T.slice(),hist:[{iter:1,residual:0,nodeResiduals:new Array(N).fill(0)}],nodeResiduals:new Array(N).fill(0)}];
+  var E0=coreEnergy(T,M);
+  frames=[{tH:0,T:T.slice(),hist:[{iter:1,residual:0,nodeResiduals:new Array(N).fill(0)}],nodeResiduals:new Array(N).fill(0),
+    E:0, Tbase:Tinit, Ttop:Tinit, frontOK:true}];
   fullHist=[];
-  var keepEvery=Math.max(1,Math.floor(steps/36)), s;
+  var chargeCurve=[{tH:0,E:0,Tbase:Tinit,Ttop:Tinit,frontOK:true}];
+  var keepEvery=Math.max(1,Math.floor(steps/48));
+  var tFrontBreak=-1, EmaxUseful=0, s;
   for(s=1;s<=steps;s++){
     var out=newtonStep(T,p,M,dt); T=out.T;
-    fullHist.push({tH:s*dt/3600, hist:out.hist.map(function(h){return {iter:h.iter,residual:h.residual};}), nodeResiduals:out.nodeResiduals.slice()});
-    if(s%keepEvery===0||s===steps)
-      frames.push({tH:s*dt/3600,T:T.slice(),hist:out.hist,nodeResiduals:out.nodeResiduals});
+    var tH=s*dt/3600;
+    var E=coreEnergy(T,M)-E0;
+    var Tb=coreBaseTemp(T,M), Tt=coreTopTemp(T,M);
+    var frontOK = Tb < tlim;
+    if(frontOK) EmaxUseful=E;
+    if(!frontOK && tFrontBreak<0) tFrontBreak=tH;
+    fullHist.push({tH:tH, hist:out.hist.map(function(h){return {iter:h.iter,residual:h.residual};}), nodeResiduals:out.nodeResiduals.slice()});
+    if(s%keepEvery===0||s===steps){
+      frames.push({tH:tH,T:T.slice(),hist:out.hist,nodeResiduals:out.nodeResiduals,E:E,Tbase:Tb,Ttop:Tt,frontOK:frontOK});
+      chargeCurve.push({tH:tH,E:E,Tbase:Tb,Ttop:Tt,frontOK:frontOK});
+    } else {
+      chargeCurve.push({tH:tH,E:E,Tbase:Tb,Ttop:Tt,frontOK:frontOK});
+    }
   }
-  LAST={p:p,M:M,dt:dt,steps:steps,hours:hours,N:N,frames:frames,fullHist:fullHist,matSnapshot:JSON.parse(JSON.stringify(MAT))};
+  // theoretical times
+  var alpha=MAT.hematita.k/(MAT.hematita.rho*MAT.hematita.cp);
+  var tDiffDays = (M.L*M.L)/(Math.PI*Math.PI*alpha) / 86400; // first mode
+  var tDiffDays2 = (M.L*M.L)/alpha / 86400;
+  LAST={p:p,M:M,dt:dt,steps:steps,hours:hours,days:days,N:N,frames:frames,fullHist:fullHist,
+    chargeCurve:chargeCurve,tFrontBreak:tFrontBreak,EmaxUseful:EmaxUseful,
+    tDiffDays:tDiffDays,tDiffDays2:tDiffDays2,alpha:alpha,
+    matSnapshot:JSON.parse(JSON.stringify(MAT))};
   return LAST;
 }
 
@@ -488,6 +548,69 @@ function drawField(){
   $("iface-box").textContent=ib;
 }
 
+
+function drawCharge(){
+  var c=$("c-charge"); if(!c||!LAST||!LAST.chargeCurve) return;
+  var ctx=c.getContext("2d"), W=c.width, H=c.height;
+  var padL=58,padR=50,padT=28,padB=40;
+  ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
+  var cc=LAST.chargeCurve;
+  var Emax=1e-9, Tmax=LAST.p.Tcharge;
+  cc.forEach(function(p){ Emax=Math.max(Emax,p.E); });
+  // axes
+  ctx.strokeStyle="#a8a29e"; ctx.beginPath();
+  ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+  // grid
+  var gi; ctx.strokeStyle="rgba(120,113,108,0.3)";
+  for(gi=0;gi<=5;gi++){
+    var yy=padT+(H-padT-padB)*gi/5;
+    ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(W-padR,yy); ctx.stroke();
+    ctx.fillStyle="#d6d3d1"; ctx.font="11px IBM Plex Mono";
+    var Ev=Emax*(1-gi/5)/1e9;
+    ctx.fillText(Ev.toFixed(2)+" GJ", 4, yy+4);
+  }
+  // E(t)
+  ctx.strokeStyle="#22d3ee"; ctx.lineWidth=2.5; ctx.beginPath();
+  cc.forEach(function(p,i){
+    var x=padL+(p.tH/Math.max(LAST.hours,1e-9))*(W-padL-padR);
+    var y=H-padB-(p.E/Emax)*(H-padT-padB);
+    if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
+  });
+  ctx.stroke();
+  // Tbase
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2; ctx.beginPath();
+  cc.forEach(function(p,i){
+    var x=padL+(p.tH/Math.max(LAST.hours,1e-9))*(W-padL-padR);
+    var y=H-padB-(p.Tbase/Tmax)*(H-padT-padB);
+    if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
+  });
+  ctx.stroke();
+  // limit line
+  var yLim=H-padB-(LAST.p.tlim/Tmax)*(H-padT-padB);
+  ctx.strokeStyle="#f43f5e"; ctx.setLineDash([6,4]); ctx.beginPath();
+  ctx.moveTo(padL,yLim); ctx.lineTo(W-padR,yLim); ctx.stroke(); ctx.setLineDash([]);
+  // break marker
+  if(LAST.tFrontBreak>0){
+    var xb=padL+(LAST.tFrontBreak/Math.max(LAST.hours,1e-9))*(W-padL-padR);
+    ctx.strokeStyle="#facc15"; ctx.lineWidth=2; ctx.beginPath();
+    ctx.moveTo(xb,padT); ctx.lineTo(xb,H-padB); ctx.stroke();
+    ctx.fillStyle="#facc15"; ctx.font="600 11px IBM Plex Sans";
+    ctx.fillText("fim termoclina", xb+4, padT+14);
+  }
+  ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
+  ctx.fillText("tempo (h) →", W/2-30, H-12);
+  ctx.fillStyle="#22d3ee"; ctx.fillText("E armazenada (GJ)", padL, 16);
+  ctx.fillStyle="#f97316"; ctx.fillText("T_base núcleo", padL+160, 16);
+  ctx.fillStyle="#f43f5e"; ctx.fillText("limite termoclina "+LAST.p.tlim+"°C", padL+290, 16);
+
+  var EmaxGJ=(LAST.EmaxUseful||0)/1e9;
+  var Efin=(cc[cc.length-1].E)/1e9;
+  var msg = LAST.tFrontBreak>0
+    ? ("Carga máxima útil ≈ "+EmaxGJ.toFixed(3)+" GJ em t="+fmt(LAST.tFrontBreak,1)+" h (antes de T_base≥"+LAST.p.tlim+"°C). E final="+Efin.toFixed(3)+" GJ.")
+    : ("Termoclina intacta no horizonte · E final="+Efin.toFixed(3)+" GJ · E_útil="+EmaxGJ.toFixed(3)+" GJ. t_diff≈"+fmt(LAST.tDiffDays,1)+" d (modo 1).");
+  $("leg-charge").innerHTML="<span>"+msg+"</span>";
+}
+
 function drawConv(){
   var c=$("c-conv"); if(!c||!LAST) return;
   var ctx=c.getContext("2d"), W=c.width, H=c.height;
@@ -577,7 +700,12 @@ function renderTerminal(){
   log+="L núcleo = "+M.L+" m → Fo = "+(alpha*tSec/(M.L*M.L)).toExponential(2)+"\n";
   log+="k_hem="+MAT.hematita.k+" IFB="+MAT.ifb.k+" perl="+MAT.perlita.k+"\n";
   log+="T_núcleo max="+fmt(tCore,1)+"  T_isol max="+fmt(tIso,1)+"\n";
+  if(LAST.tFrontBreak>0) log+="Fim termoclina @ "+fmt(LAST.tFrontBreak,1)+" h\n";
+  else log+="Termoclina OK no horizonte\n";
+  log+="E_útil max = "+fmt((LAST.EmaxUseful||0)/1e9,3)+" GJ\n";
+  log+="t_diff modo1 ≈ "+fmt(LAST.tDiffDays,1)+" dias\n";
   log+="────────────────────────────────────\n";
+  if($("note-horizon")) $("note-horizon").textContent="≈ "+LAST.days+" d ("+LAST.hours+" h) · t_diff≈"+fmt(LAST.tDiffDays,1)+" d · keff="+fmt(p.keff||1,1);
   if($("note-alpha")) $("note-alpha").textContent="α="+alpha.toExponential(2)+" | √(αt)="+fmt(delta,2)+" m | √(α·keff·t)="+fmt(deltaEff,2)+" m | Fo_L="+(alpha*tSec/(M.L*M.L)).toExponential(2);
   $("term-log").textContent=log;
   var ib=""; f.hist.forEach(function(h){ ib+="iter "+h.iter+": ‖R‖="+h.residual.toExponential(3)+(h.residual<1e-4?" OK":"")+"\n"; });
@@ -590,13 +718,16 @@ function showFrame(i){
   frameIdx=Math.max(0,Math.min(i,LAST.frames.length-1));
   $("prog").value=Math.round(100*frameIdx/Math.max(LAST.frames.length-1,1));
   $("v-prog").textContent=fmt(LAST.frames[frameIdx].tH,2)+" h";
-  try{ drawField(); drawConv(); drawNodeRes(); drawJac(); renderTerminal(); }
+  try{ drawField(); drawCharge(); drawConv(); drawNodeRes(); drawJac(); renderTerminal(); }
   catch(err){ console.error(err); $("term-log").textContent="Erro: "+err.message; }
 }
 
 function updateLabels(){
-  $("v-hours").textContent=$("hours").value+" h";
-  $("v-dt").textContent=$("dt").value+" s";
+  var days=+$("days").value, dth=+$("dt").value;
+  $("v-days").textContent=days+" d";
+  $("v-dt").textContent=dth+" h";
+  if($("v-tlim")) $("v-tlim").textContent=$("tlim").value;
+  if($("note-horizon")) $("note-horizon").textContent="≈ "+(days*24)+" h de simulação";
   $("v-tc").textContent=$("tc").value+" °C";
   $("v-ht").textContent=$("ht").value;
   $("v-hext").textContent=$("hext").value;
@@ -681,7 +812,7 @@ function makePDF(){
   doc.save("Memoria_SAET_kHarmonico_XV_CBPE.pdf");
 }
 
-["hours","dt","tc","ht","hext","keff","R","L","e1","e2","e3","eb1","eb2","eb3","kh","rh","cph","ki","kp","ks","kv"].forEach(function(id){
+["days","dt","tlim","tc","ht","hext","keff","R","L","e1","e2","e3","eb1","eb2","eb3","kh","rh","cph","ki","kp","ks","kv"].forEach(function(id){
   $(id).addEventListener("input", updateLabels);
   $(id).addEventListener("change", run);
 });
