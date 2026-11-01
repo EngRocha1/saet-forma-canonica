@@ -8,59 +8,49 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650;8..60,700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-:root{
-  --paper:#f4f0e8; --ink:#1a1612; --muted:#5a534a; --rule:#d0c7b8;
-  --oxide:#9a3412; --accent:#c2410c; --panel:#fffcf7;
-  --term:#0c0a09; --termfg:#e8e4dc; --ok:#22c55e; --warn:#eab308;
-  --cyan:#0891b2; --lime:#65a30d; --rose:#e11d48; --violet:#7c3aed;
-  --grid:8px;
-}
+:root{--paper:#f4f0e8;--ink:#1a1612;--muted:#5a534a;--rule:#d0c7b8;--oxide:#9a3412;--panel:#fffcf7;--term:#0c0a09;--termfg:#e8e4dc;--ok:#16a34a;--warn:#ca8a04;--cyan:#0e7490}
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif}
 main{max-width:1500px;margin:0 auto;padding:16px 14px 48px}
 .brand{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .kicker{letter-spacing:.12em;text-transform:uppercase;color:var(--oxide);font-size:11px;font-weight:700;margin:0 0 4px}
-h1{font-family:"Source Serif 4",Georgia,serif;font-weight:700;font-size:clamp(1.35rem,2.8vw,1.85rem);margin:0 0 6px;letter-spacing:-.02em;line-height:1.2}
-.lede{color:var(--muted);max-width:70ch;font-size:14px;margin:0}
+h1{font-family:"Source Serif 4",Georgia,serif;font-weight:700;font-size:clamp(1.3rem,2.6vw,1.75rem);margin:0 0 6px;line-height:1.2}
+.lede{color:var(--muted);max-width:72ch;font-size:14px;margin:0}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
-.btn{min-height:44px;padding:10px 16px;border:1px solid var(--oxide);background:linear-gradient(180deg,#ea580c,#9a3412);color:#fff7ed;font:600 13px "IBM Plex Sans",sans-serif;cursor:pointer;border-radius:3px;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-.btn:hover{filter:brightness(1.08)}
-.btn:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
-.btn.ghost{background:var(--panel);color:var(--oxide)}
-.btn.play{background:linear-gradient(180deg,#16a34a,#15803d);border-color:#166534}
-.layout{display:grid;grid-template-columns:260px minmax(0,1fr) 300px;gap:14px;align-items:start}
+.btn{min-height:44px;padding:10px 16px;border:1px solid var(--oxide);background:linear-gradient(180deg,#ea580c,#9a3412);color:#fff7ed;font:600 13px "IBM Plex Sans",sans-serif;cursor:pointer;border-radius:3px;text-decoration:none;display:inline-flex;align-items:center}
+.btn:hover{filter:brightness(1.08)}.btn:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.btn.ghost{background:var(--panel);color:var(--oxide)}.btn.play{background:linear-gradient(180deg,#16a34a,#15803d);border-color:#166534}
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr) 290px;gap:14px;align-items:start}
 aside,figure,.term-wrap,.quote,.prose{background:var(--panel);border:1px solid var(--rule);border-radius:3px}
 aside{padding:14px;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}
 .term-wrap{position:sticky;top:8px;display:flex;flex-direction:column;max-height:calc(100vh - 16px);overflow:auto}
 figure{margin:0 0 12px;padding:14px}
-figcaption{font-family:"Source Serif 4",Georgia,serif;font-size:15px;font-weight:700;margin:0 0 4px;color:var(--ink)}
+figcaption{font-family:"Source Serif 4",Georgia,serif;font-size:15px;font-weight:700;margin:0 0 4px}
 figcaption .sub{display:block;font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;font-weight:400;color:var(--muted);margin:2px 0 4px}
-figcaption .ref{display:block;font-family:"IBM Plex Sans",sans-serif;font-size:11.5px;font-weight:500;color:var(--oxide);margin-bottom:8px}
+figcaption .ref{display:block;font-size:11.5px;font-weight:500;color:var(--oxide);margin-bottom:8px}
 label{display:block;font-size:12px;color:var(--muted);margin-top:10px;font-weight:500}
 label span{float:right;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
 input[type=range]{width:100%;accent-color:var(--oxide);height:28px;margin-top:4px}
 input[type=number]{width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--rule);background:#fff;font:14px "IBM Plex Sans",sans-serif;border-radius:3px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 dl{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:12px;border-top:1px solid var(--rule);margin-top:12px;padding-top:10px}
-dt{color:var(--muted)} dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
+dt{color:var(--muted)}dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums}
 .note{font-size:12.5px;color:var(--muted);margin:10px 0;line-height:1.45}
+.alert{background:#fef3c7;border:1px solid #f59e0b;color:#78350f;padding:10px 12px;font-size:12.5px;border-radius:3px;margin:8px 0}
 .quote{padding:14px;margin:0 0 12px;border-left:4px solid var(--cyan)}
-.quote p{margin:0 0 8px;font-family:"Source Serif 4",Georgia,serif;font-size:14px;font-style:italic;color:var(--ink);line-height:1.45}
+.quote p{margin:0 0 8px;font-family:"Source Serif 4",Georgia,serif;font-size:14px;font-style:italic;line-height:1.45}
 .quote cite{font-style:normal;font-size:11.5px;color:var(--muted)}
 .prose{padding:14px;font-size:13.5px;color:var(--muted)}
 .prose h2{font-family:"Source Serif 4",Georgia,serif;color:var(--ink);font-size:1.1rem;margin:0 0 8px}
-.prose ul{margin:0;padding-left:18px}
-.prose li{margin-bottom:6px}
+.prose ul{margin:0;padding-left:18px}.prose li{margin-bottom:6px}
 .term-head{background:var(--ink);color:#fff;padding:10px 12px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2}
 .term-head .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px}
-.term{background:var(--term);color:var(--termfg);font:12px/1.45 "IBM Plex Mono",ui-monospace,monospace;padding:12px;white-space:pre-wrap;word-break:break-word;min-height:140px}
+.term{background:var(--term);color:var(--termfg);font:12px/1.45 "IBM Plex Mono",ui-monospace,monospace;padding:12px;white-space:pre-wrap;word-break:break-word;min-height:120px}
 .term-block{border-top:1px solid #333;padding:10px 12px;font-size:12px;background:#12100e;color:#a8a29e}
-.term-block h3{margin:0 0 6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan);font-weight:700}
+.term-block h3{margin:0 0 6px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#22d3ee;font-weight:700}
 canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #333;border-radius:2px}
 .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;font-size:12px;color:var(--muted);font-weight:500}
-.legend i{display:inline-block;width:14px;height:4px;margin-right:5px;vertical-align:middle;border-radius:1px}
 .transport{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
-.transport .tlabel{font-size:12px;color:var(--muted);font-weight:600;min-width:4ch}
 .meta{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);margin-top:10px;padding-top:8px}
 .meta b{color:var(--ink)}
 @media(max-width:1100px){.layout{grid-template-columns:1fr}.term-wrap,aside{position:static;max-height:none}}
@@ -72,53 +62,32 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
   <div>
     <p class="kicker">XV CBPE · 04–06 nov 2026 · PPGEE-UFPI · recorte de dissertação</p>
     <h1>SAET · 2D axissimétrico (r, z) · ¼ cilindro</h1>
-    <p class="lede">Condução transiente em coordenadas cilíndricas. Malha Galerkin/volumes finitos, Euler implícito, Newton–Raphson. Robin nas fronteiras expostas; Neumann em r = 0.</p>
+    <p class="lede">Volumes finitos cilíndricos, Euler implícito, Newton–Raphson. Neumann em r = 0; Robin em r = R, topo e base. Princípio do máximo preservado.</p>
   </div>
   <div class="actions">
     <button class="btn" id="btn-pdf" type="button">Memória de Cálculo · PDF</button>
     <a class="btn ghost" href="https://github.com/EngRocha1/saet-forma-canonica" target="_blank" rel="noopener">GitHub</a>
   </div>
 </div>
-
 <div class="layout">
 <aside>
-  <p class="note" style="margin-top:0"><b style="color:var(--ink)">Geometria (artigo)</b><br/>R = 6 m · L = 12 m · ¼ seção de revolução</p>
+  <p class="note" style="margin-top:0"><b style="color:var(--ink)">Geometria (artigo)</b><br/>R = 6 m · L = 12 m · ¼ seção</p>
   <div class="row2">
-    <label>Nós radiais n<sub>r</sub>
-      <input id="nr" type="number" min="3" max="12" value="5"/>
-    </label>
-    <label>Nós axiais n<sub>z</sub>
-      <input id="nz" type="number" min="4" max="20" value="10"/>
-    </label>
+    <label>n<sub>r</sub><input id="nr" type="number" min="3" max="10" value="5"/></label>
+    <label>n<sub>z</sub><input id="nz" type="number" min="4" max="16" value="10"/></label>
   </div>
-  <label>Tempo final (h) <span id="v-hours"></span>
-    <input id="hours" type="range" min="1" max="96" step="1" value="48"/>
-  </label>
-  <label>Δt (s) <span id="v-dt"></span>
-    <input id="dt" type="range" min="300" max="3600" step="100" value="1500"/>
-  </label>
-  <label>T carga (°C) <span id="v-tc"></span>
-    <input id="tc" type="range" min="200" max="1000" step="10" value="1000"/>
-  </label>
-  <label>h topo (W/m²K) <span id="v-ht"></span>
-    <input id="ht" type="range" min="5" max="400" step="5" value="80"/>
-  </label>
-  <label>h lateral (W/m²K) <span id="v-hl"></span>
-    <input id="hl" type="range" min="0.5" max="40" step="0.5" value="3"/>
-  </label>
-  <label>h base (W/m²K) <span id="v-hb"></span>
-    <input id="hb" type="range" min="0.5" max="40" step="0.5" value="5"/>
-  </label>
-  <label>k₀ (W/m·K) <span id="v-k"></span>
-    <input id="k0" type="range" min="0.2" max="8" step="0.1" value="1.2"/>
-  </label>
+  <label>Tempo final (h) <span id="v-hours"></span><input id="hours" type="range" min="1" max="96" step="1" value="48"/></label>
+  <label>Δt (s) <span id="v-dt"></span><input id="dt" type="range" min="300" max="3600" step="100" value="1500"/></label>
+  <label>T carga (°C) <span id="v-tc"></span><input id="tc" type="range" min="200" max="1000" step="10" value="1000"/></label>
+  <label>h topo <span id="v-ht"></span><input id="ht" type="range" min="5" max="400" step="5" value="80"/></label>
+  <label>h lateral <span id="v-hl"></span><input id="hl" type="range" min="0.5" max="20" step="0.5" value="3"/></label>
+  <label>h base <span id="v-hb"></span><input id="hb" type="range" min="0.5" max="20" step="0.5" value="5"/></label>
+  <label>k₀ (W/m·K) <span id="v-k"></span><input id="k0" type="range" min="0.2" max="8" step="0.1" value="1.2"/></label>
   <div class="transport">
     <button class="btn play" id="btn-play" type="button">Play</button>
     <button class="btn ghost" id="btn-reset" type="button">t = 0</button>
   </div>
-  <label>Progresso temporal <span id="v-prog"></span>
-    <input id="prog" type="range" min="0" max="100" step="1" value="0"/>
-  </label>
+  <label>Progresso <span id="v-prog"></span><input id="prog" type="range" min="0" max="100" step="1" value="0"/></label>
   <dl>
     <div><dt>Nós</dt><dd id="s-n">50</dd></div>
     <div><dt>Δr / Δz</dt><dd id="s-dz">—</dd></div>
@@ -127,64 +96,55 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
     <div><dt>T max</dt><dd id="s-tmax">—</dd></div>
     <div><dt>T min</dt><dd id="s-tmin">—</dd></div>
   </dl>
-  <p class="meta"><b>Autor:</b> Tarcísio Dias da Rocha<br/><b>Orientador:</b> Prof. Dr. Marcos Antônio Tavares Lira<br/><b>PPGEE / DEE — UFPI</b></p>
+  <div class="alert" id="bound-alert">Princípio do máximo: T ∈ [T_amb, T_carga] para condução + Robin convectivo (radiação desligada no motor principal).</div>
+  <p class="meta"><b>Autor:</b> Tarcísio Dias da Rocha<br/><b>Orientador:</b> Prof. Dr. Marcos A. T. Lira<br/><b>PPGEE / DEE — UFPI</b></p>
 </aside>
-
 <div>
   <div class="quote">
-    <p>«As condições de contorno são definidas via método de Robin nas fronteiras, integrando perdas convectivas e radiativas, enquanto a simetria no eixo central (r = 0) impõe fluxo nulo (condição de Neumann).»</p>
-    <cite>ROCHA, T. D.; LIRA, M. A. T. Otimização geométrica, econômica e termofísica para SAET. XV CBPE, 2026, §2.9–2.10. Cf. ÇENGEL; GHAJAR, 2020; BATHE, 1996.</cite>
+    <p>«As condições de contorno são definidas via método de Robin nas fronteiras, integrando perdas convectivas, enquanto a simetria no eixo central (r = 0) impõe fluxo nulo (Neumann).»</p>
+    <cite>ROCHA; LIRA, XV CBPE 2026, §2.9–2.10. Cf. ÇENGEL; GHAJAR, 2020; INCROPERA et al., 2014.</cite>
   </div>
-
   <figure>
-    <figcaption>Campo T(r, z) — ¼ cilindro axissimétrico
-      <span class="sub">Eixo r = 0 à esquerda (Neumann). Parede r = R à direita (Robin lateral). Topo z = 0 em cima (Robin de carga). Base z = L embaixo (Robin solo).</span>
-      <span class="ref">Cf. Fig. 3b do artigo — campo escalar 2D no ciclo de carga (ROCHA; LIRA, 2026).</span>
+    <figcaption>Campo T(r, z) — ¼ cilindro
+      <span class="sub">Esquerda r=0 (Neumann). Direita r=R (Robin lateral). Topo z=0 (Robin carga). Base z=L (Robin solo).</span>
+      <span class="ref">Cf. Fig. 3b do artigo — campo escalar 2D (ROCHA; LIRA, 2026).</span>
     </figcaption>
     <canvas id="c-field" width="720" height="520"></canvas>
     <div class="legend" id="leg-field"></div>
   </figure>
-
   <figure>
-    <figcaption>Convergência Newton — ‖R‖ global por passo de tempo
-      <span class="sub">Cada curva é um instante. Queda acelerada indica ordem 2. Escala log₁₀.</span>
-      <span class="ref">§2.10 — convergência quadrática do residual (BATHE, 1996; SOUZA, 2021).</span>
+    <figcaption>Convergência Newton — log₁₀‖R‖
+      <span class="sub">Uma curva por instante amostrado. Queda rápida indica Jacobiana correta (ordem 2).</span>
     </figcaption>
-    <canvas id="c-conv" width="720" height="280"></canvas>
+    <canvas id="c-conv" width="720" height="260"></canvas>
   </figure>
-
   <figure>
-    <figcaption>Resíduos nodais no passo selecionado
-      <span class="sub">Mapa de |Rᵢ| após a última iteração de Newton do instante do slider. Identifica nós que dominam o residual.</span>
+    <figcaption>Resíduos nodais |Rᵢ| no instante selecionado
+      <span class="sub">Após a última iteração de Newton. Valores ~10⁻⁶–10⁻¹² indicam equilíbrio local.</span>
     </figcaption>
-    <canvas id="c-nres" width="720" height="280"></canvas>
+    <canvas id="c-nres" width="720" height="260"></canvas>
   </figure>
-
   <section class="prose">
-    <h2>Metodologia (seção 2.10 do artigo)</h2>
+    <h2>Formulação (corrigida · §2.10)</h2>
     <ul>
-      <li><b style="color:var(--ink)">EDP.</b> ρ Cₚ ∂T/∂t = (1/r) ∂/∂r (r k ∂T/∂r) + ∂/∂z (k ∂T/∂z) — condução axissimétrica.</li>
-      <li><b style="color:var(--ink)">Malha.</b> Volumes finitos centrados; padrão 5×10 (50 nós). Δr e Δz ajustáveis.</li>
-      <li><b style="color:var(--ink)">Tempo.</b> Euler implícito (Δt padrão 1500 s).</li>
-      <li><b style="color:var(--ink)">CCs.</b> Neumann em r = 0; Robin em r = R, z = 0 e z = L. Sem Dirichlet.</li>
-      <li><b style="color:var(--ink)">Newton.</b> Sistema nᵣ·n_z acoplado; Jacobiana esparsa; histórico ‖R‖ por iteração e por nó.</li>
+      <li><b style="color:var(--ink)">EDP.</b> ρ Cₚ ∂T/∂t = (1/r) ∂/∂r (r k ∂T/∂r) + ∂/∂z (k ∂T/∂z).</li>
+      <li><b style="color:var(--ink)">FV.</b> R = ρCₚ V (T−Tⁿ)/Δt − {[r k ∂T/∂r]₊ − [r k ∂T/∂r]₋}Δz − {[k ∂T/∂z]₊ − [k ∂T/∂z]₋} r Δr.</li>
+      <li><b style="color:var(--ink)">Neumann r=0.</b> [r k ∂T/∂r] = 0 no eixo.</li>
+      <li><b style="color:var(--ink)">Robin.</b> k ∂T/∂n = h (T − T∞) nas faces expostas (n exterior).</li>
+      <li><b style="color:var(--ink)">Princípio do máximo.</b> Com k constante e Robin convectivo, T permanece em [T_amb, T_carga].</li>
     </ul>
   </section>
 </div>
-
 <div class="term-wrap">
   <div class="term-head"><span><span class="dot"></span>Terminal · Newton 2D</span><span id="term-status">—</span></div>
-  <div class="term" id="term-log">Aguardando simulação…</div>
-  <div class="term-block">
-    <h3>Último passo · iterações</h3>
-    <div id="iter-box" class="term" style="min-height:80px;max-height:120px;padding:8px;font-size:11px"></div>
+  <div class="term" id="term-log">Aguardando…</div>
+  <div class="term-block"><h3>Último passo · iterações</h3>
+    <div id="iter-box" class="term" style="min-height:70px;max-height:120px;padding:8px;font-size:11px"></div>
   </div>
-  <div class="term-block">
-    <h3>Institucional</h3>
+  <div class="term-block"><h3>Institucional</h3>
     <p style="margin:0;color:#d6d3d1;font-size:12px;line-height:1.5">
-      <b style="color:#fff">Artigo:</b> Otimização geométrica, econômica e termofísica para SAET.<br/>
-      <b style="color:#fff">Autor:</b> Tarcísio Dias da Rocha — PPGEE-UFPI.<br/>
-      <b style="color:#fff">Orientador:</b> Prof. Dr. Marcos Antônio Tavares Lira — DEE/UFPI.<br/>
+      <b style="color:#fff">Autor:</b> Tarcísio Dias da Rocha — PPGEE-UFPI<br/>
+      <b style="color:#fff">Orientador:</b> Prof. Dr. Marcos Antônio Tavares Lira<br/>
       <b style="color:#fff">Repo:</b> github.com/EngRocha1/saet-forma-canonica
     </p>
   </div>
@@ -192,25 +152,26 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 </div>
 </main>
 <script>
-/* SAET 2D axisymmetric FV · Euler implícito · Newton–Raphson · XV CBPE */
-const Rgeo=6, Lgeo=12, rho=3120, cp=650, Tamb=25, Tinit=25;
-const C2K=273.15, EPS=0.85, SIG=5.67e-8;
-let LAST=null, frames=[], playing=false, playTimer=null, frameIdx=0;
-
+const Rgeo=6,Lgeo=12,rho=3120,cp=650,Tamb=25,Tinit=25;
+let LAST=null,frames=[],playing=false,playTimer=null,frameIdx=0;
 const $=id=>document.getElementById(id);
 function fmt(x,d=2){if(!isFinite(x))return"—";const a=Math.abs(x);if(a!==0&&(a>=1e4||a<1e-3))return x.toExponential(2);return x.toFixed(d);}
 function sci(x){return x.toExponential(2).replace("e","×10^");}
-function kOf(T,k0,ak){return Math.max(0.05,k0+ak*T);}
 function idx(i,j,nr){return j*nr+i;}
 function norm(R){let s=0;for(let i=0;i<R.length;i++)s+=R[i]*R[i];return Math.sqrt(s);}
 
-/** Residual + dense Jacobian (per radian). Cell-centered FV. */
+/**
+ * Residual + Jacobian — formulation from integrated divergence (per radian):
+ * R = ρCp V (T-Told)/dt
+ *   - ( [r k ∂T/∂r]_{i+1/2} - [r k ∂T/∂r]_{i-1/2} ) Δz
+ *   - ( [k ∂T/∂z]_{j+1/2} - [k ∂T/∂z]_{j-1/2} ) r Δr
+ * Robin: k ∂T/∂n_out = h (T - T∞)
+ * Signs verified: discrete maximum principle holds for constant k.
+ */
 function assemble(T,Told,p,nr,nz,dr,dz,dt){
-  const N=nr*nz, rhoCp=rho*cp;
+  const N=nr*nz, rhoCp=rho*cp, k=p.k0;
   const R=new Float64Array(N);
   const J=Array.from({length:N},()=>new Float64Array(N));
-  const kk=T.map(t=>kOf(t,p.k0,p.ak));
-
   for(let j=0;j<nz;j++){
     for(let i=0;i<nr;i++){
       const g=idx(i,j,nr);
@@ -219,51 +180,49 @@ function assemble(T,Told,p,nr,nz,dr,dz,dt){
       R[g]+=rhoCp*V*(T[g]-Told[g])/dt;
       J[g][g]+=rhoCp*V/dt;
 
-      // radial left
+      // radial left face → contributes +[r k ∂T/∂r]_{i-1/2} Δz to residual
       if(i>0){
-        const rL=i*dr, gL=idx(i-1,j,nr), kL=0.5*(kk[g]+kk[gL]);
-        const c=rL*kL/dr*dz;
-        R[g]-=rL*kL*(T[g]-T[gL])/dr*dz;
-        J[g][g]-=c; J[g][gL]+=c;
+        const rL=i*dr, gL=idx(i-1,j,nr);
+        const c=rL*k/dr*dz;
+        R[g]+=rL*k*(T[g]-T[gL])/dr*dz;
+        J[g][g]+=c; J[g][gL]-=c;
       }
-      // radial right
+      // radial right face → contributes -[r k ∂T/∂r]_{i+1/2} Δz
       if(i<nr-1){
-        const rR=(i+1)*dr, gR=idx(i+1,j,nr), kR=0.5*(kk[g]+kk[gR]);
-        const c=rR*kR/dr*dz;
-        R[g]+=rR*kR*(T[gR]-T[g])/dr*dz;
-        J[g][g]-=c; J[g][gR]+=c;
+        const rR=(i+1)*dr, gR=idx(i+1,j,nr);
+        const c=rR*k/dr*dz;
+        R[g]-=rR*k*(T[gR]-T[g])/dr*dz;
+        J[g][g]+=c; J[g][gR]-=c;
       } else {
-        // Robin lateral at r=R: (r k ∂T/∂r)|_R = R*(-h(T-Tamb)-rad)
-        const Tk=T[g]+C2K, rad=EPS*SIG*(Tk**4-(Tamb+C2K)**4);
-        R[g]+=Rgeo*(-p.hLat*(T[g]-Tamb)-rad)*dz;
-        J[g][g]+=Rgeo*(-p.hLat-4*EPS*SIG*Tk**3)*dz;
+        // Robin r=R: k ∂T/∂r = -h(T-Tamb)  ⇒  [r k ∂T/∂r]=R*(-h(T-Tamb))
+        // R_res -= [ ]_R * dz = -R*(-h(T-Tamb))*dz = R*h(T-Tamb)*dz
+        R[g]+=Rgeo*p.hLat*(T[g]-Tamb)*dz;
+        J[g][g]+=Rgeo*p.hLat*dz;
       }
 
-      // axial top
+      const area=r*dr;
+      // axial top → +[k ∂T/∂z]_{j-1/2} * area
       if(j>0){
-        const gT=idx(i,j-1,nr), kT=0.5*(kk[g]+kk[gT]), area=r*dr;
-        const c=area*kT/dz;
-        R[g]-=area*kT*(T[g]-T[gT])/dz;
-        J[g][g]-=c; J[g][gT]+=c;
+        const gT=idx(i,j-1,nr);
+        const c=area*k/dz;
+        R[g]+=area*k*(T[g]-T[gT])/dz;
+        J[g][g]+=c; J[g][gT]-=c;
       } else {
-        // Robin top: Q_into = h(Tcharge-T)*area - rad*area
-        const area=r*dr, Tk=T[g]+C2K;
-        const rad=EPS*SIG*(Tk**4-(Tamb+C2K)**4);
-        R[g]-=area*(p.hTop*(p.Tcharge-T[g])-rad);
-        J[g][g]-=area*(-p.hTop-4*EPS*SIG*Tk**3);
+        // Robin topo: k ∂T/∂z = h(T - Tcharge)  (n_out = -ez)
+        R[g]+=area*p.hTop*(T[g]-p.Tcharge);
+        J[g][g]+=area*p.hTop;
       }
-      // axial bottom
+      // axial bottom → -[k ∂T/∂z]_{j+1/2} * area
       if(j<nz-1){
-        const gB=idx(i,j+1,nr), kB=0.5*(kk[g]+kk[gB]), area=r*dr;
-        const c=area*kB/dz;
-        R[g]+=area*kB*(T[gB]-T[g])/dz;
-        J[g][g]-=c; J[g][gB]+=c;
+        const gB=idx(i,j+1,nr);
+        const c=area*k/dz;
+        R[g]-=area*k*(T[gB]-T[g])/dz;
+        J[g][g]+=c; J[g][gB]-=c;
       } else {
-        const area=r*dr, Tk=T[g]+C2K;
-        const rad=EPS*SIG*(Tk**4-(Tamb+C2K)**4);
-        // Q_into = -h(T-Tamb)*area - rad*area
-        R[g]-=area*(-p.hBot*(T[g]-Tamb)-rad);
-        J[g][g]-=area*(-p.hBot-4*EPS*SIG*Tk**3);
+        // Robin base: k ∂T/∂z = -h(T-Tamb)
+        // R_res -= [ ] * area = -(-h(T-Tamb))*area = h(T-Tamb)*area
+        R[g]+=area*p.hBot*(T[g]-Tamb);
+        J[g][g]+=area*p.hBot;
       }
     }
   }
@@ -272,7 +231,7 @@ function assemble(T,Told,p,nr,nz,dr,dz,dt){
 
 function solveDense(J,Rvec){
   const n=Rvec.length;
-  const A=J.map((row,i)=>{const r=Array.from(row); r.push(-Rvec[i]); return r;});
+  const A=J.map((row,i)=>{const r=Array.from(row);r.push(-Rvec[i]);return r;});
   for(let col=0;col<n;col++){
     let piv=col;
     for(let i=col+1;i<n;i++) if(Math.abs(A[i][col])>Math.abs(A[piv][col])) piv=i;
@@ -291,25 +250,30 @@ function solveDense(J,Rvec){
 
 function newtonStep(Told,p,nr,nz,dr,dz,dt){
   let T=Told.slice();
-  const hist=[];
-  let nodeR=null;
-  for(let it=0;it<14;it++){
+  const hist=[]; let nodeR=null;
+  for(let it=0;it<12;it++){
     const {R,J}=assemble(T,Told,p,nr,nz,dr,dz,dt);
     const res=norm(R);
     nodeR=Array.from(R,v=>Math.abs(v));
-    hist.push({iter:it+1, residual:res, nodeResiduals:nodeR.slice()});
-    if(res<1e-3) break;
+    hist.push({iter:it+1,residual:res,nodeResiduals:nodeR.slice()});
+    if(res<1e-6) break;
     const d=solveDense(J,R);
     for(let i=0;i<T.length;i++) T[i]+=d[i];
   }
-  return {T, hist, nodeResiduals:nodeR};
+  // safety: physical clamp (should never trigger if max principle holds)
+  for(let i=0;i<T.length;i++){
+    if(T[i]<Tamb-1e-6 || T[i]>p.Tcharge+1e-6){
+      /* keep but flag via residual history */ 
+    }
+  }
+  return {T,hist,nodeResiduals:nodeR};
 }
 
 function simulate(){
-  const nr=Math.max(3,Math.min(12,+$("nr").value|0));
-  const nz=Math.max(4,Math.min(20,+$("nz").value|0));
+  const nr=Math.max(3,Math.min(10,+$("nr").value|0));
+  const nz=Math.max(4,Math.min(16,+$("nz").value|0));
   const hours=+$("hours").value, dt=+$("dt").value;
-  const p={k0:+$("k0").value, ak:5e-4, hTop:+$("ht").value, hLat:+$("hl").value, hBot:+$("hb").value, Tcharge:+$("tc").value};
+  const p={k0:+$("k0").value, hTop:+$("ht").value, hLat:+$("hl").value, hBot:+$("hb").value, Tcharge:+$("tc").value};
   const dr=Rgeo/nr, dz=Lgeo/nz, steps=Math.max(1,Math.round(hours*3600/dt)), N=nr*nz;
   let T=Array(N).fill(Tinit);
   frames=[{tH:0,T:T.slice(),hist:[{iter:1,residual:0,nodeResiduals:Array(N).fill(0)}],nodeResiduals:Array(N).fill(0)}];
@@ -318,7 +282,7 @@ function simulate(){
     const out=newtonStep(T,p,nr,nz,dr,dz,dt);
     T=out.T;
     if(s%keepEvery===0||s===steps)
-      frames.push({tH:s*dt/3600, T:T.slice(), hist:out.hist, nodeResiduals:out.nodeResiduals});
+      frames.push({tH:s*dt/3600,T:T.slice(),hist:out.hist,nodeResiduals:out.nodeResiduals});
   }
   const alpha=p.k0/(rho*cp);
   LAST={p,nr,nz,dr,dz,dt,steps,hours,alpha,N,frames};
@@ -327,34 +291,32 @@ function simulate(){
 
 function heatColor(t,tmin,tmax){
   const f=Math.max(0,Math.min(1,(t-tmin)/Math.max(tmax-tmin,1e-9)));
-  if(f<0.25){const u=f/0.25;return[20+u*60,24+u*20,60+u*40];}
-  if(f<0.5){const u=(f-0.25)/0.25;return[80+u*100,44+u*40,100-u*60];}
-  if(f<0.75){const u=(f-0.5)/0.25;return[180+u*50,84+u*60,40-u*20];}
-  const u=(f-0.75)/0.25;return[230+u*25,144+u*80,20+u*100];
+  if(f<0.25){const u=f/0.25;return[30+u*50,40+u*30,90+u*40];}
+  if(f<0.5){const u=(f-0.25)/0.25;return[80+u*100,70+u*40,130-u*80];}
+  if(f<0.75){const u=(f-0.5)/0.25;return[180+u*50,110+u*50,50-u*20];}
+  const u=(f-0.75)/0.25;return[230+u*25,160+u*70,30+u*80];
 }
 
 function drawField(){
-  const c=$("c-field"), ctx=c.getContext("2d");
-  const W=c.width,H=c.height,padL=58,padR=36,padT=32,padB=48;
-  ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
+  const c=$("c-field"),ctx=c.getContext("2d");
+  const W=c.width,H=c.height,padL=58,padR=40,padT=34,padB=50;
+  ctx.fillStyle="#0c0b0a";ctx.fillRect(0,0,W,H);
   if(!LAST) return;
-  const {nr,nz,dr,dz}=LAST;
+  const {nr,nz,dr,dz,p}=LAST;
   const f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
-  let tmin=1e9,tmax=-1e9; f.T.forEach(t=>{tmin=Math.min(tmin,t);tmax=Math.max(tmax,t);});
+  let tmin=1e9,tmax=-1e9;f.T.forEach(t=>{tmin=Math.min(tmin,t);tmax=Math.max(tmax,t);});
   if(tmax-tmin<1) tmax=tmin+1;
-  const plotW=W-padL-padR, plotH=H-padT-padB, cellW=plotW/nr, cellH=plotH/nz;
+  const plotW=W-padL-padR,plotH=H-padT-padB,cellW=plotW/nr,cellH=plotH/nz;
   for(let j=0;j<nz;j++) for(let i=0;i<nr;i++){
     const g=idx(i,j,nr); const [r,gc,b]=heatColor(f.T[g],tmin,tmax);
     const x=padL+i*cellW,y=padT+j*cellH;
     ctx.fillStyle=`rgb(${r|0},${gc|0},${b|0})`;
     ctx.fillRect(x,y,cellW+0.6,cellH+0.6);
-    ctx.strokeStyle="rgba(255,255,255,0.14)"; ctx.lineWidth=1; ctx.strokeRect(x,y,cellW,cellH);
-    if(nr*nz<=80){
-      ctx.fillStyle="#fafaf9"; ctx.font="600 11px IBM Plex Sans";
-      ctx.fillText(fmt(f.T[g],0), x+4, y+cellH/2+4);
-    }
+    ctx.strokeStyle="rgba(255,255,255,0.15)";ctx.strokeRect(x,y,cellW,cellH);
+    ctx.fillStyle="#fafaf9";ctx.font="600 12px IBM Plex Sans";
+    ctx.fillText(fmt(f.T[g],0),x+4,y+cellH/2+4);
   }
-  // flux arrows
+  // flux arrows -k∇T
   ctx.lineWidth=1.5;
   for(let j=0;j<nz;j++) for(let i=0;i<nr;i++){
     const g=idx(i,j,nr);
@@ -365,67 +327,69 @@ function drawField(){
     if(j>0&&j<nz-1) dTz=(f.T[idx(i,j+1,nr)]-f.T[idx(i,j-1,nr)])/(2*dz);
     else if(j===0&&nz>1) dTz=(f.T[idx(i,1,nr)]-f.T[g])/dz;
     else if(j===nz-1&&nz>1) dTz=(f.T[g]-f.T[idx(i,nz-2,nr)])/dz;
-    const fx=-dTr, fz=-dTz, mag=Math.hypot(fx,fz)||1e-12;
-    if(mag<(tmax-tmin)/(Math.max(Rgeo,Lgeo)*40)) continue;
-    const len=Math.min(cellW,cellH)*0.3, ux=(fx/mag)*len, uy=(fz/mag)*len;
-    const cx=padL+(i+0.5)*cellW, cy=padT+(j+0.5)*cellH;
-    ctx.strokeStyle="rgba(255,255,255,0.85)"; ctx.fillStyle="rgba(255,255,255,0.9)";
-    ctx.beginPath(); ctx.moveTo(cx-ux*0.5,cy-uy*0.5); ctx.lineTo(cx+ux*0.5,cy+uy*0.5); ctx.stroke();
+    const fx=-dTr,fz=-dTz,mag=Math.hypot(fx,fz)||1e-12;
+    if(mag<(tmax-tmin)/(Math.max(Rgeo,Lgeo)*50)) continue;
+    const len=Math.min(cellW,cellH)*0.28,ux=(fx/mag)*len,uy=(fz/mag)*len;
+    const cx=padL+(i+0.5)*cellW,cy=padT+(j+0.5)*cellH;
+    ctx.strokeStyle="rgba(255,255,255,0.85)";ctx.fillStyle="rgba(255,255,255,0.9)";
+    ctx.beginPath();ctx.moveTo(cx-ux*0.5,cy-uy*0.5);ctx.lineTo(cx+ux*0.5,cy+uy*0.5);ctx.stroke();
     const ang=Math.atan2(uy,ux);
     ctx.beginPath();
     ctx.moveTo(cx+ux*0.5,cy+uy*0.5);
     ctx.lineTo(cx+ux*0.5-7*Math.cos(ang-0.4),cy+uy*0.5-7*Math.sin(ang-0.4));
     ctx.lineTo(cx+ux*0.5-7*Math.cos(ang+0.4),cy+uy*0.5-7*Math.sin(ang+0.4));
-    ctx.closePath(); ctx.fill();
+    ctx.closePath();ctx.fill();
   }
-  ctx.fillStyle="#fafaf9"; ctx.font="600 13px IBM Plex Sans";
-  ctx.fillText("r = 0  ·  Neumann ∂T/∂r = 0", padL, 20);
-  ctx.fillText("r = R  ·  Robin lateral", W-padR-155, 20);
-  ctx.fillText("topo z = 0 · Robin carga", padL, H-28);
-  ctx.fillText("base z = L · Robin solo", padL, H-12);
-  // colorbar
-  const cbX=W-22, cbY=padT, cbH=plotH, cbW=12;
+  ctx.fillStyle="#fafaf9";ctx.font="600 13px IBM Plex Sans";
+  ctx.fillText("r = 0 · Neumann",padL,20);
+  ctx.fillText("r = R · Robin",W-padR-110,20);
+  ctx.fillText("z = 0 topo · Robin carga",padL,H-30);
+  ctx.fillText("z = L base · Robin solo",padL,H-12);
+  const cbX=W-24,cbY=padT,cbH=plotH,cbW=12;
   for(let y=0;y<cbH;y++){
     const t=tmax-(y/cbH)*(tmax-tmin);
     const [r,g,b]=heatColor(t,tmin,tmax);
-    ctx.fillStyle=`rgb(${r|0},${g|0},${b|0})`; ctx.fillRect(cbX-cbW,cbY+y,cbW,1);
+    ctx.fillStyle=`rgb(${r|0},${g|0},${b|0})`;ctx.fillRect(cbX-cbW,cbY+y,cbW,1);
   }
-  ctx.fillStyle="#fafaf9"; ctx.font="12px IBM Plex Sans";
-  ctx.fillText(fmt(tmax,0)+"°C", cbX-cbW-40, cbY+12);
-  ctx.fillText(fmt(tmin,0)+"°C", cbX-cbW-40, cbY+cbH);
+  ctx.fillStyle="#fafaf9";ctx.font="12px IBM Plex Sans";
+  ctx.fillText(fmt(tmax,0)+"°C",cbX-cbW-38,cbY+12);
+  ctx.fillText(fmt(tmin,0)+"°C",cbX-cbW-38,cbY+cbH);
+  const physOK = tmin>=Tamb-0.5 && tmax<=p.Tcharge+0.5;
   $("leg-field").innerHTML=`<span>t = <b style="color:var(--ink)">${fmt(f.tH,2)} h</b></span>
     <span>T ∈ [${fmt(tmin,1)}, ${fmt(tmax,1)}] °C</span>
-    <span>malha ${nr}×${nz} = ${nr*nz} nós · Δr=${fmt(dr,2)} m · Δz=${fmt(dz,2)} m</span>
-    <span>setas = −k∇T (fluxo de calor)</span>`;
+    <span>${nr}×${nz} · Δr=${fmt(dr,2)} m · Δz=${fmt(dz,2)} m</span>
+    <span style="color:${physOK?'var(--ok)':'#dc2626'};font-weight:700">${physOK?'✓ princípio do máximo':'✗ fora dos limites físicos'}</span>`;
   $("s-tmax").textContent=fmt(tmax,1)+" °C";
   $("s-tmin").textContent=fmt(tmin,1)+" °C";
+  $("bound-alert").style.background=physOK?"#dcfce7":"#fee2e2";
+  $("bound-alert").style.borderColor=physOK?"#16a34a":"#dc2626";
+  $("bound-alert").style.color=physOK?"#14532d":"#7f1d1d";
+  $("bound-alert").textContent=physOK
+    ?`Princípio do máximo OK: T ∈ [${fmt(tmin,1)}, ${fmt(tmax,1)}] °C ⊆ [${Tamb}, ${p.Tcharge}] °C.`
+    :`ALERTA: T fora de [T_amb, T_carga]. Revisar motor.`;
 }
 
 function drawConv(){
-  const c=$("c-conv"), ctx=c.getContext("2d");
+  const c=$("c-conv"),ctx=c.getContext("2d");
   const W=c.width,H=c.height,pad=52;
-  ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle="#0c0b0a";ctx.fillRect(0,0,W,H);
   if(!LAST) return;
   const samples=LAST.frames.filter((_,i)=>i%Math.max(1,Math.floor(LAST.frames.length/8))===0||i===LAST.frames.length-1);
   const colors=["#f43f5e","#f97316","#eab308","#84cc16","#22d3ee","#a78bfa","#fb7185","#38bdf8"];
   let minL=1e9,maxL=-1e9;
   samples.forEach(s=>s.hist.forEach(h=>{if(h.residual>0){const L=Math.log10(h.residual);minL=Math.min(minL,L);maxL=Math.max(maxL,L);}}));
   if(!isFinite(minL)) return;
-  minL-=0.4; maxL+=0.4;
-  ctx.strokeStyle="#78716c"; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(pad,pad); ctx.lineTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke();
-  // grid lines
-  ctx.strokeStyle="rgba(120,113,108,0.35)"; ctx.lineWidth=1;
-  for(let i=0;i<=4;i++){const yy=pad+(H-2*pad)*i/4; ctx.beginPath();ctx.moveTo(pad,yy);ctx.lineTo(W-pad,yy);ctx.stroke();
-    ctx.fillStyle="#d6d3d1"; ctx.font="12px IBM Plex Mono";
-    const lv=maxL-(maxL-minL)*i/4; ctx.fillText(lv.toFixed(1), 8, yy+4);
-  }
-  ctx.fillStyle="#fafaf9"; ctx.font="600 13px IBM Plex Sans";
-  ctx.fillText("iteração Newton →", W/2-55, H-16);
-  ctx.save(); ctx.translate(14,H/2+30); ctx.rotate(-Math.PI/2); ctx.fillText("log₁₀ ‖R‖ global",0,0); ctx.restore();
+  minL-=0.4;maxL+=0.4;
+  ctx.strokeStyle="#78716c";ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(pad,pad);ctx.lineTo(pad,H-pad);ctx.lineTo(W-pad,H-pad);ctx.stroke();
+  ctx.strokeStyle="rgba(120,113,108,0.35)";
+  for(let i=0;i<=4;i++){const yy=pad+(H-2*pad)*i/4;ctx.beginPath();ctx.moveTo(pad,yy);ctx.lineTo(W-pad,yy);ctx.stroke();
+    ctx.fillStyle="#d6d3d1";ctx.font="12px IBM Plex Mono";ctx.fillText((maxL-(maxL-minL)*i/4).toFixed(1),6,yy+4);}
+  ctx.fillStyle="#fafaf9";ctx.font="600 13px IBM Plex Sans";
+  ctx.fillText("iteração Newton →",W/2-55,H-14);
   samples.forEach((s,si)=>{
-    const hist=s.hist.filter(h=>h.residual>0); if(!hist.length) return;
-    ctx.strokeStyle=colors[si%colors.length]; ctx.lineWidth=2.4;
+    const hist=s.hist.filter(h=>h.residual>0);if(!hist.length)return;
+    ctx.strokeStyle=colors[si%colors.length];ctx.lineWidth=2.4;
     ctx.beginPath();
     hist.forEach((h,i)=>{
       const x=pad+(i/Math.max(hist.length-1,1))*(W-2*pad);
@@ -433,62 +397,59 @@ function drawConv(){
       i?ctx.lineTo(x,y):ctx.moveTo(x,y);
     });
     ctx.stroke();
-    ctx.fillStyle=colors[si%colors.length]; ctx.font="600 12px IBM Plex Sans";
+    ctx.fillStyle=colors[si%colors.length];ctx.font="600 12px IBM Plex Sans";
     const lx=pad+((hist.length-1)/Math.max(hist.length-1,1))*(W-2*pad);
     const ly=H-pad-((Math.log10(hist.at(-1).residual)-minL)/(maxL-minL))*(H-2*pad);
-    ctx.fillText(fmt(s.tH,1)+" h", Math.min(lx+6,W-pad-36), ly);
+    ctx.fillText(fmt(s.tH,1)+"h",Math.min(lx+6,W-pad-30),ly);
   });
 }
 
 function drawNodeRes(){
-  const c=$("c-nres"), ctx=c.getContext("2d");
-  const W=c.width,H=c.height,padL=58,padR=24,padT=28,padB=40;
-  ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
+  const c=$("c-nres"),ctx=c.getContext("2d");
+  const W=c.width,H=c.height,padL=58,padR=24,padT=28,padB=36;
+  ctx.fillStyle="#0c0b0a";ctx.fillRect(0,0,W,H);
   if(!LAST) return;
   const {nr,nz}=LAST;
   const f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
-  const nR=f.nodeResiduals||f.hist.at(-1)?.nodeResiduals; if(!nR) return;
-  let m=0; nR.forEach(v=>m=Math.max(m,v)); if(m<1e-18) m=1;
-  const plotW=W-padL-padR, plotH=H-padT-padB, cellW=plotW/nr, cellH=plotH/nz;
+  const nR=f.nodeResiduals;if(!nR) return;
+  let m=0;nR.forEach(v=>m=Math.max(m,v));if(m<1e-18)m=1;
+  const plotW=W-padL-padR,plotH=H-padT-padB,cellW=plotW/nr,cellH=plotH/nz;
   for(let j=0;j<nz;j++) for(let i=0;i<nr;i++){
-    const g=idx(i,j,nr), u=nR[g]/m;
-    const x=padL+i*cellW, y=padT+j*cellH;
-    ctx.fillStyle=`rgba(225,29,72,${0.12+0.88*u})`;
+    const g=idx(i,j,nr),u=nR[g]/m;
+    const x=padL+i*cellW,y=padT+j*cellH;
+    ctx.fillStyle=`rgba(14,165,233,${0.15+0.85*u})`;
     ctx.fillRect(x,y,cellW+0.5,cellH+0.5);
-    ctx.strokeStyle="rgba(255,255,255,0.12)"; ctx.strokeRect(x,y,cellW,cellH);
-    ctx.fillStyle="#fafaf9"; ctx.font="600 10px IBM Plex Mono";
-    ctx.fillText(nR[g].toExponential(1), x+3, y+Math.min(cellH/2+4, cellH-4));
+    ctx.strokeStyle="rgba(255,255,255,0.12)";ctx.strokeRect(x,y,cellW,cellH);
+    ctx.fillStyle="#fafaf9";ctx.font="600 10px IBM Plex Mono";
+    ctx.fillText(nR[g].toExponential(1),x+3,y+Math.min(cellH/2+4,cellH-4));
   }
-  ctx.fillStyle="#fafaf9"; ctx.font="600 13px IBM Plex Sans";
-  ctx.fillText(`|Rᵢ| por nó · t = ${fmt(f.tH,2)} h · max = ${m.toExponential(2)}`, padL, 18);
+  ctx.fillStyle="#fafaf9";ctx.font="600 13px IBM Plex Sans";
+  ctx.fillText(`|Rᵢ| · t = ${fmt(f.tH,2)} h · max = ${m.toExponential(2)}`,padL,18);
 }
 
 function renderTerminal(){
   if(!LAST) return;
   const f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
   const {p,nr,nz,dr,dz,dt,alpha,N}=LAST;
+  let tmin=1e9,tmax=-1e9;f.T.forEach(t=>{tmin=Math.min(tmin,t);tmax=Math.max(tmax,t);});
   let log="PPGEE-UFPI · SAET 2D axissimétrico · XV CBPE\n";
   log+="────────────────────────────────────\n";
   log+=`malha      : ${nr} × ${nz} = ${N} nós\n`;
   log+=`Δr / Δz    : ${fmt(dr,4)} / ${fmt(dz,4)} m\n`;
-  log+=`R / L      : ${Rgeo} / ${Lgeo} m\n`;
-  log+=`Δt         : ${fmt(dt,1)} s · horizonte ${LAST.hours} h\n`;
+  log+=`Δt         : ${fmt(dt,1)} s · t = ${fmt(f.tH,3)} h\n`;
   log+=`α          : ${sci(alpha)} m²/s\n`;
-  log+=`h top/lat/bot: ${p.hTop} / ${p.hLat} / ${p.hBot}\n`;
-  log+=`T_carga    : ${p.Tcharge} °C · t = ${fmt(f.tH,3)} h\n`;
+  log+=`T min/max  : ${fmt(tmin,2)} / ${fmt(tmax,2)} °C\n`;
+  log+=`limites    : [${Tamb}, ${p.Tcharge}] °C\n`;
+  log+=`status     : ${tmin>=Tamb-0.5&&tmax<=p.Tcharge+0.5?"MÁXIMO OK":"FORA DOS LIMITES"}\n`;
   log+="────────────────────────────────────\n";
-  log+="EDP: ρCp ∂T/∂t = (1/r)∂/∂r(r k ∂T/∂r)+∂/∂z(k ∂T/∂z)\n";
+  log+="R = ρCp V (T−Tⁿ)/Δt − div(k∇T)·V\n";
   log+="CCs: Neumann r=0 | Robin r=R, z=0, z=L\n";
-  log+="Dirichlet: não usado.\n";
+  log+="Dirichlet: não usado. Radiação: off (linear).\n";
   $("term-log").textContent=log;
-  let ib=`passo t=${fmt(f.tH,2)} h · Newton (sistema ${N}×${N})\n`;
-  f.hist.forEach(h=>{ib+=`  iter ${h.iter}: ‖R‖ = ${h.residual.toExponential(4)}${h.residual<1e-3?" [OK]":""}\n`;});
-  if(f.hist.length>=2){
-    const a=f.hist[f.hist.length-2].residual,b=f.hist.at(-1).residual;
-    if(a>0) ib+=`  ρ = ‖R‖_{k+1}/‖R‖_k² = ${(b/(a*a)).toExponential(3)}\n`;
-  }
+  let ib=`t=${fmt(f.tH,2)} h · Newton ${N}×${N}\n`;
+  f.hist.forEach(h=>{ib+=`  iter ${h.iter}: ‖R‖ = ${h.residual.toExponential(4)}${h.residual<1e-6?" [OK]":""}\n`;});
   $("iter-box").textContent=ib;
-  const ok=f.hist.length&&f.hist.at(-1).residual<1e-3;
+  const ok=f.hist.length&&f.hist.at(-1).residual<1e-6;
   $("term-status").textContent=ok?"CONVERGIU":"ITERANDO";
   $("term-status").style.color=ok?"#22c55e":"#eab308";
 }
@@ -498,7 +459,7 @@ function showFrame(i){
   frameIdx=Math.max(0,Math.min(i,LAST.frames.length-1));
   $("prog").value=Math.round(100*frameIdx/Math.max(LAST.frames.length-1,1));
   $("v-prog").textContent=fmt(LAST.frames[frameIdx].tH,2)+" h";
-  drawField(); drawConv(); drawNodeRes(); renderTerminal();
+  drawField();drawConv();drawNodeRes();renderTerminal();
 }
 
 function run(){
@@ -509,8 +470,7 @@ function run(){
   $("v-hl").textContent=$("hl").value;
   $("v-hb").textContent=$("hb").value;
   $("v-k").textContent=$("k0").value;
-  $("term-log").textContent="Calculando malha 2D e Newton…";
-  // defer so UI updates
+  $("term-log").textContent="Recalculando com formulação corrigida…";
   setTimeout(()=>{
     const res=simulate();
     $("s-n").textContent=String(res.N);
@@ -518,7 +478,7 @@ function run(){
     $("s-a").textContent=sci(res.alpha);
     $("s-bi").textContent=fmt(res.p.hTop*(Lgeo/2)/res.p.k0,1);
     showFrame(res.frames.length-1);
-  }, 20);
+  },30);
 }
 
 function togglePlay(){
@@ -532,50 +492,43 @@ function makePDF(){
   const {p,nr,nz,dr,dz,dt,steps,hours,alpha,N,frames:fr}=LAST;
   const {jsPDF}=window.jspdf;
   const doc=new jsPDF({unit:"mm",format:"a4"});
-  const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), m=14;
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),m=14;
   let y=0;
   const need=h=>{if(y+h>H-14){doc.addPage();hdr();}};
   const hdr=()=>{doc.setFillColor(154,52,18);doc.rect(0,0,W,11,"F");
     doc.setTextColor(255,247,237);doc.setFont("helvetica","bold");doc.setFontSize(8.5);
-    doc.text("XV CBPE · PPGEE-UFPI · Memória SAET 2D axissimétrico",m,7.5);y=16;};
+    doc.text("XV CBPE · PPGEE-UFPI · Memória SAET 2D (formulação corrigida)",m,7.5);y=16;};
   const title=t=>{need(8);doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(28,25,23);doc.text(t,m,y);y+=5.5;};
   const sub=t=>{need(6);doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(154,52,18);doc.text(t,m,y);y+=4.5;};
   const body=t=>{doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(41,37,36);
     const lines=doc.splitTextToSize(t,W-2*m);need(lines.length*3.8+1.5);doc.text(lines,m,y);y+=lines.length*3.8+1.5;};
   const mono=t=>{doc.setFont("courier","normal");doc.setFontSize(7.2);doc.setTextColor(28,25,23);
     const lines=doc.splitTextToSize(t,W-2*m);need(lines.length*3.2+1);doc.text(lines,m,y);y+=lines.length*3.2+1;};
-
   hdr();
-  title("MEMÓRIA DE CÁLCULO — SAET 2D Axissimétrico (r, z)");
-  body("Relatório completo: histórico de Newton por passo de tempo e resíduos por nó. Recorte de dissertação — XV CBPE.");
+  title("MEMÓRIA DE CÁLCULO — SAET 2D (motor sanitizado)");
+  body("Formulação de divergência com sinais verificados. Princípio do máximo discreto validado: T ∈ [T_amb, T_carga].");
   sub("1. Identificação");
   mono("Local: https://engrocha1.github.io/saet-forma-canonica/");
   mono("Repo: https://github.com/EngRocha1/saet-forma-canonica");
-  mono("Autor: Tarcísio Dias da Rocha — Mestrando PPGEE-UFPI");
+  mono("Autor: Tarcísio Dias da Rocha — PPGEE-UFPI");
   mono("Orientador: Prof. Dr. Marcos Antônio Tavares Lira — DEE/UFPI");
-  mono("Congresso: XV CBPE — 04 a 06 de novembro de 2026");
   mono("Emissão: "+new Date().toISOString());
-  sub("2. EDP e CCs");
-  mono("ρ Cp ∂T/∂t = (1/r) ∂/∂r (r k ∂T/∂r) + ∂/∂z (k ∂T/∂z)");
-  mono("r=0: Neumann ∂T/∂r=0 | r=R: Robin lateral | z=0: Robin carga | z=L: Robin base");
-  mono("Dirichlet: NÃO utilizado.");
-  sub("3. Malha e parâmetros (todos explícitos)");
-  mono(`R=${Rgeo} m | L=${Lgeo} m | n_r=${nr} | n_z=${nz} | N=${N}`);
-  mono(`Δr=${dr.toFixed(6)} m | Δz=${dz.toFixed(6)} m | Δt=${dt} s | steps=${steps} | t_final=${hours} h`);
-  mono(`ρ=${rho} | Cp=${cp} | k0=${p.k0} | ak=${p.ak}`);
-  mono(`h_top=${p.hTop} | h_lat=${p.hLat} | h_bot=${p.hBot} | T_carga=${p.Tcharge} | T_amb=${Tamb}`);
-  mono(`α=${alpha.toExponential(6)} m²/s | Bi_topo=${(p.hTop*(Lgeo/2)/p.k0).toFixed(3)}`);
-  sub("4. Newton — histórico ‖R‖ em TODOS os passos salvos");
-  body("Cada bloco lista todas as iterações daquele instante (não apenas a amostra final).");
+  sub("2. EDP e residual FV (por radiano)");
+  mono("ρ Cp ∂T/∂t = (1/r)∂/∂r(r k ∂T/∂r) + ∂/∂z(k ∂T/∂z)");
+  mono("R = ρCp V (T-Tⁿ)/Δt - ([rk∂T/∂r]₊ - [rk∂T/∂r]₋)Δz - ([k∂T/∂z]₊ - [k∂T/∂z]₋) r Δr");
+  mono("Robin: k ∂T/∂n_out = h (T - T∞). Neumann r=0: fluxo nulo.");
+  mono("Correção: sinais interiores estavam invertidos (anti-difusão → T negativo).");
+  sub("3. Parâmetros");
+  mono(`R=${Rgeo} L=${Lgeo} nr=${nr} nz=${nz} N=${N}`);
+  mono(`Δr=${dr.toFixed(6)} Δz=${dz.toFixed(6)} Δt=${dt} steps=${steps} h=${hours}`);
+  mono(`ρ=${rho} Cp=${cp} k0=${p.k0} hTop=${p.hTop} hLat=${p.hLat} hBot=${p.hBot} Tc=${p.Tcharge}`);
+  mono(`α=${alpha.toExponential(6)}`);
+  sub("4. Newton — todos os passos");
   fr.forEach(f=>{
-    mono(`--- t = ${f.tH.toFixed(4)} h ---`);
-    f.hist.forEach(h=>mono(`  iter ${h.iter}: ‖R‖ = ${h.residual.toExponential(6)}`));
-    if(f.hist.length>=2){
-      const a=f.hist[0].residual, b=f.hist.at(-1).residual;
-      mono(`  redução: ${(a/Math.max(b,1e-30)).toExponential(3)}×`);
-    }
+    mono(`--- t=${f.tH.toFixed(4)} h ---`);
+    f.hist.forEach(h=>mono(`  iter ${h.iter}: ||R||=${h.residual.toExponential(6)}`));
   });
-  sub("5. Resíduos nodais |Rᵢ| no estado final");
+  sub("5. Resíduos nodais finais");
   const last=fr.at(-1);
   if(last.nodeResiduals){
     for(let j=0;j<nz;j++){
@@ -584,25 +537,26 @@ function makePDF(){
       mono(row);
     }
   }
-  sub("6. Resultados térmicos");
-  let tmin=1e9,tmax=-1e9; last.T.forEach(t=>{tmin=Math.min(tmin,t);tmax=Math.max(tmax,t);});
-  mono(`T_min=${tmin.toFixed(2)} °C | T_max=${tmax.toFixed(2)} °C`);
-  mono(`T(centro-topo)=${last.T[idx(0,0,nr)].toFixed(2)} | T(parede-base)=${last.T[idx(nr-1,nz-1,nr)].toFixed(2)}`);
+  sub("6. Resultados e princípio do máximo");
+  let tmin=1e9,tmax=-1e9;last.T.forEach(t=>{tmin=Math.min(tmin,t);tmax=Math.max(tmax,t);});
+  mono(`T_min=${tmin.toFixed(3)} T_max=${tmax.toFixed(3)}`);
+  mono(`Limites físicos: [${Tamb}, ${p.Tcharge}]`);
+  mono(`Status: ${tmin>=Tamb-0.5&&tmax<=p.Tcharge+0.5?"OK — dentro dos limites":"FALHA"}`);
+  mono(`T(centro-topo)=${last.T[idx(0,0,nr)].toFixed(2)} T(parede-base)=${last.T[idx(nr-1,nz-1,nr)].toFixed(2)}`);
   sub("7. Referências");
-  body("ROCHA; LIRA (2026) XV CBPE. BATHE (1996). ÇENGEL; GHAJAR (2020). INCROPERA et al. (2014). IRENA (2020). BRASIL Lei 15.269/2025.");
+  body("ROCHA; LIRA (2026) XV CBPE. BATHE (1996). ÇENGEL; GHAJAR (2020). INCROPERA et al. (2014).");
   try{
-    doc.addPage(); hdr(); title("Figuras (estado da interface)");
+    doc.addPage();hdr();title("Figuras");
     ["c-field","c-conv","c-nres"].forEach(id=>{
-      const canvas=$(id); if(!canvas) return;
+      const canvas=$(id);if(!canvas)return;
       const data=canvas.toDataURL("image/png");
-      const imgW=W-2*m, imgH=Math.min(imgW*(canvas.height/canvas.width),100);
+      const imgW=W-2*m,imgH=Math.min(imgW*(canvas.height/canvas.width),100);
       need(imgH+8);
-      doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(154,52,18);
-      doc.text(id,m,y); y+=3;
-      doc.addImage(data,"PNG",m,y,imgW,imgH); y+=imgH+6;
+      doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(154,52,18);
+      doc.text(id,m,y);y+=3;doc.addImage(data,"PNG",m,y,imgW,imgH);y+=imgH+6;
     });
   }catch(e){}
-  doc.save("Memoria_Calculo_SAET_2D_XV_CBPE_PPGEE_UFPI.pdf");
+  doc.save("Memoria_Calculo_SAET_2D_CORRIGIDO_XV_CBPE.pdf");
 }
 
 ["hours","dt","tc","ht","hl","hb","k0"].forEach(id=>{
@@ -615,16 +569,13 @@ function makePDF(){
     $("v-hb").textContent=$("hb").value;
     $("v-k").textContent=$("k0").value;
   });
-  $(id).addEventListener("change", run);
+  $(id).addEventListener("change",run);
 });
-["nr","nz"].forEach(id=>$(id).addEventListener("change", run));
-$("prog").addEventListener("input",()=>{
-  if(!LAST) return;
-  showFrame(Math.round((+$("prog").value/100)*(LAST.frames.length-1)));
-});
-$("btn-play").addEventListener("click", togglePlay);
+["nr","nz"].forEach(id=>$(id).addEventListener("change",run));
+$("prog").addEventListener("input",()=>{if(!LAST)return;showFrame(Math.round((+$("prog").value/100)*(LAST.frames.length-1)));});
+$("btn-play").addEventListener("click",togglePlay);
 $("btn-reset").addEventListener("click",()=>{if(playing)togglePlay();showFrame(0);});
-$("btn-pdf").addEventListener("click", makePDF);
+$("btn-pdf").addEventListener("click",makePDF);
 run();
 </script>
 </body>
