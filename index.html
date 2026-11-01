@@ -194,6 +194,7 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
   </div>
 </div>
 </div>
+<div id="chart-tip" style="display:none;position:fixed;z-index:100;pointer-events:none;background:#1c1917;color:#fafaf9;border:1px solid #78716c;padding:8px 10px;font:12px/1.4 'IBM Plex Mono',monospace;border-radius:4px;max-width:280px;box-shadow:0 4px 16px rgba(0,0,0,.4)"></div>
 </main>
 <div class="modal-bg" id="modal-iso">
   <div class="modal">
@@ -734,121 +735,238 @@ function drawField(){
   $("iface-box").textContent=ib;
 }
 
+
+function tipShow(ev, html){
+  var tip=$("chart-tip"); if(!tip) return;
+  tip.innerHTML=html; tip.style.display="block";
+  tip.style.left=Math.min(ev.clientX+14, window.innerWidth-300)+"px";
+  tip.style.top=Math.min(ev.clientY+14, window.innerHeight-80)+"px";
+}
+function tipHide(){ var tip=$("chart-tip"); if(tip) tip.style.display="none"; }
+
 function drawCharge(){
   var c=$("c-charge"); if(!c||!LAST||!LAST.chargeCurve) return;
   var ctx=c.getContext("2d"), W=c.width, H=c.height;
-  var padL=58,padR=50,padT=28,padB=40;
+  var padL=62, padR=28, padT=32, padB=48;
   ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
   var cc=LAST.chargeCurve;
-  var Emax=1e-9, Tmax=LAST.p.Tcharge;
-  cc.forEach(function(p){ Emax=Math.max(Emax,p.E); });
-  // axes
-  ctx.strokeStyle="#a8a29e"; ctx.beginPath();
-  ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
-  // grid
-  var gi; ctx.strokeStyle="rgba(120,113,108,0.3)";
+  var Emax=1e-9, Tmax=Math.max(LAST.p.Tcharge, 100);
+  cc.forEach(function(pt){ Emax=Math.max(Emax, pt.E); });
+  var tMax=Math.max(LAST.hours, 1e-9);
+  var plotW=W-padL-padR, plotH=H-padT-padB;
+
+  function xOf(tH){ return padL+(tH/tMax)*plotW; }
+  function yE(E){ return H-padB-(E/Emax)*plotH; }
+  function yT(Tb){ return H-padB-(Tb/Tmax)*plotH; }
+
+  // grid + Y axis (energy)
+  var gi;
+  ctx.strokeStyle="rgba(120,113,108,0.35)"; ctx.lineWidth=1;
   for(gi=0;gi<=5;gi++){
-    var yy=padT+(H-padT-padB)*gi/5;
+    var yy=padT+plotH*gi/5;
     ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(W-padR,yy); ctx.stroke();
     ctx.fillStyle="#d6d3d1"; ctx.font="11px IBM Plex Mono";
-    var Ev=Emax*(1-gi/5)/1e9;
-    ctx.fillText(Ev.toFixed(2)+" GJ", 4, yy+4);
+    ctx.fillText((Emax*(1-gi/5)/1e9).toFixed(1)+" GJ", 4, yy+4);
   }
-  // E(t)
+  // X axis ticks (time)
+  var nTick=6;
+  for(gi=0;gi<=nTick;gi++){
+    var tH=tMax*gi/nTick, xx=xOf(tH);
+    ctx.strokeStyle="rgba(120,113,108,0.35)";
+    ctx.beginPath(); ctx.moveTo(xx,padT); ctx.lineTo(xx,H-padB); ctx.stroke();
+    ctx.fillStyle="#e7e5e4"; ctx.font="11px IBM Plex Mono";
+    ctx.textAlign="center";
+    ctx.fillText(fmt(tH,0), xx, H-padB+16);
+    if(tMax>=48) ctx.fillText(fmt(tH/24,1)+"d", xx, H-padB+28);
+  }
+  ctx.textAlign="left";
+  ctx.strokeStyle="#a8a29e"; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+
+  // E curve
   ctx.strokeStyle="#22d3ee"; ctx.lineWidth=2.5; ctx.beginPath();
-  cc.forEach(function(p,i){
-    var x=padL+(p.tH/Math.max(LAST.hours,1e-9))*(W-padL-padR);
-    var y=H-padB-(p.E/Emax)*(H-padT-padB);
-    if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
-  });
+  cc.forEach(function(pt,i){ var x=xOf(pt.tH), y=yE(pt.E); if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y); });
   ctx.stroke();
   // Tbase
   ctx.strokeStyle="#f97316"; ctx.lineWidth=2; ctx.beginPath();
-  cc.forEach(function(p,i){
-    var x=padL+(p.tH/Math.max(LAST.hours,1e-9))*(W-padL-padR);
-    var y=H-padB-(p.Tbase/Tmax)*(H-padT-padB);
-    if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y);
-  });
+  cc.forEach(function(pt,i){ var x=xOf(pt.tH), y=yT(pt.Tbase); if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y); });
   ctx.stroke();
-  // limit line
-  var yLim=H-padB-(LAST.p.tlim/Tmax)*(H-padT-padB);
+  // limit
+  var yLim=yT(LAST.p.tlim);
   ctx.strokeStyle="#f43f5e"; ctx.setLineDash([6,4]); ctx.beginPath();
   ctx.moveTo(padL,yLim); ctx.lineTo(W-padR,yLim); ctx.stroke(); ctx.setLineDash([]);
-  // break marker
   if(LAST.tFrontBreak>0){
-    var xb=padL+(LAST.tFrontBreak/Math.max(LAST.hours,1e-9))*(W-padL-padR);
+    var xb=xOf(LAST.tFrontBreak);
     ctx.strokeStyle="#facc15"; ctx.lineWidth=2; ctx.beginPath();
     ctx.moveTo(xb,padT); ctx.lineTo(xb,H-padB); ctx.stroke();
     ctx.fillStyle="#facc15"; ctx.font="600 11px IBM Plex Sans";
     ctx.fillText("fim termoclina", xb+4, padT+14);
   }
-  ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
-  ctx.fillText("tempo (h) →", W/2-30, H-12);
-  ctx.fillStyle="#22d3ee"; ctx.fillText("E armazenada (GJ)", padL, 16);
-  ctx.fillStyle="#f97316"; ctx.fillText("T_base núcleo", padL+160, 16);
-  ctx.fillStyle="#f43f5e"; ctx.fillText("limite termoclina "+LAST.p.tlim+"°C", padL+290, 16);
+  ctx.fillStyle="#22d3ee"; ctx.font="600 12px IBM Plex Sans"; ctx.fillText("E (GJ)", padL, 16);
+  ctx.fillStyle="#f97316"; ctx.fillText("T_base (°C)", padL+70, 16);
+  ctx.fillStyle="#f43f5e"; ctx.fillText("limite "+LAST.p.tlim+"°C", padL+170, 16);
+  ctx.fillStyle="#e7e5e4"; ctx.font="600 12px IBM Plex Sans";
+  ctx.fillText("tempo (h) →", W/2-40, H-8);
 
-  var EmaxGJ=(LAST.EmaxUseful||0)/1e9;
-  var Efin=(cc[cc.length-1].E)/1e9;
+  var EmaxGJ=(LAST.EmaxUseful||0)/1e9, Efin=(cc[cc.length-1].E)/1e9;
   var msg = LAST.tFrontBreak>0
-    ? ("Carga máxima útil ≈ "+EmaxGJ.toFixed(3)+" GJ em t="+fmt(LAST.tFrontBreak,1)+" h (antes de T_base≥"+LAST.p.tlim+"°C). E final="+Efin.toFixed(3)+" GJ.")
-    : ("Termoclina intacta no horizonte · E final="+Efin.toFixed(3)+" GJ · E_útil="+EmaxGJ.toFixed(3)+" GJ. t_diff≈"+fmt(LAST.tDiffDays,1)+" d (modo 1).");
-  $("leg-charge").innerHTML="<span>"+msg+"</span>";
+    ? ("Carga máxima útil ≈ "+EmaxGJ.toFixed(3)+" GJ em t="+fmt(LAST.tFrontBreak,1)+" h. E final="+Efin.toFixed(3)+" GJ.")
+    : ("Termoclina intacta · E final="+Efin.toFixed(3)+" GJ.");
+  $("leg-charge").innerHTML="<span>"+msg+"</span><span style='color:var(--muted)'> · passe o mouse na curva</span>";
+
+  // hover hit-test store
+  c._chargeHit = {cc:cc, xOf:xOf, yE:yE, yT:yT, padL:padL, padR:padR, padT:padT, padB:padB, tMax:tMax, Emax:Emax, Tmax:Tmax, W:W, H:H};
+  c.onmousemove = function(ev){
+    var rect=c.getBoundingClientRect();
+    var mx=(ev.clientX-rect.left)*(c.width/rect.width);
+    var my=(ev.clientY-rect.top)*(c.height/rect.height);
+    var h=c._chargeHit; if(!h) return;
+    if(mx<h.padL||mx>h.W-h.padR||my<h.padT||my>h.H-h.padB){ tipHide(); return; }
+    var tH=((mx-h.padL)/ (h.W-h.padL-h.padR))*h.tMax;
+    var best=0, bestD=1e99, i;
+    for(i=0;i<h.cc.length;i++){ var d=Math.abs(h.cc[i].tH-tH); if(d<bestD){bestD=d;best=i;} }
+    var pt=h.cc[best];
+    tipShow(ev, "<b>t = "+fmt(pt.tH,2)+" h</b> ("+fmt(pt.tH/24,2)+" d)<br/>E = "+fmt(pt.E/1e9,3)+" GJ<br/>T_base = "+fmt(pt.Tbase,1)+" °C<br/>T_topo = "+fmt(pt.Ttop,1)+" °C<br/>termoclina: "+(pt.frontOK?"intacta":"rompida"));
+  };
+  c.onmouseleave = tipHide;
 }
 
 function drawConv(){
   var c=$("c-conv"); if(!c||!LAST) return;
   var ctx=c.getContext("2d"), W=c.width, H=c.height;
-  var padL=56,padR=24,padT=28,padB=44;
+  var padL=56, padR=24, padT=28, padB=48;
   ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
   var samples=LAST.frames.filter(function(_,i){return i%Math.max(1,Math.floor(LAST.frames.length/8))===0||i===LAST.frames.length-1;});
   var colors=["#f43f5e","#f97316","#eab308","#84cc16","#22d3ee","#a78bfa","#fb7185","#38bdf8"];
-  var minL=1e9,maxL=-1e9;
-  samples.forEach(function(s){s.hist.forEach(function(h){if(h.residual>0){var L=Math.log10(h.residual);minL=Math.min(minL,L);maxL=Math.max(maxL,L);}});});
+  var minL=1e9, maxL=-1e9, maxIter=1;
+  samples.forEach(function(s){ s.hist.forEach(function(h){ if(h.residual>0){ var L=Math.log10(h.residual); minL=Math.min(minL,L); maxL=Math.max(maxL,L);} maxIter=Math.max(maxIter,h.iter); }); });
   if(!isFinite(minL)) return;
-  minL-=0.5; maxL+=0.4;
+  minL-=0.4; maxL+=0.3;
+  var plotW=W-padL-padR, plotH=H-padT-padB;
+
+  // Y grid
   var gi;
   ctx.strokeStyle="rgba(120,113,108,0.35)";
   for(gi=0;gi<=6;gi++){
-    var yy=padT+(H-padT-padB)*gi/6;
-    ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(W-padR,yy);ctx.stroke();
-    ctx.fillStyle="#d6d3d1"; ctx.font="12px IBM Plex Mono";
-    ctx.fillText((maxL-(maxL-minL)*gi/6).toFixed(1),8,yy+4);
+    var yy=padT+plotH*gi/6;
+    ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(W-padR,yy); ctx.stroke();
+    ctx.fillStyle="#d6d3d1"; ctx.font="11px IBM Plex Mono";
+    ctx.fillText((maxL-(maxL-minL)*gi/6).toFixed(1), 6, yy+4);
   }
-  ctx.strokeStyle="#a8a29e"; ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+  // X ticks = Newton iteration
+  for(gi=1;gi<=maxIter;gi++){
+    var xx=padL+((gi-1)/Math.max(maxIter-1,1))*plotW;
+    ctx.strokeStyle="rgba(120,113,108,0.25)";
+    ctx.beginPath(); ctx.moveTo(xx,padT); ctx.lineTo(xx,H-padB); ctx.stroke();
+    ctx.fillStyle="#e7e5e4"; ctx.font="11px IBM Plex Mono";
+    ctx.textAlign="center"; ctx.fillText(String(gi), xx, H-padB+16);
+  }
+  ctx.textAlign="left";
+  ctx.strokeStyle="#a8a29e"; ctx.beginPath();
+  ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
+
   samples.forEach(function(s,si){
     var hist=s.hist.filter(function(h){return h.residual>0;}); if(!hist.length) return;
-    ctx.strokeStyle=colors[si%colors.length]; ctx.lineWidth=2.5; ctx.beginPath();
+    ctx.strokeStyle=colors[si%colors.length]; ctx.lineWidth=2.4; ctx.beginPath();
     hist.forEach(function(h,ii){
-      var x=padL+(ii/Math.max(hist.length-1,1))*(W-padL-padR);
-      var y=H-padB-((Math.log10(h.residual)-minL)/(maxL-minL))*(H-padT-padB);
+      var x=padL+((h.iter-1)/Math.max(maxIter-1,1))*plotW;
+      var y=H-padB-((Math.log10(h.residual)-minL)/(maxL-minL))*plotH;
       if(ii) ctx.lineTo(x,y); else ctx.moveTo(x,y);
     });
     ctx.stroke();
   });
-  ctx.fillStyle="#fafaf9"; ctx.font="600 13px IBM Plex Sans";
-  ctx.fillText("iteração Newton →", W/2-50, H-12);
+  ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
+  ctx.fillText("iteração Newton →", W/2-50, H-10);
+  ctx.save(); ctx.translate(14, H/2+30); ctx.rotate(-Math.PI/2);
+  ctx.fillText("log₁₀ ‖R‖", 0, 0); ctx.restore();
+
+  c._convHit={samples:samples, colors:colors, padL:padL, padR:padR, padT:padT, padB:padB, minL:minL, maxL:maxL, maxIter:maxIter, W:W, H:H, plotW:plotW, plotH:plotH};
+  c.onmousemove=function(ev){
+    var rect=c.getBoundingClientRect();
+    var mx=(ev.clientX-rect.left)*(c.width/rect.width);
+    var my=(ev.clientY-rect.top)*(c.height/rect.height);
+    var h=c._convHit; if(!h) return;
+    if(mx<h.padL||mx>h.W-h.padR){ tipHide(); return; }
+    var iter=1+Math.round(((mx-h.padL)/h.plotW)*Math.max(h.maxIter-1,1));
+    iter=Math.max(1,Math.min(h.maxIter,iter));
+    var lines="<b>iteração Newton = "+iter+"</b>";
+    h.samples.forEach(function(s,si){
+      var hit=null; s.hist.forEach(function(hh){ if(hh.iter===iter) hit=hh; });
+      if(hit) lines+="<br/><span style='color:"+h.colors[si%h.colors.length]+"'>t="+fmt(s.tH,1)+" h</span> ‖R‖="+hit.residual.toExponential(3);
+    });
+    tipShow(ev, lines);
+  };
+  c.onmouseleave=tipHide;
 }
 
 function drawNodeRes(){
   var c=$("c-nres"); if(!c||!LAST) return;
-  var ctx=c.getContext("2d"), W=c.width, H=c.height, padL=48,padR=16,padT=28,padB=28;
+  var ctx=c.getContext("2d"), W=c.width, H=c.height;
+  var padL=48, padR=16, padT=36, padB=36;
   ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
   var M=LAST.M, f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)], nR=f.nodeResiduals;
   if(!nR) return;
   var m=0; nR.forEach(function(v){m=Math.max(m,v);}); if(m<1e-18) m=1;
   var rMax=M.rEdges[M.rEdges.length-1], zMax=M.zEdges[M.zEdges.length-1];
-  var sx=(W-padL-padR)/rMax, sy=(H-padT-padB)/zMax, i,j,g;
-  for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
-    g=idx(i,j,M.nr);
+  var plotW=W-padL-padR, plotH=H-padT-padB;
+  var sx=plotW/rMax, sy=plotH/zMax;
+
+  // axis labels
+  ctx.fillStyle="#e7e5e4"; ctx.font="11px IBM Plex Sans";
+  ctx.fillText("r →", padL+plotW/2-10, H-8);
+  ctx.save(); ctx.translate(14, padT+plotH/2+20); ctx.rotate(-Math.PI/2);
+  ctx.fillText("z →", 0, 0); ctx.restore();
+  ctx.fillStyle="#a8a29e"; ctx.font="10px IBM Plex Mono";
+  ctx.fillText("r=0", padL, H-padB+14);
+  ctx.fillText("r="+fmt(rMax,1)+"m", W-padR-50, H-padB+14);
+  ctx.fillText("z=0", 4, padT+8);
+  ctx.fillText("z="+fmt(zMax,1)+"m", 4, H-padB);
+
+  var cells=[];
+  for(var j=0;j<M.nz;j++) for(var i=0;i<M.nr;i++){
+    var g=idx(i,j,M.nr);
     var x=padL+M.rEdges[i]*sx, y=padT+M.zEdges[j]*sy;
     var w=(M.rEdges[i+1]-M.rEdges[i])*sx, h=(M.zEdges[j+1]-M.zEdges[j])*sy;
-    ctx.fillStyle="rgba(14,165,233,"+(0.1+0.9*(nR[g]/m))+")";
+    var u=nR[g]/m;
+    ctx.fillStyle="rgba(14,165,233,"+(0.12+0.88*u)+")";
     ctx.fillRect(x,y,w+0.3,h+0.3);
-    ctx.strokeStyle="rgba(255,255,255,0.12)"; ctx.strokeRect(x,y,w,h);
+    ctx.strokeStyle="rgba(255,255,255,0.2)"; ctx.strokeRect(x,y,w,h);
+    // value text
+    var ink = u>0.45 ? "#0c0a09" : "#fafaf9";
+    var fs=Math.max(7, Math.min(10, Math.min(w,h)*0.22));
+    ctx.fillStyle=ink; ctx.font="700 "+fs+"px IBM Plex Mono";
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    var lab = nR[g]<1e-3 ? nR[g].toExponential(1) : fmt(nR[g],2);
+    if(Math.min(w,h)>16) ctx.fillText(lab, x+w/2, y+h/2);
+    cells.push({i:i,j:j,g:g,x:x,y:y,w:w,h:h,val:nR[g], mat:M.mat[g]});
   }
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
   ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
-  ctx.fillText("|Rᵢ| · t="+fmt(f.tH,2)+" h · max="+m.toExponential(2), padL, 16);
+  ctx.fillText("|Rᵢ| · t="+fmt(f.tH,2)+" h · max="+m.toExponential(2)+" · valores em cada célula · mouse = detalhe", padL, 18);
+
+  // core outline
+  var xC0=padL, yC0=padT+M.zEdges[M.jCore0]*sy;
+  var xC1=padL+M.rEdges[M.iCoreEnd+1]*sx, yC1=padT+M.zEdges[M.jCoreEnd+1]*sy;
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2; ctx.strokeRect(xC0,yC0,xC1-xC0,yC1-yC0);
+
+  c._nresHit={cells:cells, M:M};
+  c.onmousemove=function(ev){
+    var rect=c.getBoundingClientRect();
+    var mx=(ev.clientX-rect.left)*(c.width/rect.width);
+    var my=(ev.clientY-rect.top)*(c.height/rect.height);
+    var hit=null, k, cells=c._nresHit.cells;
+    for(k=0;k<cells.length;k++){
+      var ce=cells[k];
+      if(mx>=ce.x&&mx<=ce.x+ce.w&&my>=ce.y&&my<=ce.y+ce.h){ hit=ce; break; }
+    }
+    if(!hit){ tipHide(); return; }
+    var core = hit.mat==="hematita";
+    tipShow(ev, "<b>nó (i="+hit.i+", j="+hit.j+")</b> g="+hit.g+
+      "<br/>material: "+hit.mat+(core?" [NÚCLEO]":" [isolante]")+
+      "<br/>|R| = "+hit.val.toExponential(4)+
+      "<br/><span style='color:#a8a29e'>Resíduo do balanço de energia no VC</span>");
+  };
+  c.onmouseleave=tipHide;
 }
 
 function drawJac(){
