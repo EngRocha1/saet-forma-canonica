@@ -121,15 +121,33 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
     <cite>ROCHA; LIRA, XV CBPE 2026 §2.8–2.10 · dados físicos do simulador legado EngRocha1/Carnot_Battery_Simulator</cite>
   </div>
   <figure>
-    <figcaption>Campo T no núcleo + envelope isolante (corte r–z)
-      <span class="sub">Centro: malha do leito. Faixas externas: camadas isolantes com queda T ao longo da espessura (quadriláteros em série).</span>
+    <figcaption>Campo T(r,z) no núcleo · ¼ cilindro + envelope isolante
+      <span class="sub">Malha de quadriláteros no leito (nós acoplados). À direita: vista de topo do recorte 270° com setor de 90° calculado. Faixas externas: blocos-nó por camada isolante.</span>
+      <span class="sub" style="color:var(--oxide)">Cf. Fig. 3b do artigo — campo escalar 2D no ciclo de carga (ROCHA; LIRA, 2026). CCs: Robin nas fronteiras; Neumann em r = 0 (§2.9–2.10).</span>
     </figcaption>
-    <canvas id="c-field" width="780" height="540"></canvas>
+    <canvas id="c-field" width="820" height="560"></canvas>
     <div class="legend" id="leg-field"></div>
   </figure>
   <figure>
-    <figcaption>Convergência Newton · log₁₀‖R‖</figcaption>
-    <canvas id="c-conv" width="780" height="240"></canvas>
+    <figcaption>Convergência Newton–Raphson · log₁₀‖R‖ por passo
+      <span class="sub">Cada curva é um instante amostrado. Queda acelerada indica ordem 2 da Jacobiana.</span>
+      <span class="sub" style="color:var(--oxide)">§2.10 — Euler implícito + Newton–Raphson; convergência quadrática do resíduo (BATHE, 1996; SOUZA, 2021).</span>
+    </figcaption>
+    <canvas id="c-conv" width="820" height="260"></canvas>
+  </figure>
+  <figure>
+    <figcaption>Resíduos nodais |Rᵢ| no núcleo (instante do slider)
+      <span class="sub">Mapa por quadrilátero após a última iteração de Newton. Valores ~10⁻⁶–10⁻¹² → equilíbrio local do sistema acoplado.</span>
+      <span class="sub" style="color:var(--oxide)">Integridade do solver e conservação no volume de controle (§2.10).</span>
+    </figcaption>
+    <canvas id="c-nres" width="820" height="280"></canvas>
+  </figure>
+  <figure>
+    <figcaption>Amostra da Jacobiana global J[0:6,0:6] (último Newton do instante)
+      <span class="sub">Acoplamentos radiais e axiais entre nós vizinhos. Diagonal dominada por capacitância + Robin/U_eff.</span>
+      <span class="sub" style="color:var(--oxide)">Matriz J resolve não-linearidades termofísicas (BATHE, 1996; artigo §2.10).</span>
+    </figcaption>
+    <div id="jac-table" style="overflow:auto;background:#0c0b0a;color:#e7e5e4;font:12px/1.4 'IBM Plex Mono',monospace;padding:12px;border:1px solid #333"></div>
   </figure>
 </div>
 <div class="term-wrap">
@@ -336,107 +354,239 @@ function drawField(){
   let tmin=1e9,tmax=-1e9; f.T.forEach(t=>{tmin=Math.min(tmin,t);tmax=Math.max(tmax,t);});
   if(tmax-tmin<1) tmax=tmin+1;
 
-  // Geometry: core rect + lateral strip + base strip
   const eLat = pilhaLateral().reduce((s,c)=>s+c.e,0);
   const eBase = pilhaBase().reduce((s,c)=>s+c.e,0);
-  const scale = Math.min((W-80)/(Rgeo+eLat), (H-70)/(Lgeo+eBase));
-  const x0=50, y0=36;
-  const coreW=Rgeo*scale, coreH=Lgeo*scale;
-  const latW=eLat*scale, baseH=eBase*scale;
 
-  // Core mesh
+  /* Left region: core + insulation in r-z; Right: 270° cut top view */
+  const split = Math.floor(W*0.64);
+  const scale = Math.min((split-70)/(Rgeo+eLat*0.85), (H-80)/(Lgeo+eBase*0.85));
+  const x0=48, y0=40;
+  const coreW=Rgeo*scale, coreH=Lgeo*scale;
   const cellW=coreW/nr, cellH=coreH/nz;
+
+  ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
+  ctx.fillText("Plano (r, z) · quadriláteros do núcleo + blocos das camadas", x0, 18);
+
+  // ── Core quadrilateral mesh (nodes at cell centers, edges = connectivity) ──
   for(let j=0;j<nz;j++) for(let i=0;i<nr;i++){
     const g=idx(i,j,nr); const [r,gc,b]=heatColor(f.T[g],tmin,tmax);
     const x=x0+i*cellW, y=y0+j*cellH;
     ctx.fillStyle=`rgb(${r|0},${gc|0},${b|0})`;
     ctx.fillRect(x,y,cellW+0.5,cellH+0.5);
-    ctx.strokeStyle="rgba(255,255,255,0.15)"; ctx.strokeRect(x,y,cellW,cellH);
-    if(nr*nz<=60){ ctx.fillStyle="#fafaf9"; ctx.font="600 10px IBM Plex Sans"; ctx.fillText(fmt(f.T[g],0),x+2,y+cellH/2+3); }
+    ctx.strokeStyle="rgba(255,255,255,0.22)"; ctx.lineWidth=1; ctx.strokeRect(x,y,cellW,cellH);
+    // node marker
+    ctx.fillStyle="rgba(255,255,255,0.9)";
+    ctx.beginPath(); ctx.arc(x+cellW/2, y+cellH/2, 2.2, 0, Math.PI*2); ctx.fill();
+    if(nr*nz<=60){
+      ctx.fillStyle="#fafaf9"; ctx.font="600 10px IBM Plex Sans";
+      ctx.fillText(fmt(f.T[g],0), x+3, y+cellH/2-5);
+    }
   }
-  ctx.strokeStyle="#f97316"; ctx.lineWidth=2; ctx.strokeRect(x0,y0,coreW,coreH);
-  ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
-  ctx.fillText("NÚCLEO r–z", x0+6, y0-8);
-  ctx.fillText("r=0", x0, y0+coreH+14);
-  ctx.fillText("r=R", x0+coreW-28, y0+coreH+14);
+  // draw connectivity lines between node centers (radial + axial)
+  ctx.strokeStyle="rgba(251,146,60,0.35)"; ctx.lineWidth=1;
+  for(let j=0;j<nz;j++) for(let i=0;i<nr-1;i++){
+    ctx.beginPath();
+    ctx.moveTo(x0+(i+0.5)*cellW, y0+(j+0.5)*cellH);
+    ctx.lineTo(x0+(i+1.5)*cellW, y0+(j+0.5)*cellH); ctx.stroke();
+  }
+  for(let j=0;j<nz-1;j++) for(let i=0;i<nr;i++){
+    ctx.beginPath();
+    ctx.moveTo(x0+(i+0.5)*cellW, y0+(j+0.5)*cellH);
+    ctx.lineTo(x0+(i+0.5)*cellW, y0+(j+1.5)*cellH); ctx.stroke();
+  }
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2.2; ctx.strokeRect(x0,y0,coreW,coreH);
+  ctx.fillStyle="#fdba74"; ctx.font="600 11px IBM Plex Sans";
+  ctx.fillText("NÚCLEO", x0+4, y0+12);
+  ctx.fillStyle="#e7e5e4"; ctx.font="11px IBM Plex Sans";
+  ctx.fillText("r=0 Neumann", x0, y0+coreH+14);
+  ctx.fillText("r=R", x0+coreW-22, y0+coreH+14);
 
-  // Lateral insulation layers (right of core) — stacked radially with infinitesimal strips
-  const latRows = p.ul.rows;
-  let xL = x0+coreW;
-  // face temperature: mean of outer radial nodes
+  // ── Lateral insulation: one block-node column per layer, subdivided quads ──
   let TsLat=0; for(let j=0;j<nz;j++) TsLat+=f.T[idx(nr-1,j,nr)]; TsLat/=nz;
-  const latProf = layerTemps(TsLat, Tamb, latRows, p.Ulat);
-  let Tprev = TsLat;
-  for(const row of latRows){
-    const w = row.e*scale;
-    const Tnext = Tprev - latProf.q * row.Ri;
-    // subdivide layer into ~4 quads for visual
-    const nSub=Math.max(2, Math.round(4*row.e/Math.max(eLat,1e-6)*latRows.length));
-    for(let s=0;s<nSub;s++){
-      const tt = Tprev + (Tnext-Tprev)*(s+0.5)/nSub;
-      const [r,gc,b]=heatColor(tt, Math.min(tmin,Tamb), Math.max(tmax,TsLat));
+  const latRows=p.ul.rows;
+  const latProf=layerTemps(TsLat,Tamb,latRows,p.Ulat);
+  let xL=x0+coreW, Tprev=TsLat;
+  latRows.forEach((row,li)=>{
+    const w=Math.max(row.e*scale, 14);
+    const Tnext=Tprev-latProf.q*row.Ri;
+    const nSub=Math.max(3, Math.min(8, Math.round(w/8)));
+    for(let s=0;s<nSub;s++) for(let jj=0;jj<nz;jj++){
+      const tt=Tprev+(Tnext-Tprev)*(s+0.5)/nSub;
+      const [r,gc,b]=heatColor(tt,Math.min(tmin,Tamb),Math.max(tmax,TsLat));
+      const x=xL+s*(w/nSub), y=y0+jj*cellH;
       ctx.fillStyle=`rgb(${r|0},${gc|0},${b|0})`;
-      ctx.fillRect(xL+s*(w/nSub), y0, w/nSub+0.4, coreH);
-      ctx.strokeStyle="rgba(255,255,255,0.12)"; ctx.strokeRect(xL+s*(w/nSub), y0, w/nSub, coreH);
+      ctx.fillRect(x,y,w/nSub+0.3,cellH+0.3);
+      ctx.strokeStyle="rgba(255,255,255,0.1)"; ctx.strokeRect(x,y,w/nSub,cellH);
     }
-    ctx.strokeStyle="rgba(34,211,238,0.7)"; ctx.lineWidth=1;
-    ctx.strokeRect(xL, y0, w, coreH);
-    ctx.save();
-    ctx.fillStyle="#e0f2fe"; ctx.font="600 10px IBM Plex Sans";
-    ctx.translate(xL+w/2, y0+coreH/2);
-    ctx.rotate(-Math.PI/2);
+    // layer node (center)
+    ctx.fillStyle="#22d3ee";
+    ctx.beginPath(); ctx.arc(xL+w/2, y0+coreH/2, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#22d3ee"; ctx.lineWidth=1.5; ctx.strokeRect(xL,y0,w,coreH);
+    ctx.save(); ctx.fillStyle="#a5f3fc"; ctx.font="600 9px IBM Plex Sans";
+    ctx.translate(xL+w/2, y0+coreH/2); ctx.rotate(-Math.PI/2);
     const short=row.nome.replace("Tijolo Refratário Isolante (IFB)","IFB").replace(" expandida","");
-    ctx.fillText(short+" "+fmt(row.e*100,0)+"cm", -40, 0);
-    ctx.restore();
-    xL += w; Tprev = Tnext;
-  }
+    ctx.fillText(short+" "+fmt(row.e*100,0)+"cm", -36, 3); ctx.restore();
+    // link line from core outer nodes to layer node
+    ctx.strokeStyle="rgba(34,211,238,0.5)"; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x0+coreW-cellW/2, y0+coreH/2); ctx.lineTo(xL+w/2, y0+coreH/2); ctx.stroke();
+    xL+=w; Tprev=Tnext;
+  });
 
-  // Base insulation (below core)
-  const baseRows = p.ub.rows;
+  // ── Base insulation blocks ──
   let TsBase=0; for(let i=0;i<nr;i++) TsBase+=f.T[idx(i,nz-1,nr)]; TsBase/=nr;
-  const baseProf = layerTemps(TsBase, Tsolo, baseRows, p.Ubase);
-  let yB = y0+coreH;
-  Tprev = TsBase;
-  for(const row of baseRows){
-    const h = row.e*scale;
-    const Tnext = Tprev - baseProf.q * row.Ri;
-    const nSub=Math.max(2, Math.round(4*row.e/Math.max(eBase,1e-6)*baseRows.length));
-    for(let s=0;s<nSub;s++){
-      const tt = Tprev + (Tnext-Tprev)*(s+0.5)/nSub;
-      const [r,gc,b]=heatColor(tt, Math.min(tmin,Tsolo), Math.max(tmax,TsBase));
+  const baseRows=p.ub.rows;
+  const baseProf=layerTemps(TsBase,Tsolo,baseRows,p.Ubase);
+  let yB=y0+coreH; Tprev=TsBase;
+  baseRows.forEach(row=>{
+    const h=Math.max(row.e*scale, 12);
+    const Tnext=Tprev-baseProf.q*row.Ri;
+    const nSub=Math.max(3, Math.min(8, Math.round(h/8)));
+    for(let s=0;s<nSub;s++) for(let ii=0;ii<nr;ii++){
+      const tt=Tprev+(Tnext-Tprev)*(s+0.5)/nSub;
+      const [r,gc,b]=heatColor(tt,Math.min(tmin,Tsolo),Math.max(tmax,TsBase));
       ctx.fillStyle=`rgb(${r|0},${gc|0},${b|0})`;
-      ctx.fillRect(x0, yB+s*(h/nSub), coreW, h/nSub+0.4);
-      ctx.strokeStyle="rgba(255,255,255,0.12)"; ctx.strokeRect(x0, yB+s*(h/nSub), coreW, h/nSub);
+      ctx.fillRect(x0+ii*cellW, yB+s*(h/nSub), cellW+0.3, h/nSub+0.3);
+      ctx.strokeStyle="rgba(255,255,255,0.1)"; ctx.strokeRect(x0+ii*cellW, yB+s*(h/nSub), cellW, h/nSub);
     }
-    ctx.strokeStyle="rgba(167,139,250,0.75)"; ctx.lineWidth=1;
-    ctx.strokeRect(x0, yB, coreW, h);
-    ctx.fillStyle="#ede9fe"; ctx.font="600 10px IBM Plex Sans";
+    ctx.fillStyle="#c084fc";
+    ctx.beginPath(); ctx.arc(x0+coreW/2, yB+h/2, 3.5, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle="#c084fc"; ctx.lineWidth=1.5; ctx.strokeRect(x0,yB,coreW,h);
+    ctx.fillStyle="#e9d5ff"; ctx.font="600 9px IBM Plex Sans";
     const short=row.nome.replace("Tijolo Refratário Isolante (IFB)","IFB").replace(" expandida","").replace(" de cálcio"," Ca");
-    ctx.fillText(short+" "+fmt(row.e*100,0)+" cm", x0+4, yB+Math.min(h-4,14));
-    yB += h; Tprev = Tnext;
-  }
+    ctx.fillText(short+" "+fmt(row.e*100,0)+"cm", x0+4, yB+Math.min(h-3,12));
+    yB+=h; Tprev=Tnext;
+  });
 
-  // corner hatch for envelope extent
-  ctx.strokeStyle="rgba(251,146,60,0.5)"; ctx.setLineDash([4,3]);
-  ctx.strokeRect(x0, y0, coreW+latW, coreH+baseH); ctx.setLineDash([]);
+  // ── Right panel: quadrilled 1/4 cylinder (270° removed) ──
+  const ox = split + (W-split)/2 + 10;
+  const oy = H*0.38;
+  const rad = Math.min((W-split)*0.36, H*0.26);
+  ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
+  ctx.fillText("Vista topo · cilindro quadriculado", split+8, 20);
+  ctx.fillStyle="#a8a29e"; ctx.font="11px IBM Plex Sans";
+  ctx.fillText("270° por simetria · 90° = domínio 2D", split+8, 36);
+
+  // full dashed circle
+  ctx.beginPath(); ctx.arc(ox,oy,rad,0,Math.PI*2);
+  ctx.strokeStyle="rgba(120,113,108,0.5)"; ctx.lineWidth=1.5; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+
+  // 270° removed (dark)
+  const a0=-Math.PI/2, a1=0;
+  ctx.beginPath(); ctx.moveTo(ox,oy);
+  ctx.arc(ox,oy,rad,a1,a0+2*Math.PI,false); ctx.closePath();
+  ctx.fillStyle="rgba(28,25,23,0.9)"; ctx.fill();
+  ctx.fillStyle="#78716c"; ctx.font="600 10px IBM Plex Sans";
+  ctx.fillText("270° fora", ox-22, oy+4);
+  ctx.fillText("do MEF 2D", ox-24, oy+16);
+
+  // 90° active sector with grid (radial rings × angular)
+  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.arc(ox,oy,rad,a0,a1,false); ctx.closePath();
+  ctx.fillStyle="rgba(234,88,12,0.18)"; ctx.fill();
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2; ctx.stroke();
+  for(let i=1;i<=nr;i++){
+    const ri=(i/nr)*rad;
+    ctx.beginPath(); ctx.arc(ox,oy,ri,a0,a1,false);
+    ctx.strokeStyle="rgba(251,146,60,0.65)"; ctx.lineWidth=1; ctx.stroke();
+  }
+  for(let k=0;k<=6;k++){
+    const ang=a0+(a1-a0)*k/6;
+    ctx.beginPath(); ctx.moveTo(ox,oy);
+    ctx.lineTo(ox+rad*Math.cos(ang),oy+rad*Math.sin(ang));
+    ctx.strokeStyle="rgba(251,146,60,0.7)"; ctx.stroke();
+  }
+  // map temperature into sector cells
+  for(let i=0;i<nr;i++){
+    const r0=(i/nr)*rad, r1=((i+1)/nr)*rad;
+    for(let k=0;k<4;k++){
+      const t0=a0+(a1-a0)*k/4, t1=a0+(a1-a0)*(k+1)/4;
+      // use mid-height temp as representative
+      const g=idx(i, Math.floor(nz/3), nr);
+      const [r,gc,b]=heatColor(f.T[g],tmin,tmax);
+      ctx.beginPath();
+      ctx.arc(ox,oy,r1,t0,t1,false);
+      ctx.arc(ox,oy,r0,t1,t0,true);
+      ctx.closePath();
+      ctx.fillStyle=`rgba(${r|0},${gc|0},${b|0},0.85)`; ctx.fill();
+      ctx.strokeStyle="rgba(255,255,255,0.15)"; ctx.stroke();
+    }
+  }
+  ctx.fillStyle="#22d3ee"; ctx.font="600 10px IBM Plex Sans";
+  ctx.fillText("r=0", ox-10, oy-rad-6);
+  ctx.fillStyle="#fb923c"; ctx.fillText("r=R", ox+rad*0.7, oy-rad*0.35);
+
+  // colorbar
+  const cbX=split-6, cbY=y0, cbH=coreH, cbW=10;
+  for(let y=0;y<cbH;y++){
+    const t=tmax-(y/cbH)*(tmax-tmin);
+    const [r,g,b]=heatColor(t,tmin,tmax);
+    ctx.fillStyle=`rgb(${r|0},${g|0},${b|0})`; ctx.fillRect(cbX-cbW,cbY+y,cbW,1);
+  }
+  ctx.fillStyle="#fafaf9"; ctx.font="11px IBM Plex Sans";
+  ctx.fillText(fmt(tmax,0)+"°C", cbX-cbW-34, cbY+10);
+  ctx.fillText(fmt(tmin,0)+"°C", cbX-cbW-34, cbY+cbH);
 
   ctx.fillStyle="#a8a29e"; ctx.font="11px IBM Plex Sans";
-  ctx.fillText("Envelope isolante (fora do MEF 2D do núcleo · condução 1D em série)", x0, H-10);
+  ctx.fillText("Laranja: ligações entre nós do núcleo · Ciano/roxo: nós-bloco das camadas isolantes", x0, H-12);
 
-  const physOK = tmin>=Tinit-1 && tmax<=p.Tcharge+0.5;
+  const physOK=tmin>=Tinit-1&&tmax<=p.Tcharge+0.5;
   $("leg-field").innerHTML=`<span>t=<b>${fmt(f.tH,2)} h</b></span>
-    <span>T núcleo [${fmt(tmin,1)}, ${fmt(tmax,1)}] °C</span>
-    <span>U_lat=${fmt(p.Ulat,4)} · U_base=${fmt(p.Ubase,4)} W/(m²·K)</span>
-    <span>q″_lat=${fmt(latProf.q,1)} · q″_base=${fmt(baseProf.q,1)} W/m²</span>
-    <span style="color:${physOK?'var(--ok)':'#dc2626'};font-weight:700">${physOK?'✓ máx. OK':'✗'}</span>`;
+    <span>T∈[${fmt(tmin,1)}, ${fmt(tmax,1)}] °C</span>
+    <span>${nr}×${nz} nós núcleo · U_lat=${fmt(p.Ulat,4)} · U_base=${fmt(p.Ubase,4)}</span>
+    <span style="color:${physOK?'var(--ok)':'#dc2626'};font-weight:700">${physOK?'✓ princípio do máximo':'✗'}</span>`;
   $("s-tmax").textContent=fmt(tmax,1)+" °C";
   $("s-tmin").textContent=fmt(tmin,1)+" °C";
   $("s-ulat").textContent=fmt(p.Ulat,4);
   $("s-ubase").textContent=fmt(p.Ubase,4);
-  $("bound-alert").textContent=physOK
-    ?`Máximo OK · T≤${p.Tcharge} °C · U_lat=${fmt(p.Ulat,4)} · U_base=${fmt(p.Ubase,4)} W/(m²·K)`
-    :`Fora dos limites físicos`;
-  $("bound-alert").style.background=physOK?"#dcfce7":"#fee2e2";
+}
+
+function drawNodeRes(){
+  const c=$("c-nres"); if(!c) return;
+  const ctx=c.getContext("2d");
+  const W=c.width,H=c.height,padL=52,padR=20,padT=28,padB=36;
+  ctx.fillStyle="#0c0b0a";ctx.fillRect(0,0,W,H);
+  if(!LAST) return;
+  const {nr,nz}=LAST;
+  const f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
+  const nR=f.nodeResiduals; if(!nR) return;
+  let m=0; nR.forEach(v=>m=Math.max(m,v)); if(m<1e-18) m=1;
+  const plotW=W-padL-padR, plotH=H-padT-padB, cellW=plotW/nr, cellH=plotH/nz;
+  for(let j=0;j<nz;j++) for(let i=0;i<nr;i++){
+    const g=idx(i,j,nr), u=nR[g]/m;
+    const x=padL+i*cellW, y=padT+j*cellH;
+    ctx.fillStyle=`rgba(14,165,233,${0.12+0.88*u})`;
+    ctx.fillRect(x,y,cellW+0.5,cellH+0.5);
+    ctx.strokeStyle="rgba(255,255,255,0.15)"; ctx.strokeRect(x,y,cellW,cellH);
+    ctx.fillStyle="#fafaf9"; ctx.font="600 10px IBM Plex Mono";
+    ctx.fillText(nR[g].toExponential(1), x+3, y+cellH/2+3);
+    ctx.fillStyle="rgba(255,255,255,0.85)";
+    ctx.beginPath(); ctx.arc(x+cellW/2,y+cellH/2,2,0,Math.PI*2); ctx.fill();
+  }
+  ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
+  ctx.fillText(`|Rᵢ| por nó · t=${fmt(f.tH,2)} h · max=${m.toExponential(2)}`, padL, 16);
+}
+
+function drawJac(){
+  const el=$("jac-table"); if(!el||!LAST) return;
+  const {nr,nz,p,dr,dz,dt}=LAST;
+  const f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
+  // rebuild J at current T for display sample
+  const {J}=assemble(f.T, f.T, p, nr, nz, dr, dz, dt);
+  const nShow=Math.min(6, nr*nz);
+  let html='<table style="border-collapse:collapse;width:100%"><tr><th></th>';
+  for(let j=0;j<nShow;j++) html+=`<th style="padding:3px 6px;color:#a8a29e">j${j}</th>`;
+  html+='</tr>';
+  for(let i=0;i<nShow;i++){
+    html+=`<tr><th style="padding:3px 6px;color:#a8a29e">i${i}</th>`;
+    for(let j=0;j<nShow;j++){
+      const v=J[i][j];
+      const s=Math.abs(v)<1e-18?'·':v.toExponential(2);
+      html+=`<td style="padding:3px 6px;text-align:right;color:${i===j?'#fbbf24':'#e7e5e4'}">${s}</td>`;
+    }
+    html+='</tr>';
+  }
+  html+='</table>';
+  html+=`<p style="margin:8px 0 0;color:#a8a29e;font:12px IBM Plex Sans">Ke ~ (k/Δ)·[[1,-1],[-1,1]] · Ce ~ (ρCp Δ/6)·[[2,1],[1,2]] · Robin/U na diagonal dos nós de contorno.</p>`;
+  el.innerHTML=html;
 }
 
 function drawConv(){
@@ -544,7 +694,7 @@ function showFrame(i){
   frameIdx=Math.max(0,Math.min(i,LAST.frames.length-1));
   $("prog").value=Math.round(100*frameIdx/Math.max(LAST.frames.length-1,1));
   $("v-prog").textContent=fmt(LAST.frames[frameIdx].tH,2)+" h";
-  drawField(); drawConv(); renderTerminal();
+  drawField(); drawConv(); drawNodeRes(); drawJac(); renderTerminal();
   if($("modal-iso").classList.contains("on")) fillIsoModal();
 }
 function run(){
