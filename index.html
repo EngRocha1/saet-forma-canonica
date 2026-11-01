@@ -114,7 +114,7 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 </aside>
 <div>
   <div class="quote">
-    <p>«Robin nas fronteiras (injeção e perdas); Neumann em r = 0. Isolamento graded: refratário + perlita; base com suporte mecânico (silicato + vermiculita).»</p>
+    <p>«Injeção Robin no topo do leito (núcleo); isolante com Robin de perda no contorno externo; Neumann em r = 0. Envelope graded contínuo na malha.»</p>
     <cite>ROCHA; LIRA, XV CBPE 2026 §2.8–2.10</cite>
   </div>
   <figure>
@@ -248,7 +248,7 @@ function buildMesh(){
 }
 
 function assemble(T,Told,p,M){
-  const {nr,nz,rC,dr,dz,mat}=M;
+  const {nr,nz,rC,dr,dz,mat,iCoreEnd,jCore0,jCoreEnd}=M;
   const N=nr*nz;
   const R=new Float64Array(N);
   const J=Array.from({length:N},()=>new Float64Array(N));
@@ -262,13 +262,11 @@ function assemble(T,Told,p,M){
       R[g]+=rhoCp*V*(T[g]-Told[g])/dt_step;
       J[g][g]+=rhoCp*V/dt_step;
 
-      // radial faces
+      // ── radial conduction ──
       if(i>0){
         const gL=idx(i-1,j,nr);
         const kL=0.5*(MAT[mat[g]].k+MAT[mat[gL]].k);
         const rL=M.rEdges[i];
-        const c=rL*kL/((rC(i)-rC(i-1)))*dzj;
-        // use edge distance
         const dist=rC(i)-rC(i-1);
         const coef=rL*kL/dist*dzj;
         R[g]+=coef*(T[g]-T[gL]);
@@ -283,26 +281,25 @@ function assemble(T,Told,p,M){
         R[g]-=coef*(T[gR]-T[g]);
         J[g][g]+=coef; J[g][gR]-=coef;
       } else {
-        // outer radial Robin loss to Tamb
+        // outer wall: Robin perda → Tamb
         const rOut=M.rEdges[nr];
         R[g]+=rOut*p.hExt*(T[g]-Tamb)*dzj;
         J[g][g]+=rOut*p.hExt*dzj;
       }
 
-      // axial faces
+      // ── axial conduction ──
       const area=r*dri;
       if(j>0){
         const gT=idx(i,j-1,nr);
         const kT=0.5*(MAT[mat[g]].k+MAT[mat[gT]].k);
-        const dist=rC? (M.zC(j)-M.zC(j-1)) : dzj;
         const distz=M.zC(j)-M.zC(j-1);
         const coef=area*kT/distz;
         R[g]+=coef*(T[g]-T[gT]);
         J[g][g]+=coef; J[g][gT]-=coef;
       } else {
-        // top outer: Robin injection toward Tcharge
-        R[g]+=area*p.hTop*(T[g]-p.Tcharge);
-        J[g][g]+=area*p.hTop;
+        // outer TOP of insulation: Robin perda to Tamb (NOT charge)
+        R[g]+=area*p.hExt*(T[g]-Tamb);
+        J[g][g]+=area*p.hExt;
       }
       if(j<nz-1){
         const gB=idx(i,j+1,nr);
@@ -312,8 +309,17 @@ function assemble(T,Told,p,M){
         R[g]-=coef*(T[gB]-T[g]);
         J[g][g]+=coef; J[g][gB]-=coef;
       } else {
+        // outer BASE: Robin → Tsolo
         R[g]+=area*p.hExt*(T[g]-Tsolo);
         J[g][g]+=area*p.hExt;
+      }
+
+      // ── INJEÇÃO DE CARGA no TOPO DO NÚCLEO (leito), não no isolante ──
+      // Artigo §2.10: injeção Robin no nó superior do leito (Nó 0 do núcleo).
+      // Fluido quente contacta a face superior do packed bed (j = jCore0, i ≤ iCoreEnd).
+      if(j===jCore0 && i<=iCoreEnd){
+        R[g]+=area*p.hTop*(T[g]-p.Tcharge);
+        J[g][g]+=area*p.hTop;
       }
     }
   }
@@ -357,13 +363,15 @@ function simulate(){
   const N=M.nr*M.nz;
   let T=Array(N).fill(Tinit);
   frames=[{tH:0,T:T.slice(),hist:[{iter:1,residual:0,nodeResiduals:Array(N).fill(0)}],nodeResiduals:Array(N).fill(0)}];
+  const fullHist=[]; // todos os passos para memória de cálculo
   const keepEvery=Math.max(1,Math.floor(steps/40));
   for(let s=1;s<=steps;s++){
     const out=newtonStep(T,p,M); T=out.T;
+    fullHist.push({tH:s*dt_step/3600, hist:out.hist.map(h=>({iter:h.iter,residual:h.residual})), nodeResiduals:out.nodeResiduals.slice(), Tsample:out.T.slice()});
     if(s%keepEvery===0||s===steps)
       frames.push({tH:s*dt_step/3600,T:T.slice(),hist:out.hist,nodeResiduals:out.nodeResiduals});
   }
-  LAST={p,M,dt:dt_step,steps,hours,N,frames};
+  LAST={p,M,dt:dt_step,steps,hours,N,frames,fullHist};
   return LAST;
 }
 
@@ -419,6 +427,11 @@ function drawField(){
   ctx.strokeRect(xC0, yC0, xC1-xC0, yC1-yC0);
   ctx.fillStyle="#fdba74"; ctx.font="600 11px IBM Plex Sans";
   ctx.fillText("NÚCLEO", xC0+4, yC0+12);
+  // marca face de injeção (topo do núcleo)
+  ctx.strokeStyle="#facc15"; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(xC0, yC0); ctx.lineTo(xC1, yC0); ctx.stroke();
+  ctx.fillStyle="#facc15"; ctx.font="600 10px IBM Plex Sans";
+  ctx.fillText("← INJEÇÃO ROBIN (carga)", xC1+4, yC0+4);
 
   // outer domain outline
   ctx.strokeStyle="#22d3ee"; ctx.lineWidth=1.5;
@@ -426,7 +439,8 @@ function drawField(){
 
   ctx.fillStyle="#e7e5e4"; ctx.font="11px IBM Plex Sans";
   ctx.fillText("r=0 Neumann", padL, padT+zMax*sy+16);
-  ctx.fillText("topo Robin carga", padL+80, padT-6);
+  ctx.fillText("topo isolante: Robin perda", padL+60, padT-6);
+  ctx.fillText("carga Robin no topo do NÚCLEO", padL+60, padT+M.zEdges[M.jCore0]*sy-4);
   ctx.fillText("base Robin solo", padL+80, padT+zMax*sy+16);
   ctx.fillText("lateral Robin perda", padL+rMax*sx-20, padT+20);
 
@@ -614,40 +628,119 @@ function togglePlay(){
 }
 function makePDF(){
   if(!LAST) return;
-  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
-  const W=doc.internal.pageSize.getWidth(),m=14; let y=18;
-  doc.setFillColor(154,52,18);doc.rect(0,0,W,11,"F");
-  doc.setTextColor(255,247,237);doc.setFontSize(9);
-  doc.text("XV CBPE · SAET malha contínua núcleo+isolamento · PPGEE-UFPI",m,7.5);
-  doc.setTextColor(28,25,23);doc.setFontSize(12);doc.setFont("helvetica","bold");
-  doc.text("Memória — EDP integrada no domínio composto",m,y); y+=8;
-  doc.setFont("courier","normal");doc.setFontSize(8);
-  const {M,p,N,frames:fr}=LAST;
-  const lines=[
-    `Nós ${M.nr}x${M.nz}=${N} · R=${M.R} L=${M.L} · Tc=${p.Tcharge}`,
-    `CCs: Robin topo carga · Neumann r=0 · Robin perdas externas`,
-    `Autor: Tarcísio Dias da Rocha · Orientador: Prof. Dr. Marcos A. T. Lira`
-  ];
-  lines.forEach(t=>{doc.text(t,m,y);y+=5;});
-  fr.filter((_,i)=>i%Math.max(1,Math.floor(fr.length/10))===0).forEach(f=>{
-    doc.text(`t=${f.tH.toFixed(2)}h `+f.hist.map(h=>h.residual.toExponential(2)).join(" → "),m,y); y+=4;
-    if(y>270){doc.addPage();y=16;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:"mm",format:"a4"});
+  const W=doc.internal.pageSize.getWidth(), H=doc.internal.pageSize.getHeight(), m=14;
+  let y=0;
+  const need=h=>{if(y+h>H-14){doc.addPage();hdr();}};
+  const hdr=()=>{doc.setFillColor(154,52,18);doc.rect(0,0,W,11,"F");
+    doc.setTextColor(255,247,237);doc.setFont("helvetica","bold");doc.setFontSize(8.5);
+    doc.text("XV CBPE · PPGEE-UFPI · Memória integral SAET 2D malha contínua",m,7.5);y=16;};
+  const title=t=>{need(8);doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(28,25,23);doc.text(t,m,y);y+=5.5;};
+  const sub=t=>{need(6);doc.setFont("helvetica","bold");doc.setFontSize(9.5);doc.setTextColor(154,52,18);doc.text(t,m,y);y+=4.5;};
+  const body=t=>{doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.setTextColor(41,37,36);
+    const lines=doc.splitTextToSize(t,W-2*m);need(lines.length*3.8+1.5);doc.text(lines,m,y);y+=lines.length*3.8+1.5;};
+  const mono=t=>{doc.setFont("courier","normal");doc.setFontSize(7);doc.setTextColor(28,25,23);
+    const lines=doc.splitTextToSize(t,W-2*m);need(lines.length*3.1+0.8);doc.text(lines,m,y);y+=lines.length*3.1+0.8;};
+
+  const {M,p,N,frames:fr,fullHist,dt,steps,hours}=LAST;
+  hdr();
+  title("MEMÓRIA DE CÁLCULO INTEGRAL — linha a linha");
+  body("Malha única núcleo+isolamento. Injeção Robin no TOPO DO NÚCLEO (leito), não no isolante externo. Neumann r=0. Perdas Robin no contorno exterior.");
+  sub("1. Identificação");
+  mono("Local: https://engrocha1.github.io/saet-forma-canonica/");
+  mono("Repo: https://github.com/EngRocha1/saet-forma-canonica");
+  mono("Autor: Tarcísio Dias da Rocha — Mestrando PPGEE-UFPI");
+  mono("Orientador: Prof. Dr. Marcos Antônio Tavares Lira — DEE/UFPI");
+  mono("Congresso: XV CBPE · Emissão: "+new Date().toISOString());
+  sub("2. EDP e CCs (corrigidas)");
+  mono("ρ Cp ∂T/∂t = (1/r)∂/∂r(r k ∂T/∂r)+∂/∂z(k ∂T/∂z)  [k,ρ,Cp por nó]");
+  mono("r=0: Neumann ∂T/∂r=0");
+  mono("Topo NÚCLEO (j=jCore0, i≤iCoreEnd): Robin h_top (T - T_carga)  ← INJEÇÃO");
+  mono("Topo ISOLANTE externo (j=0): Robin h_ext (T - T_amb)  ← perda telhado");
+  mono("r=R_ext: Robin h_ext (T - T_amb)  ← perda lateral");
+  mono("z=L_ext: Robin h_ext (T - T_solo)  ← perda base");
+  mono("Dirichlet: NÃO usado.");
+  sub("3. Malha e materiais");
+  mono(`nr×nz=${M.nr}×${M.nz}=${N} | R_nucleo=${M.R} L_nucleo=${M.L}`);
+  mono(`nrC=${M.nrC} nzC=${M.nzC} | jCore0=${M.jCore0} jCoreEnd=${M.jCoreEnd} iCoreEnd=${M.iCoreEnd}`);
+  mono(`Δt=${dt}s steps=${steps} horizonte=${hours}h | Tcarga=${p.Tcharge} hTop=${p.hTop} hExt=${p.hExt}`);
+  const counts={}; M.mat.forEach(k=>{counts[k]=(counts[k]||0)+1;});
+  Object.keys(counts).forEach(k=>mono(`  ${MAT[k].name}: ${counts[k]} nós | k=${MAT[k].k} ρ=${MAT[k].rho} Cp=${MAT[k].cp}`));
+  sub("4. Newton–Raphson — TODOS os passos · todas as iterações");
+  body("Para cada passo temporal: sequência completa de ‖R‖. Razão ρ≈‖R‖_{k+1}/‖R‖_k² quando aplicável.");
+  const histSrc = fullHist && fullHist.length ? fullHist : fr.map(f=>({tH:f.tH,hist:f.hist,nodeResiduals:f.nodeResiduals}));
+  // sample if huge: keep all if ≤80 else every n
+  const stride = histSrc.length>60 ? Math.ceil(histSrc.length/50) : 1;
+  histSrc.forEach((f,idx)=>{
+    if(idx%stride!==0 && idx!==histSrc.length-1) return;
+    mono(`── t = ${f.tH.toFixed(4)} h ──`);
+    (f.hist||[]).forEach(h=>{
+      mono(`  iter ${h.iter}: ‖R‖ = ${Number(h.residual).toExponential(6)}${h.residual<1e-5?"  [OK]":""}`);
+    });
+    if(f.hist && f.hist.length>=2){
+      for(let k=0;k<f.hist.length-1;k++){
+        const a=f.hist[k].residual, b=f.hist[k+1].residual;
+        if(a>1e-30) mono(`  ρ_${k+1} = ‖R‖_{k+1}/‖R‖_k² = ${(b/(a*a)).toExponential(4)}`);
+      }
+    }
   });
-  try{doc.addPage();doc.addImage($("c-field").toDataURL("image/png"),"PNG",m,20,W-2*m,100);
-  doc.addImage($("c-conv").toDataURL("image/png"),"PNG",m,130,W-2*m,90);}catch(e){}
-  doc.save("Memoria_SAET_MalhaContinua_XV_CBPE.pdf");
+  sub("5. Resíduos nodais |Rᵢ| no estado final (núcleo e isolação)");
+  const last = histSrc[histSrc.length-1];
+  const nR = last.nodeResiduals || fr.at(-1).nodeResiduals;
+  if(nR){
+    mono("g=j*nr+i | zona | |R_g|");
+    for(let j=0;j<M.nz;j++){
+      for(let i=0;i<M.nr;i++){
+        const g=idx(i,j,M.nr);
+        const zona=M.mat[g];
+        const inCore=(j>=M.jCore0&&j<=M.jCoreEnd&&i<=M.iCoreEnd);
+        mono(`  (${i},${j}) g=${g} ${zona}${inCore?" [NÚCLEO]":""} |R|=${nR[g].toExponential(4)}`);
+      }
+    }
+  }
+  sub("6. Jacobiana amostra J[0:7,0:7] no estado final");
+  dt_step=dt;
+  const Tlast=fr.at(-1).T;
+  const {J}=assemble(Tlast,Tlast,p,M);
+  const nS=Math.min(8,N);
+  for(let i=0;i<nS;i++){
+    let row=`i=${i}: `;
+    for(let j=0;j<nS;j++) row+=(Math.abs(J[i][j])<1e-18?"0 ":J[i][j].toExponential(3)+" ");
+    mono(row);
+  }
+  body("Faces entre núcleo e isolante usam k médio. Diagonal inclui ρCp V/Δt + contribuições Robin de injeção (nós de topo do núcleo) e de perda (contorno externo).");
+  sub("7. Resultados térmicos");
+  let tmin=1e9,tmax=-1e9, tCoreMax=-1e9, tCoreMin=1e9;
+  Tlast.forEach((t,g)=>{
+    tmin=Math.min(tmin,t); tmax=Math.max(tmax,t);
+    const i=g%M.nr, j=(g/M.nr)|0;
+    if(j>=M.jCore0&&j<=M.jCoreEnd&&i<=M.iCoreEnd){tCoreMax=Math.max(tCoreMax,t);tCoreMin=Math.min(tCoreMin,t);}
+  });
+  mono(`T_global min/max = ${tmin.toFixed(2)} / ${tmax.toFixed(2)} °C`);
+  mono(`T_NÚCLEO min/max = ${tCoreMin.toFixed(2)} / ${tCoreMax.toFixed(2)} °C`);
+  mono(`T carga = ${p.Tcharge} °C | status núcleo aquecendo: ${tCoreMax>Tinit+5?"SIM":"ainda frio / verificar Δt e horizonte"}`);
+  // temps at core top row
+  let rowT="T topo núcleo: ";
+  for(let i=0;i<=M.iCoreEnd;i++) rowT+=Tlast[idx(i,M.jCore0,M.nr)].toFixed(1)+" ";
+  mono(rowT);
+  sub("8. Referências");
+  body("ROCHA; LIRA (2026) XV CBPE §2.8–2.10. BATHE (1996). ÇENGEL; GHAJAR (2020). INCROPERA et al. (2014). Dados isolação: Carnot_Battery_Simulator.");
+  try{
+    doc.addPage(); hdr(); title("Figuras");
+    ["c-field","c-conv","c-nres"].forEach(id=>{
+      const canvas=$(id); if(!canvas) return;
+      const data=canvas.toDataURL("image/png");
+      const imgW=W-2*m, imgH=Math.min(imgW*(canvas.height/canvas.width), 95);
+      need(imgH+10);
+      doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(154,52,18);
+      doc.text(id,m,y); y+=3;
+      doc.addImage(data,"PNG",m,y,imgW,imgH); y+=imgH+6;
+    });
+  }catch(e){}
+  doc.save("Memoria_Integral_SAET_2D_XV_CBPE_PPGEE_UFPI.pdf");
 }
 
-function updateLabels(){
-  $("v-hours").textContent=$("hours").value+" h";
-  $("v-dt").textContent=$("dt").value+" s";
-  $("v-tc").textContent=$("tc").value+" °C";
-  $("v-ht").textContent=$("ht").value;
-  $("v-hext").textContent=$("hext").value;
-  $("v-R").textContent=$("R").value+" m";
-  $("v-L").textContent=$("L").value+" m";
-  ["e1","e2","e3","eb1","eb2","eb3"].forEach(id=>$("v-"+id).textContent=$(id).value);
-}
 ["hours","dt","tc","ht","hext","R","L","e1","e2","e3","eb1","eb2","eb3"].forEach(id=>{
   $(id).addEventListener("input", updateLabels);
   $(id).addEventListener("change", run);
