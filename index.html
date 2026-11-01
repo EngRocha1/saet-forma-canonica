@@ -150,10 +150,10 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
   </div>
   <figure>
     <figcaption>Campo T · núcleo quente, isolante com queda brusca
-      <span class="sub">Células discretas com T no centro (contraste automático). Setas = fluxo q=−k∇T. Isolante com queda brusca na interface (k harmônico).</span>
+      <span class="sub">Esquerda: malha (r,z) no plano de corte. Direita: ½ cilindro em corte — a face aberta é o domínio 2D (mesma T). Setas q=−k∇T.</span>
       <span class="ref">Fig. 3b · EDP no domínio composto · §2.9–2.10</span>
     </figcaption>
-    <canvas id="c-field" width="860" height="560"></canvas>
+    <canvas id="c-field" width="960" height="580"></canvas>
     <div class="legend" id="leg-field"></div>
   </figure>
   <figure>
@@ -468,89 +468,65 @@ function drawField(){
   var dTiface=TcoreTop-TisoAbove;
 
   var rMax=M.rEdges[M.rEdges.length-1], zMax=M.zEdges[M.zEdges.length-1];
-  var padL=52, padR=150, padT=40, padB=40;
-  var sx=(W-padL-padR)/rMax, sy=(H-padT-padB)/zMax;
+  /* Left 58% = r-z mesh; right 42% = half-cylinder 3D cutaway */
+  var padL=48, padT=36, padB=36;
+  var split=Math.floor(W*0.56);
+  var sx=(split-padL-16)/rMax, sy=(H-padT-padB)/zMax;
 
   ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
-  ctx.fillText("Malha discreta · nós ativos · fluxo q = −k∇T · contraste inteligente", padL, 18);
+  ctx.fillText("Plano de corte (r, z) · ½ fatia do cilindro · domínio axissimétrico", padL, 18);
 
-  /* ── flux at cell centers for arrows ── */
   function cellFlux(i,j){
     var g=idx(i,j,M.nr), k=MAT[M.mat[g]].k;
-    if(M.mat[g]==="hematita" && (p.keff||1)>1){
-      // only axial component amplified for display consistency with solver
-    }
     var qr=0, qz=0;
-    // radial
     if(i>0 && i<M.nr-1){
       var TL=T[idx(i-1,j,M.nr)], TR=T[idx(i+1,j,M.nr)];
       var kL=kFace(k,MAT[M.mat[idx(i-1,j,M.nr)]].k);
       var kR=kFace(k,MAT[M.mat[idx(i+1,j,M.nr)]].k);
-      var dTdr=(TR-TL)/(M.rC(i+1)-M.rC(i-1));
-      qr = -0.5*(kL+kR)*dTdr;
+      qr=-0.5*(kL+kR)*(TR-TL)/(M.rC(i+1)-M.rC(i-1));
     } else if(i<M.nr-1){
       var TR2=T[idx(i+1,j,M.nr)];
-      var kR2=kFace(k,MAT[M.mat[idx(i+1,j,M.nr)]].k);
-      qr = -kR2*(TR2-T[g])/(M.rC(i+1)-M.rC(i));
+      qr=-kFace(k,MAT[M.mat[idx(i+1,j,M.nr)]].k)*(TR2-T[g])/(M.rC(i+1)-M.rC(i));
     } else if(i>0){
       var TL2=T[idx(i-1,j,M.nr)];
-      var kL2=kFace(k,MAT[M.mat[idx(i-1,j,M.nr)]].k);
-      qr = -kL2*(T[g]-TL2)/(M.rC(i)-M.rC(i-1));
+      qr=-kFace(k,MAT[M.mat[idx(i-1,j,M.nr)]].k)*(T[g]-TL2)/(M.rC(i)-M.rC(i-1));
     }
-    // axial
-    var kAx = k;
-    if(M.mat[g]==="hematita") kAx *= (p.keff||1);
+    var kAx=k*(M.mat[g]==="hematita"?(p.keff||1):1);
     if(j>0 && j<M.nz-1){
-      var TT=T[idx(i,j-1,M.nr)], TB=T[idx(i,j+1,M.nr)];
-      qz = -kAx*(TB-TT)/(M.zC(j+1)-M.zC(j-1));
+      qz=-kAx*(T[idx(i,j+1,M.nr)]-T[idx(i,j-1,M.nr)])/(M.zC(j+1)-M.zC(j-1));
     } else if(j<M.nz-1){
-      var TB2=T[idx(i,j+1,M.nr)];
-      qz = -kAx*(TB2-T[g])/(M.zC(j+1)-M.zC(j));
+      qz=-kAx*(T[idx(i,j+1,M.nr)]-T[g])/(M.zC(j+1)-M.zC(j));
     } else if(j>0){
-      var TT2=T[idx(i,j-1,M.nr)];
-      qz = -kAx*(T[g]-TT2)/(M.zC(j)-M.zC(j-1));
+      qz=-kAx*(T[g]-T[idx(i,j-1,M.nr)])/(M.zC(j)-M.zC(j-1));
     }
-    return {qr:qr, qz:qz};
+    return {qr:qr,qz:qz};
   }
   var qMax=1e-12;
   for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
     var fl=cellFlux(i,j);
-    qMax=Math.max(qMax, Math.sqrt(fl.qr*fl.qr+fl.qz*fl.qz));
+    qMax=Math.max(qMax, Math.hypot(fl.qr,fl.qz));
   }
-
   function smartInk(t){
-    // brightness of heatColor mid - use normalized T
     var fcol=Math.max(0,Math.min(1,(t-tmin)/Math.max(tmax-tmin,1e-9)));
-    // hot cells (f>0.55) -> black text; cold -> white
-    return fcol > 0.55 ? "#0c0a09" : "#fafaf9";
+    return fcol>0.55?"#0c0a09":"#fafaf9";
   }
-
-  function drawArrow(cx,cy,vx,vy,color){
-    var len=Math.sqrt(vx*vx+vy*vy);
-    if(len<1e-15) return;
-    var sc=Math.min(cellMin*0.38, 14)*Math.min(1, len/qMax*1.2+0.15);
-    var ux=vx/len*sc, uy=vy/len*sc;
-    // screen: z grows downward in our plot, r to the right
-    // physical qz>0 is heat flux in +z (down the tank if z=0 is top)
-    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=1.4;
-    ctx.beginPath(); ctx.moveTo(cx-ux*0.3, cy-uy*0.3); ctx.lineTo(cx+ux*0.7, cy+uy*0.7); ctx.stroke();
-    // head
-    var hx=cx+ux*0.7, hy=cy+uy*0.7;
-    var px=-uy*0.35, py=ux*0.35;
-    ctx.beginPath();
-    ctx.moveTo(hx,hy);
-    ctx.lineTo(hx-ux*0.35+px, hy-uy*0.35+py);
-    ctx.lineTo(hx-ux*0.35-px, hy-uy*0.35-py);
-    ctx.closePath(); ctx.fill();
-  }
-
   var cellMin=1e9;
   for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
-    var ww=(M.rEdges[i+1]-M.rEdges[i])*sx, hh=(M.zEdges[j+1]-M.zEdges[j])*sy;
-    cellMin=Math.min(cellMin, ww, hh);
+    cellMin=Math.min(cellMin,(M.rEdges[i+1]-M.rEdges[i])*sx,(M.zEdges[j+1]-M.zEdges[j])*sy);
+  }
+  function drawArrow(cx,cy,vx,vy,color){
+    var len=Math.hypot(vx,vy); if(len<1e-15) return;
+    var sc=Math.min(cellMin*0.36,13)*(0.2+0.8*Math.min(1,len/qMax));
+    var ux=vx/len*sc, uy=vy/len*sc;
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.moveTo(cx-ux*0.25,cy-uy*0.25); ctx.lineTo(cx+ux*0.75,cy+uy*0.75); ctx.stroke();
+    var hx=cx+ux*0.75, hy=cy+uy*0.75, px=-uy*0.32, py=ux*0.32;
+    ctx.beginPath(); ctx.moveTo(hx,hy);
+    ctx.lineTo(hx-ux*0.32+px,hy-uy*0.32+py);
+    ctx.lineTo(hx-ux*0.32-px,hy-uy*0.32-py); ctx.closePath(); ctx.fill();
   }
 
-  /* ── cells ── */
+  /* ===== LEFT: discrete r-z mesh ===== */
   for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
     g=idx(i,j,M.nr);
     var x=padL+M.rEdges[i]*sx, y=padT+M.zEdges[j]*sy;
@@ -558,90 +534,183 @@ function drawField(){
     var col=heatColor(T[g],tmin,tmax);
     ctx.fillStyle="rgb("+(col[0]|0)+","+(col[1]|0)+","+(col[2]|0)+")";
     ctx.fillRect(x+0.5,y+0.5,Math.max(w-1,1),Math.max(h-1,1));
-    // sharp grid
-    ctx.strokeStyle=M.mat[g]==="hematita"?"rgba(251,146,60,0.85)":"rgba(34,211,238,0.7)";
-    ctx.lineWidth=1.2;
-    ctx.strokeRect(x,y,w,h);
-
-    var cx=x+w/2, cy=y+h/2;
-    var ink=smartInk(T[g]);
-
-    // node
+    ctx.strokeStyle=M.mat[g]==="hematita"?"rgba(251,146,60,0.9)":"rgba(34,211,238,0.75)";
+    ctx.lineWidth=1.15; ctx.strokeRect(x,y,w,h);
+    var cx=x+w/2, cy=y+h/2, ink=smartInk(T[g]);
     ctx.fillStyle=ink;
-    ctx.beginPath(); ctx.arc(cx, cy-Math.min(h*0.22,6), Math.min(2.2, cellMin*0.08), 0, Math.PI*2); ctx.fill();
-
-    // temperature label
-    var fs=Math.max(8, Math.min(12, Math.min(w,h)*0.28));
+    ctx.beginPath(); ctx.arc(cx,cy-Math.min(h*0.2,5),Math.min(2,cellMin*0.07),0,Math.PI*2); ctx.fill();
+    var fs=Math.max(8,Math.min(11,Math.min(w,h)*0.26));
     ctx.font="700 "+fs+"px IBM Plex Mono";
-    ctx.fillStyle=ink;
     ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText(fmt(T[g],0), cx, cy+fs*0.15);
-
-    // flux arrow (physical: +qr right, +qz down in screen)
+    ctx.fillText(fmt(T[g],0),cx,cy+fs*0.12);
     var fl=cellFlux(i,j);
-    drawArrow(cx, cy+Math.min(h*0.28,8), fl.qr, fl.qz, ink);
+    drawArrow(cx,cy+Math.min(h*0.26,7),fl.qr,fl.qz,ink);
   }
   ctx.textAlign="left"; ctx.textBaseline="alphabetic";
 
-  // core outline + injection face
   var xC0=padL, yC0=padT+M.zEdges[M.jCore0]*sy;
   var xC1=padL+M.rEdges[M.iCoreEnd+1]*sx, yC1=padT+M.zEdges[M.jCoreEnd+1]*sy;
-  ctx.strokeStyle="#f97316"; ctx.lineWidth=2.8; ctx.strokeRect(xC0,yC0,xC1-xC0,yC1-yC0);
-  ctx.strokeStyle="#facc15"; ctx.lineWidth=3.5;
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2.6; ctx.strokeRect(xC0,yC0,xC1-xC0,yC1-yC0);
+  ctx.strokeStyle="#facc15"; ctx.lineWidth=3.2;
   ctx.beginPath(); ctx.moveTo(xC0,yC0); ctx.lineTo(xC1,yC0); ctx.stroke();
   ctx.fillStyle="#facc15"; ctx.font="600 11px IBM Plex Sans";
-  ctx.fillText("INJEÇÃO ROBIN →", xC1+6, yC0+4);
-  ctx.fillStyle="#fdba74"; ctx.fillText("NÚCLEO", xC0+4, yC0+14);
-  if(M.jCore0>0){
-    ctx.fillStyle="#67e8f9"; ctx.font="600 10px IBM Plex Sans";
-    ctx.fillText("ΔT_iface="+fmt(dTiface,1)+" K", xC0, yC0-6);
+  ctx.fillText("INJEÇÃO →", xC1+4, yC0+3);
+  ctx.fillStyle="#fdba74"; ctx.fillText("NÚCLEO", xC0+3, yC0+13);
+  ctx.fillStyle="#e7e5e4"; ctx.font="11px IBM Plex Sans";
+  ctx.fillText("r=0", padL, padT+zMax*sy+14);
+  ctx.fillText("corte diametral = domínio 2D", padL+40, padT+zMax*sy+14);
+
+  /* ===== RIGHT: 3D half-cylinder cutaway (like reference figure) ===== */
+  var cx3 = split + (W-split)*0.52;
+  var topY = padT + 28;
+  var botY = H - padB - 10;
+  var cylH = botY - topY;
+  var rx = Math.min((W-split)*0.38, 70);  // ellipse radius x
+  var ry = rx * 0.32;                     // ellipse radius y (perspective)
+  var zScale = cylH / zMax;
+  var rScale = rx / rMax;
+
+  ctx.fillStyle="#fafaf9"; ctx.font="600 11px IBM Plex Sans";
+  ctx.fillText("½ cilindro · fatia central (visão do espectador)", split+8, 18);
+  ctx.fillStyle="#a8a29e"; ctx.font="10px IBM Plex Sans";
+  ctx.fillText("Azul = volume fora do MEF 2D · face = malha (r,z)", split+8, 32);
+
+  // Helper: isometric-ish ellipse at depth z (0=top)
+  function ellY(zphys){ return topY + zphys*zScale; }
+
+  // Outer half-cylinder body (right half solid, left half = cut = open to mesh)
+  // Draw back half-ellipse arc (far side)
+  ctx.beginPath();
+  ctx.ellipse(cx3, topY, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle="#1e3a5f"; ctx.fill();
+  ctx.strokeStyle="#94a3b8"; ctx.lineWidth=1.5; ctx.stroke();
+
+  // Vertical wall of visible half (right side of cylinder)
+  ctx.beginPath();
+  ctx.moveTo(cx3+rx, topY);
+  ctx.lineTo(cx3+rx, botY);
+  ctx.ellipse(cx3, botY, rx, ry, 0, 0, Math.PI, false); // bottom front? 
+  // redraw properly:
+  // Right silhouette
+  ctx.beginPath();
+  ctx.moveTo(cx3+rx*Math.cos(-0.15), topY+ry*Math.sin(-0.15));
+  ctx.lineTo(cx3+rx, botY);
+  ctx.strokeStyle="#64748b"; ctx.lineWidth=2; ctx.stroke();
+
+  // Bottom ellipse
+  ctx.beginPath();
+  ctx.ellipse(cx3, botY, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle="#1e3a5f"; ctx.fill();
+  ctx.strokeStyle="#94a3b8"; ctx.lineWidth=1.5; ctx.stroke();
+
+  // Side generators (vertical lines on curved surface) — right half only
+  var nGen=8;
+  for(var gi=0; gi<=nGen; gi++){
+    var ang = -Math.PI/2 + Math.PI*(gi/nGen); // -90° to +90° = visible outer half
+    // actually for half cut: show generators from 0 to 180° on the BACK/right
+    ang = -Math.PI/2 + Math.PI * (gi/nGen);
+    var gx = cx3 + rx*Math.cos(ang);
+    var gyt = topY + ry*Math.sin(ang);
+    var gyb = botY + ry*Math.sin(ang);
+    // only draw if on the "solid" half (right side, cos>=0 roughly for outer)
+    if(Math.cos(ang) > -0.05){
+      ctx.beginPath();
+      ctx.moveTo(gx, gyt); ctx.lineTo(gx, gyb);
+      ctx.strokeStyle="rgba(15,23,42,0.85)"; ctx.lineWidth=1.6; ctx.stroke();
+    }
   }
 
-  ctx.fillStyle="#e7e5e4"; ctx.font="11px IBM Plex Sans";
-  ctx.fillText("r=0 Neumann", padL, padT+zMax*sy+16);
-  ctx.fillText("k_hem="+fmt(MAT.hematita.k,2)+" | k_IFB="+fmt(MAT.ifb.k,2)+" | k_perl="+fmt(MAT.perlita.k,3), padL+110, padT+zMax*sy+16);
+  // Top ring again on top
+  ctx.beginPath();
+  ctx.ellipse(cx3, topY, rx, ry, 0, 0, Math.PI*2);
+  ctx.strokeStyle="#cbd5e1"; ctx.lineWidth=2; ctx.stroke();
 
-  // quarter view
-  var ox=W-88, oy=H*0.30, rad=50;
-  ctx.beginPath(); ctx.arc(ox,oy,rad,0,Math.PI*2);
-  ctx.strokeStyle="rgba(120,113,108,0.5)"; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(ox,oy); ctx.arc(ox,oy,rad,0,-Math.PI/2,true); ctx.closePath();
-  ctx.fillStyle="rgba(234,88,12,0.28)"; ctx.fill();
-  ctx.strokeStyle="#f97316"; ctx.lineWidth=2; ctx.stroke();
-  ctx.fillStyle="#fafaf9"; ctx.font="10px IBM Plex Sans"; ctx.fillText("90° MEF", ox+2, oy-4);
+  // CUT FACE: map temperature field onto the diametral rectangle in perspective
+  // Cut face spans from axis (cx3) to left (cx3 - something) — open sector
+  // Draw cut face as vertical rectangle slightly left of axis with mesh colors
+  var faceLeft = cx3 - rx*0.92;
+  var faceRight = cx3;
+  var faceTop = topY;
+  var faceBot = botY;
+  var faceW = faceRight - faceLeft;
+  var faceH = faceBot - faceTop;
+
+  // White / light cut interior
+  ctx.fillStyle="rgba(248,250,252,0.12)";
+  ctx.fillRect(faceLeft, faceTop, faceW, faceH);
+
+  // Paint mesh on cut face (r horizontal from axis, z vertical)
+  for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
+    g=idx(i,j,M.nr);
+    var fr0=M.rEdges[i]/rMax, fr1=M.rEdges[i+1]/rMax;
+    var fz0=M.zEdges[j]/zMax, fz1=M.zEdges[j+1]/zMax;
+    var fx=faceLeft + fr0*faceW;
+    var fy=faceTop + fz0*faceH;
+    var fw=(fr1-fr0)*faceW, fh=(fz1-fz0)*faceH;
+    var col2=heatColor(T[g],tmin,tmax);
+    ctx.fillStyle="rgb("+(col2[0]|0)+","+(col2[1]|0)+","+(col2[2]|0)+")";
+    ctx.fillRect(fx,fy,Math.max(fw,0.8),Math.max(fh,0.8));
+    ctx.strokeStyle="rgba(255,255,255,0.15)"; ctx.lineWidth=0.6;
+    ctx.strokeRect(fx,fy,fw,fh);
+  }
+  // Core outline on cut face
+  var fxc0=faceLeft + 0;
+  var fyc0=faceTop + M.zEdges[M.jCore0]/zMax*faceH;
+  var fxc1=faceLeft + M.rEdges[M.iCoreEnd+1]/rMax*faceW;
+  var fyc1=faceTop + M.zEdges[M.jCoreEnd+1]/zMax*faceH;
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2;
+  ctx.strokeRect(fxc0, fyc0, fxc1-fxc0, fyc1-fyc0);
+
+  // Cut edges (thick white/light lines) — like reference open sector
+  ctx.strokeStyle="#f8fafc"; ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.moveTo(faceLeft, faceTop); ctx.lineTo(faceLeft, faceBot);
+  ctx.lineTo(faceRight, faceBot); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(faceLeft, faceTop); ctx.lineTo(faceRight, faceTop); ctx.stroke();
+
+  // Axis line
+  ctx.strokeStyle="#22d3ee"; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(faceLeft, faceTop); ctx.lineTo(faceLeft, faceBot); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle="#22d3ee"; ctx.font="600 10px IBM Plex Sans";
+  ctx.fillText("eixo r=0", faceLeft+4, faceBot-6);
+  ctx.fillStyle="#f97316"; ctx.fillText("face de corte = MEF 2D", faceLeft+4, faceTop+12);
+
+  // Connection hint: arrow from 2D mesh to cut face
+  ctx.strokeStyle="rgba(251,146,60,0.7)"; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(split-10, padT+zMax*sy*0.45);
+  ctx.lineTo(faceLeft-4, faceTop+faceH*0.45);
+  ctx.stroke();
+  ctx.fillStyle="#fdba74"; ctx.font="10px IBM Plex Sans";
+  ctx.fillText("mesmo campo T", split-8, padT+zMax*sy*0.45-6);
 
   // colorbar
-  var yi;
-  for(yi=0;yi<110;yi++){
-    var tt=tmax-(yi/110)*(tmax-tmin);
+  for(var yi=0;yi<100;yi++){
+    var tt=tmax-(yi/100)*(tmax-tmin);
     var cc=heatColor(tt,tmin,tmax);
     ctx.fillStyle="rgb("+(cc[0]|0)+","+(cc[1]|0)+","+(cc[2]|0)+")";
-    ctx.fillRect(W-26, padT+yi, 10, 1);
+    ctx.fillRect(W-22, padT+yi, 8, 1);
   }
-  ctx.fillStyle="#fafaf9"; ctx.font="11px IBM Plex Sans";
-  ctx.fillText(fmt(tmax,0)+"°C", W-68, padT+10);
-  ctx.fillText(fmt(tmin,0)+"°C", W-68, padT+110);
-  ctx.font="9px IBM Plex Sans";
-  ctx.fillText("texto preto=quente", W-100, padT+130);
-  ctx.fillText("texto branco=frio", W-100, padT+142);
+  ctx.fillStyle="#fafaf9"; ctx.font="10px IBM Plex Sans";
+  ctx.fillText(fmt(tmax,0)+"°C", W-58, padT+8);
+  ctx.fillText(fmt(tmin,0)+"°C", W-58, padT+100);
 
   var ok = tCoreMax > tIsoMax + 5;
-  $("leg-field").innerHTML='<span>t=<b>'+fmt(f.tH,2)+' h</b></span> <span>T_núcleo max=<b>'+fmt(tCoreMax,1)+'</b> °C</span> <span>T_isol max='+fmt(tIsoMax,1)+' °C</span> <span>ΔT_iface=<b>'+fmt(dTiface,1)+'</b> K</span> <span style="color:'+(ok?'var(--ok)':'#ca8a04')+';font-weight:700">'+(ok?'✓ isolante mais frio':'verificar k')+'</span>';
+  $("leg-field").innerHTML='<span>t=<b>'+fmt(f.tH,2)+' h</b></span> <span>½ fatia · plano diametral</span> <span>T_núcleo max=<b>'+fmt(tCoreMax,1)+'</b> °C</span> <span>ΔT_iface=<b>'+fmt(dTiface,1)+'</b> K</span> <span style="color:'+(ok?'var(--ok)':'#ca8a04')+';font-weight:700">'+(ok?'✓':'…')+'</span>';
   $("s-tmax").textContent=fmt(tCoreMax,1)+" °C";
   $("s-dti").textContent=fmt(dTiface,1)+" K";
   $("s-n").textContent=String(M.nr*M.nz);
   $("s-mesh").textContent=M.nr+"×"+M.nz;
   $("bound-alert").textContent=ok
-    ? ("OK · núcleo "+fmt(tCoreMax,1)+" °C > isolante "+fmt(tIsoMax,1)+" °C · ΔT_iface="+fmt(dTiface,1)+" K · max principle")
-    : "Ajustar k isolante ou tempo de carga";
+    ? ("OK · ½ cilindro · campo no plano de corte · núcleo "+fmt(tCoreMax,1)+" °C")
+    : "Verificar parâmetros";
   $("bound-alert").style.background=ok?"#dcfce7":"#fef9c3";
-
-  var ib="T topo núcleo  = "+fmt(TcoreTop,1)+" °C\n";
-  ib+="T isolante acima = "+fmt(TisoAbove,1)+" °C\n";
-  ib+="ΔT interface   = "+fmt(dTiface,1)+" K\n";
-  ib+="k_face hem|IFB = "+fmt(kFace(MAT.hematita.k,MAT.ifb.k),4)+"\n";
-  ib+="T_isol max global = "+fmt(tIsoMax,1)+" °C\n";
-  ib+="|q|_max (display) = "+qMax.toExponential(2)+"\n";
+  var ib="Vista: ½ fatia do cilindro (plano diametral)\\n";
+  ib+="MEF 2D resolve o corte; rotação 2π reconstrói o tanque.\\n";
+  ib+="T topo núcleo="+fmt(TcoreTop,1)+" isol acima="+fmt(TisoAbove,1)+"\\n";
+  ib+="ΔT_iface="+fmt(dTiface,1)+" K | k_face="+fmt(kFace(MAT.hematita.k,MAT.ifb.k),4)+"\\n";
   $("iface-box").textContent=ib;
 }
 
