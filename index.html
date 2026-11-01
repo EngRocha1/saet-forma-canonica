@@ -133,6 +133,11 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
     <button class="btn play" id="btn-play" type="button">Play</button>
     <button class="btn ghost" id="btn-reset" type="button">t = 0</button>
   </div>
+  <div class="transport">
+    <button class="btn ghost" id="btn-arrows" type="button" title="Mostrar/ocultar setas de fluxo">Setas q</button>
+    <button class="btn ghost" id="btn-labels" type="button" title="Mostrar/ocultar temperaturas nos nós">Números T</button>
+  </div>
+  <p class="note" style="font-size:11px">Desative setas/números para limpar a malha na apresentação.</p>
   <label>Progresso <span id="v-prog">0 h</span><input id="prog" type="range" min="0" max="100" step="1" value="0"/></label>
   <dl>
     <div><dt>Nós</dt><dd id="s-n">—</dd></div>
@@ -220,6 +225,7 @@ var MAT = {
 };
 var Tamb=37, Tsolo=25, Tinit=25;
 var LAST=null, frames=[], fullHist=[], playing=false, playTimer=null, frameIdx=0, MESH=null;
+var showArrows=false, showLabels=true;
 var $ = function(id){ return document.getElementById(id); };
 function fmt(x,d){ d=d===undefined?2:d; if(!isFinite(x)) return "—"; var a=Math.abs(x); if(a!==0&&(a>=1e4||a<1e-3)) return x.toExponential(2); return (+x).toFixed(d); }
 function idx(i,j,nr){ return j*nr+i; }
@@ -356,16 +362,17 @@ function residualDiag(T,Told,p,M,dt){
 }
 
 function newtonStep(Told,p,M,dt){
-  var T=Told.slice(), hist=[], nodeR=null, it,g,N=Told.length;
+  var T=Told.slice(), hist=[], nodeR=null, lastDiag=null, it,g,N=Told.length;
   for(it=0;it<25;it++){
     var rd=residualDiag(T,Told,p,M,dt);
     var res=norm(rd.R);
     nodeR=Array.prototype.slice.call(rd.R).map(function(v){return Math.abs(v);});
-    hist.push({iter:it+1, residual:res, nodeResiduals:nodeR.slice()});
+    lastDiag=Array.prototype.slice.call(rd.diag);
+    hist.push({iter:it+1, residual:res, nodeResiduals:nodeR.slice(), diag:lastDiag.slice()});
     if(res<1e-4) break;
     for(g=0;g<N;g++) if(Math.abs(rd.diag[g])>1e-18) T[g]-=rd.R[g]/rd.diag[g];
   }
-  return {T:T, hist:hist, nodeResiduals:nodeR};
+  return {T:T, hist:hist, nodeResiduals:nodeR, diag:lastDiag};
 }
 
 function coreEnergy(T,M){
@@ -418,9 +425,9 @@ function simulate(){
     var frontOK = Tb < tlim;
     if(frontOK) EmaxUseful=E;
     if(!frontOK && tFrontBreak<0) tFrontBreak=tH;
-    fullHist.push({tH:tH, hist:out.hist.map(function(h){return {iter:h.iter,residual:h.residual};}), nodeResiduals:out.nodeResiduals.slice()});
+    fullHist.push({tH:tH, hist:out.hist.map(function(h){return {iter:h.iter,residual:h.residual,diag:h.diag?h.diag.slice():null};}), nodeResiduals:out.nodeResiduals.slice(), T:T.slice(), diag:out.diag?out.diag.slice():null});
     if(s%keepEvery===0||s===steps){
-      frames.push({tH:tH,T:T.slice(),hist:out.hist,nodeResiduals:out.nodeResiduals,E:E,Tbase:Tb,Ttop:Tt,frontOK:frontOK});
+      frames.push({tH:tH,T:T.slice(),hist:out.hist,nodeResiduals:out.nodeResiduals,diag:out.diag?out.diag.slice():null,E:E,Tbase:Tb,Ttop:Tt,frontOK:frontOK});
       chargeCurve.push({tH:tH,E:E,Tbase:Tb,Ttop:Tt,frontOK:frontOK});
     } else {
       chargeCurve.push({tH:tH,E:E,Tbase:Tb,Ttop:Tt,frontOK:frontOK});
@@ -534,12 +541,16 @@ function drawField(){
     var cx=x+ww/2, cy=y+hh/2, ink=smartInk(T[g]);
     ctx.fillStyle=ink;
     ctx.beginPath(); ctx.arc(cx,cy-Math.min(hh*0.16,4),Math.min(1.7,cellMin*0.06),0,Math.PI*2); ctx.fill();
-    var fs=Math.max(7,Math.min(11,Math.min(ww,hh)*0.24));
-    ctx.font="700 "+fs+"px IBM Plex Mono";
-    ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText(fmt(T[g],0),cx,cy+fs*0.1);
-    var fl=cellFlux(i,j);
-    drawArrow(cx,cy+Math.min(hh*0.2,6),fl.qr,fl.qz,ink,cellMin);
+    if(showLabels){
+      var fs=Math.max(7,Math.min(11,Math.min(ww,hh)*0.24));
+      ctx.font="700 "+fs+"px IBM Plex Mono";
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      ctx.fillText(fmt(T[g],0),cx,cy+fs*0.1);
+    }
+    if(showArrows){
+      var fl=cellFlux(i,j);
+      drawArrow(cx,cy+Math.min(hh*0.2,6),fl.qr,fl.qz,ink,cellMin);
+    }
   }
   ctx.textAlign="left"; ctx.textBaseline="alphabetic";
 
@@ -638,7 +649,7 @@ function drawField(){
     ctx.fillRect(fx,fy,fw,fh);
     ctx.strokeStyle="rgba(255,255,255,0.15)"; ctx.lineWidth=0.5; ctx.strokeRect(fx,fy,fw,fh);
     // small T if room
-    if(fw>14 && fh>12){
+    if(showLabels && fw>14 && fh>12){
       var ink2=smartInk(T[g]);
       ctx.fillStyle=ink2; ctx.font="700 8px IBM Plex Mono";
       ctx.textAlign="center"; ctx.textBaseline="middle";
@@ -1064,41 +1075,148 @@ function fillIsoModal(){
 function makePDF(){
   if(!LAST){ alert("Rode a simulação antes."); return; }
   var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
-  var W=doc.internal.pageSize.getWidth(), Hp=doc.internal.pageSize.getHeight(), m=14, y=0;
-  function need(h){ if(y+h>Hp-14){ doc.addPage(); hdr(); } }
-  function hdr(){ doc.setFillColor(154,52,18); doc.rect(0,0,W,11,"F");
-    doc.setTextColor(255,247,237); doc.setFont("helvetica","bold"); doc.setFontSize(8.5);
-    doc.text("XV CBPE · PPGEE-UFPI · Memória SAET · k harmônico",m,7.5); y=16; }
-  function mono(t){ doc.setFont("courier","normal"); doc.setFontSize(7); doc.setTextColor(28,25,23);
-    var lines=doc.splitTextToSize(t,W-2*m); need(lines.length*3.1+0.8); doc.text(lines,m,y); y+=lines.length*3.1+0.8; }
-  function sub(t){ need(6); doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(154,52,18); doc.text(t,m,y); y+=4.5; }
-  var M=LAST.M, p=LAST.p;
+  var W=doc.internal.pageSize.getWidth(), Hp=doc.internal.pageSize.getHeight(), m=12;
+  var y=0;
+  function need(h){ if(y+h>Hp-12){ doc.addPage(); hdr(); } }
+  function hdr(){
+    doc.setFillColor(154,52,18); doc.rect(0,0,W,10,"F");
+    doc.setTextColor(255,247,237); doc.setFont("helvetica","bold"); doc.setFontSize(8);
+    doc.text("XV CBPE · PPGEE-UFPI · Memória integral linha a linha · SAET 2D",m,6.8); y=14;
+  }
+  function mono(t){
+    doc.setFont("courier","normal"); doc.setFontSize(6.5); doc.setTextColor(28,25,23);
+    var lines=doc.splitTextToSize(t,W-2*m); need(lines.length*2.9+0.6); doc.text(lines,m,y); y+=lines.length*2.9+0.6;
+  }
+  function sub(t){
+    need(5.5); doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(154,52,18);
+    doc.text(t,m,y); y+=4.2;
+  }
+  function body(t){
+    doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(41,37,36);
+    var lines=doc.splitTextToSize(t,W-2*m); need(lines.length*3.4+1); doc.text(lines,m,y); y+=lines.length*3.4+1;
+  }
+
+  var M=LAST.M, p=LAST.p, N=LAST.N, src=LAST.fullHist.length?LAST.fullHist:LAST.frames;
   hdr();
   doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(28,25,23);
-  doc.text("MEMÓRIA INTEGRAL — gradiente isolante correto",m,y); y+=7;
+  doc.text("MEMÓRIA DE CÁLCULO INTEGRAL — T nodal + diagonal J",m,y); y+=6;
   mono("Autor: Tarcísio Dias da Rocha | Orientador: Prof. Dr. Marcos A. T. Lira");
-  mono("k_face = 2/(1/k1+1/k2) | materiais.json + sliders");
-  sub("1. Propriedades");
-  mono("hematita k="+MAT.hematita.k+" rho="+MAT.hematita.rho+" Cp="+MAT.hematita.cp);
+  mono("Repo: github.com/EngRocha1/saet-forma-canonica | "+new Date().toISOString());
+  mono("Malha "+M.nr+"x"+M.nz+"="+N+" | R="+M.R+" L="+M.L+" | dias="+LAST.days+" dt="+LAST.dt+"s");
+  mono("Tcarga="+p.Tcharge+" hTop="+p.hTop+" hExt="+p.hExt+" keff="+p.keff+" tlim="+p.tlim);
+
+  sub("1. Propriedades e k de face (harmônica)");
+  mono("hematita: k="+MAT.hematita.k+" rho="+MAT.hematita.rho+" Cp="+MAT.hematita.cp);
   mono("IFB k="+MAT.ifb.k+" | perlita k="+MAT.perlita.k+" | silicato k="+MAT.silicato.k+" | verm k="+MAT.vermiculita.k);
-  mono("k_face(hem,IFB)="+kFace(MAT.hematita.k,MAT.ifb.k).toFixed(5));
-  sub("2. CCs");
-  mono("Injeção Robin no topo do NÚCLEO | perdas Robin no contorno isolante | Neumann r=0");
-  sub("3. Newton");
-  var src=LAST.fullHist.length?LAST.fullHist:LAST.frames;
-  var stride=src.length>50?Math.ceil(src.length/40):1;
-  src.forEach(function(f,idx){
-    if(idx%stride!==0&&idx!==src.length-1) return;
-    mono("--- t="+f.tH.toFixed(4)+" h ---");
-    (f.hist||[]).forEach(function(h){ mono("  iter "+h.iter+" ||R||="+Number(h.residual).toExponential(5)+(h.residual<1e-4?" [OK]":"")); });
-  });
-  sub("4. Interface");
-  var Tf=LAST.frames[LAST.frames.length-1].T;
-  var Tc=0,nc=0,Ti=0,ni=0,i;
-  for(i=0;i<=M.iCoreEnd;i++){ Tc+=Tf[idx(i,M.jCore0,M.nr)]; nc++; if(M.jCore0>0){Ti+=Tf[idx(i,M.jCore0-1,M.nr)]; ni++;} }
-  mono("T_core_top="+ (Tc/nc).toFixed(2)+" T_iso_above="+(Ti/Math.max(ni,1)).toFixed(2)+" dT="+(Tc/nc-Ti/Math.max(ni,1)).toFixed(2));
-  try{ doc.addPage(); hdr(); doc.addImage($("c-field").toDataURL("image/png"),"PNG",m,20,W-2*m,95); }catch(e){}
-  doc.save("Memoria_SAET_kHarmonico_XV_CBPE.pdf");
+  mono("k_face(hem,IFB)=2/(1/k1+1/k2)="+kFace(MAT.hematita.k,MAT.ifb.k).toExponential(6));
+  mono("alpha_hem="+LAST.alpha.toExponential(6)+" m2/s | t_diff modo1 ~ "+fmt(LAST.tDiffDays,2)+" d");
+
+  sub("2. Formulação residual e diagonal da Jacobiana (por nó g)");
+  body("Para cada volume de controle g, o residual R_g e a diagonal J_gg do Newton–Jacobi são:");
+  mono("R_g = rho*Cp*V*(T_g - T_g^n)/dt + sum faces (fluxo) + Robin");
+  mono("J_gg = rho*Cp*V/dt + sum |coef_face| + h*Area  (contribuições Robin)");
+  mono("Atualização: T_g <- T_g - R_g / J_gg");
+  mono("Faces interiores: coef = k_face * (área geométrica) / distância entre centros");
+  mono("k_face = média harmônica; no núcleo axial multiplica-se keff.");
+
+  sub("3. Newton — residual e diagonal J por iteração (passos amostrados)");
+  var stride=src.length>40?Math.ceil(src.length/35):1;
+  var si;
+  for(si=0;si<src.length;si++){
+    if(si%stride!==0 && si!==src.length-1) continue;
+    var step=src[si];
+    mono("======== t = "+Number(step.tH).toFixed(4)+" h ========");
+    (step.hist||[]).forEach(function(h){
+      mono("  iter "+h.iter+": ||R|| = "+Number(h.residual).toExponential(6)+(h.residual<1e-4?"  [OK]":""));
+      if(h.diag && h.diag.length){
+        // first 8 and last note
+        var nShow=Math.min(12, h.diag.length);
+        var line="    diag J[0.."+ (nShow-1) +"]: ";
+        var di;
+        for(di=0;di<nShow;di++) line+=Number(h.diag[di]).toExponential(3)+(di<nShow-1?" | ":"");
+        mono(line);
+        if(h.diag.length>nShow) mono("    ... ("+h.diag.length+" elementos na diagonal)");
+      }
+    });
+    if(step.hist && step.hist.length>=2){
+      var k;
+      for(k=0;k<step.hist.length-1;k++){
+        var a=step.hist[k].residual, b=step.hist[k+1].residual;
+        if(a>1e-30) mono("  rho_"+ (k+1) +" = ||R||_{k+1}/||R||_k^2 = "+(b/(a*a)).toExponential(4));
+      }
+    }
+  }
+
+  sub("4. Temperaturas nodais T(i,j) em cada tempo amostrado");
+  body("Coordenadas: g = j*nr + i | i=0..nr-1 (r) | j=0..nz-1 (z). Núcleo: j in [jCore0,jCoreEnd], i<=iCoreEnd.");
+  mono("jCore0="+M.jCore0+" jCoreEnd="+M.jCoreEnd+" iCoreEnd="+M.iCoreEnd);
+  for(si=0;si<src.length;si++){
+    if(si%stride!==0 && si!==src.length-1) continue;
+    var step2=src[si];
+    var Tv=step2.T || (LAST.frames.filter(function(fr){return Math.abs(fr.tH-step2.tH)<1e-9;})[0]||{}).T;
+    if(!Tv) continue;
+    mono("----- T [°C] em t = "+Number(step2.tH).toFixed(4)+" h -----");
+    var j,i,line;
+    for(j=0;j<M.nz;j++){
+      line="z"+j+": ";
+      for(i=0;i<M.nr;i++){
+        var gg=idx(i,j,M.nr);
+        var tag=(j>=M.jCore0&&j<=M.jCoreEnd&&i<=M.iCoreEnd)?"N":"I";
+        line+=fmt(Tv[gg],1)+tag+(i<M.nr-1?" ":"");
+      }
+      mono(line);
+    }
+  }
+
+  sub("5. Diagonal J final (último passo) completa");
+  var last=src[src.length-1];
+  var dfin=last.diag;
+  if(!dfin && last.hist && last.hist.length) dfin=last.hist[last.hist.length-1].diag;
+  if(dfin){
+    for(var g=0;g<dfin.length;g++){
+      var i=g%M.nr, j=(g/M.nr)|0;
+      mono("J["+g+"] (i="+i+",j="+j+", mat="+M.mat[g]+") = "+Number(dfin[g]).toExponential(6));
+    }
+  } else mono("(diagonal não armazenada neste passo — rode novamente a simulação)");
+
+  sub("6. Resíduos nodais |R_i| no estado final");
+  var nR=last.nodeResiduals || (LAST.frames[LAST.frames.length-1]||{}).nodeResiduals;
+  if(nR){
+    for(g=0;g<nR.length;g++){
+      i=g%M.nr; j=(g/M.nr)|0;
+      mono("|R|("+i+","+j+") mat="+M.mat[g]+" = "+Number(nR[g]).toExponential(5));
+    }
+  }
+
+  sub("7. Energia e termoclina");
+  mono("E_util max = "+((LAST.EmaxUseful||0)/1e9).toFixed(4)+" GJ");
+  if(LAST.tFrontBreak>0) mono("Fim termoclina em t = "+LAST.tFrontBreak.toFixed(2)+" h");
+  else mono("Termoclina intacta no horizonte");
+  var Tf=(LAST.frames[LAST.frames.length-1]||{}).T;
+  if(Tf){
+    var tmn=1e9,tmx=-1e9,tc=-1e9;
+    Tf.forEach(function(t,gg){
+      tmn=Math.min(tmn,t); tmx=Math.max(tmx,t);
+      var ii=gg%M.nr, jj=(gg/M.nr)|0;
+      if(jj>=M.jCore0&&jj<=M.jCoreEnd&&ii<=M.iCoreEnd) tc=Math.max(tc,t);
+    });
+    mono("T global ["+tmn.toFixed(2)+", "+tmx.toFixed(2)+"] | T_nucleo max="+tc.toFixed(2));
+  }
+
+  sub("8. Referências");
+  mono("ROCHA; LIRA (2026) XV CBPE §2.8-2.10. BATHE (1996). CENGEL; GHAJAR (2020). INCROPERA et al. (2014).");
+
+  try{
+    doc.addPage(); hdr();
+    doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(28,25,23);
+    doc.text("Figuras da simulação",m,y); y+=6;
+    if($("c-field")){ doc.addImage($("c-field").toDataURL("image/png"),"PNG",m,y,W-2*m,88); y+=92; }
+    if(y>160){ doc.addPage(); hdr(); }
+    if($("c-charge")){ doc.addImage($("c-charge").toDataURL("image/png"),"PNG",m,y,W-2*m,70); y+=76; }
+    if($("c-conv")){ need(70); doc.addImage($("c-conv").toDataURL("image/png"),"PNG",m,y,W-2*m,65); }
+  }catch(e){ mono("Figuras: "+e.message); }
+
+  doc.save("Memoria_Integral_SAET_T_Jacobiana_XV_CBPE.pdf");
 }
 
 ["days","dt","tlim","tc","ht","hext","keff","R","L","e1","e2","e3","eb1","eb2","eb3","kh","rh","cph","ki","kp","ks","kv"].forEach(function(id){
@@ -1107,6 +1225,22 @@ function makePDF(){
 });
 ["nr","nz"].forEach(function(id){ $(id).addEventListener("change", run); });
 $("prog").addEventListener("input", function(){ if(!LAST) return; showFrame(Math.round((+$("prog").value/100)*(LAST.frames.length-1))); });
+
+$("btn-arrows").addEventListener("click", function(){
+  showArrows=!showArrows;
+  $("btn-arrows").style.opacity=showArrows?"1":"0.55";
+  $("btn-arrows").textContent=showArrows?"Setas q ✓":"Setas q";
+  if(LAST) showFrame(frameIdx);
+});
+$("btn-labels").addEventListener("click", function(){
+  showLabels=!showLabels;
+  $("btn-labels").style.opacity=showLabels?"1":"0.55";
+  $("btn-labels").textContent=showLabels?"Números T ✓":"Números T";
+  if(LAST) showFrame(frameIdx);
+});
+$("btn-arrows").style.opacity="0.55";
+$("btn-labels").style.opacity="1";
+
 $("btn-play").addEventListener("click", togglePlay);
 $("btn-reset").addEventListener("click", function(){ if(playing) togglePlay(); showFrame(0); });
 $("btn-pdf").addEventListener("click", makePDF);
