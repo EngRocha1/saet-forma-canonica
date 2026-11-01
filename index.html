@@ -71,7 +71,9 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 </div>
 <div class="layout">
 <aside>
-  <p class="note" style="margin-top:0"><b style="color:var(--ink)">Geometria (artigo)</b><br/>R = 6 m · L = 12 m · ¼ seção</p>
+  <p class="note" style="margin-top:0"><b style="color:var(--ink)">Geometria · ¼ cilindro (recorte 270°)</b><br/>O cálculo é feito no setor r–z do quarto de revolução.</p>
+  <label>Raio R (m) <span id="v-R"></span><input id="R" type="range" min="1" max="15" step="0.5" value="6"/></label>
+  <label>Altura L (m) <span id="v-L"></span><input id="L" type="range" min="2" max="24" step="0.5" value="12"/></label>
   <div class="row2">
     <label>n<sub>r</sub><input id="nr" type="number" min="3" max="10" value="5"/></label>
     <label>n<sub>z</sub><input id="nz" type="number" min="4" max="16" value="10"/></label>
@@ -105,8 +107,8 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
     <cite>ROCHA; LIRA, XV CBPE 2026, §2.9–2.10. Cf. ÇENGEL; GHAJAR, 2020; INCROPERA et al., 2014.</cite>
   </div>
   <figure>
-    <figcaption>Campo T(r, z) — ¼ cilindro
-      <span class="sub">Esquerda r=0 (Neumann). Direita r=R (Robin lateral). Topo z=0 (Robin carga). Base z=L (Robin solo).</span>
+    <figcaption>Campo T(r, z) no ¼ cilindro · recorte 270°
+      <span class="sub">Malha r–z do setor de 90° (o restante 270° é simetria de revolução). Eixo r=0 à esquerda; parede r=R à direita.</span>
       <span class="ref">Cf. Fig. 3b do artigo — campo escalar 2D (ROCHA; LIRA, 2026).</span>
     </figcaption>
     <canvas id="c-field" width="720" height="520"></canvas>
@@ -152,7 +154,7 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 </div>
 </main>
 <script>
-const Rgeo=6,Lgeo=12,rho=3120,cp=650,Tamb=25,Tinit=25;
+let Rgeo=6,Lgeo=12; const rho=3120,cp=650,Tamb=25,Tinit=25;
 let LAST=null,frames=[],playing=false,playTimer=null,frameIdx=0;
 const $=id=>document.getElementById(id);
 function fmt(x,d=2){if(!isFinite(x))return"—";const a=Math.abs(x);if(a!==0&&(a>=1e4||a<1e-3))return x.toExponential(2);return x.toFixed(d);}
@@ -270,6 +272,7 @@ function newtonStep(Told,p,nr,nz,dr,dz,dt){
 }
 
 function simulate(){
+  Rgeo=+$("R").value; Lgeo=+$("L").value;
   const nr=Math.max(3,Math.min(10,+$("nr").value|0));
   const nz=Math.max(4,Math.min(16,+$("nz").value|0));
   const hours=+$("hours").value, dt=+$("dt").value;
@@ -299,25 +302,50 @@ function heatColor(t,tmin,tmax){
 
 function drawField(){
   const c=$("c-field"),ctx=c.getContext("2d");
-  const W=c.width,H=c.height,padL=58,padR=40,padT=34,padB=50;
+  const W=c.width,H=c.height;
   ctx.fillStyle="#0c0b0a";ctx.fillRect(0,0,W,H);
   if(!LAST) return;
   const {nr,nz,dr,dz,p}=LAST;
   const f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
   let tmin=1e9,tmax=-1e9;f.T.forEach(t=>{tmin=Math.min(tmin,t);tmax=Math.max(tmax,t);});
   if(tmax-tmin<1) tmax=tmin+1;
-  const plotW=W-padL-padR,plotH=H-padT-padB,cellW=plotW/nr,cellH=plotH/nz;
+
+  /* Layout: left = (r,z) mesh domain; right = 3/4-cut cylinder schematic */
+  const split = Math.floor(W*0.62);
+  const padL=52, padR=12, padT=36, padB=48;
+  const plotW=split-padL-padR, plotH=H-padT-padB;
+  const cellW=plotW/nr, cellH=plotH/nz;
+
+  // title
+  ctx.fillStyle="#fafaf9"; ctx.font="600 13px IBM Plex Sans";
+  ctx.fillText("Domínio de cálculo · plano (r, z) do ¼ cilindro", padL, 18);
+
+  // mesh cells
   for(let j=0;j<nz;j++) for(let i=0;i<nr;i++){
     const g=idx(i,j,nr); const [r,gc,b]=heatColor(f.T[g],tmin,tmax);
-    const x=padL+i*cellW,y=padT+j*cellH;
+    const x=padL+i*cellW, y=padT+j*cellH;
     ctx.fillStyle=`rgb(${r|0},${gc|0},${b|0})`;
     ctx.fillRect(x,y,cellW+0.6,cellH+0.6);
-    ctx.strokeStyle="rgba(255,255,255,0.15)";ctx.strokeRect(x,y,cellW,cellH);
-    ctx.fillStyle="#fafaf9";ctx.font="600 12px IBM Plex Sans";
-    ctx.fillText(fmt(f.T[g],0),x+4,y+cellH/2+4);
+    ctx.strokeStyle="rgba(255,255,255,0.18)"; ctx.lineWidth=1; ctx.strokeRect(x,y,cellW,cellH);
+    if(nr*nz<=80){
+      ctx.fillStyle="#fafaf9"; ctx.font="600 11px IBM Plex Sans";
+      ctx.fillText(fmt(f.T[g],0), x+3, y+cellH/2+4);
+    }
   }
-  // flux arrows -k∇T
-  ctx.lineWidth=1.5;
+  // domain border emphasis
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2;
+  ctx.strokeRect(padL, padT, plotW, plotH);
+
+  // axes labels on mesh
+  ctx.fillStyle="#e7e5e4"; ctx.font="600 12px IBM Plex Sans";
+  ctx.fillText("r = 0", padL, padT+plotH+16);
+  ctx.fillText("r = R = "+fmt(Rgeo,1)+" m", padL+plotW-90, padT+plotH+16);
+  ctx.fillText("z = 0 (topo)", padL, padT-6);
+  ctx.save(); ctx.translate(14, padT+plotH/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText("z → base  L = "+fmt(Lgeo,1)+" m", 0, 0); ctx.restore();
+
+  // flux arrows (subset)
+  ctx.lineWidth=1.4;
   for(let j=0;j<nz;j++) for(let i=0;i<nr;i++){
     const g=idx(i,j,nr);
     let dTr=0,dTz=0;
@@ -327,38 +355,110 @@ function drawField(){
     if(j>0&&j<nz-1) dTz=(f.T[idx(i,j+1,nr)]-f.T[idx(i,j-1,nr)])/(2*dz);
     else if(j===0&&nz>1) dTz=(f.T[idx(i,1,nr)]-f.T[g])/dz;
     else if(j===nz-1&&nz>1) dTz=(f.T[g]-f.T[idx(i,nz-2,nr)])/dz;
-    const fx=-dTr,fz=-dTz,mag=Math.hypot(fx,fz)||1e-12;
+    const fx=-dTr, fz=-dTz, mag=Math.hypot(fx,fz)||1e-12;
     if(mag<(tmax-tmin)/(Math.max(Rgeo,Lgeo)*50)) continue;
-    const len=Math.min(cellW,cellH)*0.28,ux=(fx/mag)*len,uy=(fz/mag)*len;
-    const cx=padL+(i+0.5)*cellW,cy=padT+(j+0.5)*cellH;
-    ctx.strokeStyle="rgba(255,255,255,0.85)";ctx.fillStyle="rgba(255,255,255,0.9)";
-    ctx.beginPath();ctx.moveTo(cx-ux*0.5,cy-uy*0.5);ctx.lineTo(cx+ux*0.5,cy+uy*0.5);ctx.stroke();
+    const len=Math.min(cellW,cellH)*0.26, ux=(fx/mag)*len, uy=(fz/mag)*len;
+    const cx=padL+(i+0.5)*cellW, cy=padT+(j+0.5)*cellH;
+    ctx.strokeStyle="rgba(255,255,255,0.8)"; ctx.fillStyle="rgba(255,255,255,0.85)";
+    ctx.beginPath(); ctx.moveTo(cx-ux*0.5,cy-uy*0.5); ctx.lineTo(cx+ux*0.5,cy+uy*0.5); ctx.stroke();
     const ang=Math.atan2(uy,ux);
     ctx.beginPath();
     ctx.moveTo(cx+ux*0.5,cy+uy*0.5);
-    ctx.lineTo(cx+ux*0.5-7*Math.cos(ang-0.4),cy+uy*0.5-7*Math.sin(ang-0.4));
-    ctx.lineTo(cx+ux*0.5-7*Math.cos(ang+0.4),cy+uy*0.5-7*Math.sin(ang+0.4));
-    ctx.closePath();ctx.fill();
+    ctx.lineTo(cx+ux*0.5-6*Math.cos(ang-0.4),cy+uy*0.5-6*Math.sin(ang-0.4));
+    ctx.lineTo(cx+ux*0.5-6*Math.cos(ang+0.4),cy+uy*0.5-6*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fill();
   }
-  ctx.fillStyle="#fafaf9";ctx.font="600 13px IBM Plex Sans";
-  ctx.fillText("r = 0 · Neumann",padL,20);
-  ctx.fillText("r = R · Robin",W-padR-110,20);
-  ctx.fillText("z = 0 topo · Robin carga",padL,H-30);
-  ctx.fillText("z = L base · Robin solo",padL,H-12);
-  const cbX=W-24,cbY=padT,cbH=plotH,cbW=12;
+
+  // colorbar on mesh side
+  const cbX=split-8, cbY=padT, cbH=plotH, cbW=10;
   for(let y=0;y<cbH;y++){
     const t=tmax-(y/cbH)*(tmax-tmin);
     const [r,g,b]=heatColor(t,tmin,tmax);
-    ctx.fillStyle=`rgb(${r|0},${g|0},${b|0})`;ctx.fillRect(cbX-cbW,cbY+y,cbW,1);
+    ctx.fillStyle=`rgb(${r|0},${g|0},${b|0})`; ctx.fillRect(cbX-cbW,cbY+y,cbW,1);
   }
-  ctx.fillStyle="#fafaf9";ctx.font="12px IBM Plex Sans";
-  ctx.fillText(fmt(tmax,0)+"°C",cbX-cbW-38,cbY+12);
-  ctx.fillText(fmt(tmin,0)+"°C",cbX-cbW-38,cbY+cbH);
+  ctx.fillStyle="#fafaf9"; ctx.font="11px IBM Plex Sans";
+  ctx.fillText(fmt(tmax,0)+"°C", cbX-cbW-36, cbY+11);
+  ctx.fillText(fmt(tmin,0)+"°C", cbX-cbW-36, cbY+cbH);
+
+  /* ── Right panel: top-view 270° cut + 90° computational sector ── */
+  const ox = split + (W-split)/2;
+  const oy = H*0.42;
+  const rad = Math.min((W-split)*0.38, H*0.28);
+
+  ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
+  ctx.fillText("Vista do recorte (topo)", split+16, 22);
+  ctx.font="11px IBM Plex Sans"; ctx.fillStyle="#a8a29e";
+  ctx.fillText("270° removidos · 90° calculados", split+16, 38);
+
+  // full circle ghost
+  ctx.beginPath(); ctx.arc(ox,oy,rad,0,Math.PI*2);
+  ctx.strokeStyle="rgba(120,113,108,0.45)"; ctx.lineWidth=1.5; ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
+
+  // 270° removed sector (from +x axis, going CCW 270°) — show as dim
+  // Computational sector: θ from -45° to +45° relative to +x, or standard: 0 to π/2
+  // Draw 90° sector as active (from angle -π/2 to 0 in canvas = left-top quarter visually)
+  // Canvas angles: 0 = +x right, CW positive in some APIs but CCW in standard canvas.
+  // Show sector from θ=0 (east) to θ=-π/2 (north) i.e. first quadrant: θ from -π/2 to 0
+
+  const a0 = -Math.PI/2, a1 = 0; // 90° sector NE
+  // removed 270° fill
+  ctx.beginPath(); ctx.moveTo(ox,oy);
+  ctx.arc(ox,oy,rad, a1, a0+Math.PI*2, false); // long way
+  ctx.closePath();
+  ctx.fillStyle="rgba(41,37,36,0.85)"; ctx.fill();
+  ctx.fillStyle="#78716c"; ctx.font="600 11px IBM Plex Sans";
+  ctx.fillText("270° fora do", ox-28, oy+8);
+  ctx.fillText("domínio 2D", ox-22, oy+22);
+
+  // active 90° sector with radial+arc grid
+  ctx.beginPath(); ctx.moveTo(ox,oy);
+  ctx.arc(ox,oy,rad, a0, a1, false);
+  ctx.closePath();
+  ctx.fillStyle="rgba(234,88,12,0.2)"; ctx.fill();
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2; ctx.stroke();
+
+  // radial grid lines in sector
+  for(let i=0;i<=nr;i++){
+    const ri = (i/nr)*rad;
+    ctx.beginPath(); ctx.arc(ox,oy,ri,a0,a1,false);
+    ctx.strokeStyle="rgba(251,146,60,0.55)"; ctx.lineWidth=1; ctx.stroke();
+  }
+  for(let k=0;k<=4;k++){
+    const ang = a0 + (a1-a0)*k/4;
+    ctx.beginPath(); ctx.moveTo(ox,oy);
+    ctx.lineTo(ox+rad*Math.cos(ang), oy+rad*Math.sin(ang));
+    ctx.strokeStyle="rgba(251,146,60,0.7)"; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  // axis labels on schematic
+  ctx.fillStyle="#22d3ee"; ctx.font="600 11px IBM Plex Sans";
+  ctx.fillText("r = 0", ox-14, oy-rad-8);
+  ctx.strokeStyle="#22d3ee"; ctx.lineWidth=1.5; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(ox,oy-4); ctx.lineTo(ox,oy-rad); ctx.stroke(); ctx.setLineDash([]);
+
+  ctx.fillStyle="#fb923c";
+  ctx.fillText("r = R", ox+rad*0.55, oy-rad*0.55-6);
+
+  // link arrow from sector to mesh
+  ctx.strokeStyle="#a3e635"; ctx.fillStyle="#a3e635"; ctx.lineWidth=1.5;
+  const lx0 = ox + rad*Math.cos(-Math.PI/4)*0.3;
+  const ly0 = oy + rad*Math.sin(-Math.PI/4)*0.3;
+  ctx.beginPath(); ctx.moveTo(split+8, padT+plotH*0.5); ctx.lineTo(ox-rad*0.2, oy);
+  ctx.stroke();
+  ctx.font="600 11px IBM Plex Sans";
+  ctx.fillText("malha r×z", split+10, padT+plotH*0.5-8);
+
+  // bottom legend for schematic
+  ctx.fillStyle="#d6d3d1"; ctx.font="11px IBM Plex Sans";
+  ctx.fillText("Setor laranja = volume de controle 2D", split+16, H-28);
+  ctx.fillText("Círculo tracejado = tanque completo", split+16, H-12);
+
   const physOK = tmin>=Tamb-0.5 && tmax<=p.Tcharge+0.5;
   $("leg-field").innerHTML=`<span>t = <b style="color:var(--ink)">${fmt(f.tH,2)} h</b></span>
     <span>T ∈ [${fmt(tmin,1)}, ${fmt(tmax,1)}] °C</span>
-    <span>${nr}×${nz} · Δr=${fmt(dr,2)} m · Δz=${fmt(dz,2)} m</span>
-    <span style="color:${physOK?'var(--ok)':'#dc2626'};font-weight:700">${physOK?'✓ princípio do máximo':'✗ fora dos limites físicos'}</span>`;
+    <span>R=${fmt(Rgeo,1)} m · L=${fmt(Lgeo,1)} m · ${nr}×${nz}</span>
+    <span>Δr=${fmt(dr,2)} m · Δz=${fmt(dz,2)} m</span>
+    <span style="color:${physOK?'var(--ok)':'#dc2626'};font-weight:700">${physOK?'✓ princípio do máximo':'✗ fora dos limites'}</span>`;
   $("s-tmax").textContent=fmt(tmax,1)+" °C";
   $("s-tmin").textContent=fmt(tmin,1)+" °C";
   $("bound-alert").style.background=physOK?"#dcfce7":"#fee2e2";
@@ -366,7 +466,7 @@ function drawField(){
   $("bound-alert").style.color=physOK?"#14532d":"#7f1d1d";
   $("bound-alert").textContent=physOK
     ?`Princípio do máximo OK: T ∈ [${fmt(tmin,1)}, ${fmt(tmax,1)}] °C ⊆ [${Tamb}, ${p.Tcharge}] °C.`
-    :`ALERTA: T fora de [T_amb, T_carga]. Revisar motor.`;
+    :`ALERTA: T fora de [T_amb, T_carga].`;
 }
 
 function drawConv(){
@@ -470,6 +570,8 @@ function run(){
   $("v-hl").textContent=$("hl").value;
   $("v-hb").textContent=$("hb").value;
   $("v-k").textContent=$("k0").value;
+  $("v-R").textContent=$("R").value+" m";
+  $("v-L").textContent=$("L").value+" m";
   $("term-log").textContent="Recalculando com formulação corrigida…";
   setTimeout(()=>{
     const res=simulate();
@@ -559,7 +661,7 @@ function makePDF(){
   doc.save("Memoria_Calculo_SAET_2D_CORRIGIDO_XV_CBPE.pdf");
 }
 
-["hours","dt","tc","ht","hl","hb","k0"].forEach(id=>{
+["hours","dt","tc","ht","hl","hb","k0","R","L"].forEach(id=>{
   $(id).addEventListener("input",()=>{
     $("v-hours").textContent=$("hours").value+" h";
     $("v-dt").textContent=$("dt").value+" s";
@@ -568,6 +670,8 @@ function makePDF(){
     $("v-hl").textContent=$("hl").value;
     $("v-hb").textContent=$("hb").value;
     $("v-k").textContent=$("k0").value;
+    if($("v-R")) $("v-R").textContent=$("R").value+" m";
+    if($("v-L")) $("v-L").textContent=$("L").value+" m";
   });
   $(id).addEventListener("change",run);
 });
