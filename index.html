@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>SAET 2D · Malha contínua · XV CBPE / PPGEE-UFPI</title>
+<title>SAET 2D · Gradiente isolante correto · XV CBPE / PPGEE-UFPI</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,650;8..60,700&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -13,14 +13,14 @@ body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 "IBM Plex S
 main{max-width:1540px;margin:0 auto;padding:16px 14px 48px}
 .brand{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
 .kicker{letter-spacing:.12em;text-transform:uppercase;color:var(--oxide);font-size:11px;font-weight:700;margin:0 0 4px}
-h1{font-family:"Source Serif 4",Georgia,serif;font-weight:700;font-size:clamp(1.15rem,2.3vw,1.6rem);margin:0 0 6px;line-height:1.2}
-.lede{color:var(--muted);max-width:78ch;font-size:14px;margin:0}
+h1{font-family:"Source Serif 4",Georgia,serif;font-weight:700;font-size:clamp(1.15rem,2.3vw,1.55rem);margin:0 0 6px;line-height:1.2}
+.lede{color:var(--muted);max-width:80ch;font-size:14px;margin:0}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .btn{min-height:44px;padding:10px 14px;border:1px solid var(--oxide);background:linear-gradient(180deg,#ea580c,#9a3412);color:#fff7ed;font:600 13px "IBM Plex Sans",sans-serif;cursor:pointer;border-radius:3px;text-decoration:none;display:inline-flex;align-items:center}
 .btn:hover{filter:brightness(1.08)}.btn.ghost{background:var(--panel);color:var(--oxide)}
 .btn.play{background:linear-gradient(180deg,#16a34a,#15803d);border-color:#166534}
 .btn.iso{background:linear-gradient(180deg,#0e7490,#155e75);border-color:#0e7490}
-.layout{display:grid;grid-template-columns:248px minmax(0,1fr) 280px;gap:14px;align-items:start}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr) 280px;gap:14px;align-items:start}
 aside,figure,.term-wrap,.quote{background:var(--panel);border:1px solid var(--rule);border-radius:3px}
 aside{padding:14px;position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}
 .term-wrap{position:sticky;top:8px;display:flex;flex-direction:column;max-height:calc(100vh - 16px);overflow:auto}
@@ -30,12 +30,13 @@ figcaption .sub{display:block;font-family:"IBM Plex Sans",sans-serif;font-size:1
 figcaption .ref{display:block;font-size:11.5px;font-weight:500;color:var(--oxide);margin-bottom:8px}
 label{display:block;font-size:12px;color:var(--muted);margin-top:8px;font-weight:500}
 label span{float:right;color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600}
-input[type=range]{width:100%;accent-color:var(--oxide);height:26px;margin-top:3px}
-input[type=number]{width:100%;min-height:36px;padding:6px 8px;border:1px solid var(--rule);background:#fff;font:13px "IBM Plex Sans",sans-serif;border-radius:3px}
+input[type=range]{width:100%;accent-color:var(--oxide);height:24px;margin-top:2px}
+input[type=number]{width:100%;min-height:34px;padding:5px 8px;border:1px solid var(--rule);background:#fff;font:13px "IBM Plex Sans",sans-serif;border-radius:3px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
 dl{display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;font-size:12px;border-top:1px solid var(--rule);margin-top:10px;padding-top:8px}
 dt{color:var(--muted)}dd{margin:0;font-weight:600}
-.note{font-size:12.5px;color:var(--muted);margin:8px 0;line-height:1.4}
+.note{font-size:12px;color:var(--muted);margin:8px 0;line-height:1.4}
 .alert{padding:9px 11px;font-size:12.5px;border-radius:3px;margin:8px 0;border:1px solid #16a34a;background:#dcfce7;color:#14532d}
 .quote{padding:12px 14px;margin:0 0 12px;border-left:4px solid var(--cyan)}
 .quote p{margin:0 0 6px;font-family:"Source Serif 4",Georgia,serif;font-size:13.5px;font-style:italic}
@@ -50,9 +51,11 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 .transport{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
 .meta{font-size:12px;color:var(--muted);border-top:1px solid var(--rule);margin-top:10px;padding-top:8px}
 .meta b{color:var(--ink)}
+.mat-block{border:1px solid var(--rule);padding:8px;margin-top:8px;border-radius:3px;background:#fff}
+.mat-block h4{margin:0 0 4px;font-size:12px;color:var(--oxide)}
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(12,10,9,.55);z-index:50;align-items:center;justify-content:center;padding:16px}
 .modal-bg.on{display:flex}
-.modal{background:var(--panel);border:1px solid var(--rule);border-radius:4px;max-width:900px;width:100%;max-height:92vh;overflow:auto;padding:18px 20px}
+.modal{background:var(--panel);border:1px solid var(--rule);border-radius:4px;max-width:920px;width:100%;max-height:92vh;overflow:auto;padding:18px 20px}
 .modal h2{font-family:"Source Serif 4",Georgia,serif;margin:0 0 8px;font-size:1.2rem}
 .modal .close{float:right;border:0;background:transparent;font-size:22px;cursor:pointer;color:var(--muted)}
 .iso-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
@@ -67,37 +70,59 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 <main>
 <div class="brand">
   <div>
-    <p class="kicker">XV CBPE · PPGEE-UFPI · malha contínua · carga no topo do núcleo</p>
-    <h1>SAET 2D · EDP integrada núcleo + isolação</h1>
-    <p class="lede">Malha única com (ρ, Cp, k) por nó. Injeção Robin no <b>topo do leito</b>; isolante só perde calor no contorno externo. Neumann em r = 0.</p>
+    <p class="kicker">XV CBPE · PPGEE-UFPI · k harmônico · materiais.json</p>
+    <h1>SAET 2D · Núcleo quente · isolante com gradiente brusco</h1>
+    <p class="lede">Calor acumula no leito de hematita. Nas interfaces, k de face = média harmônica. Isolantes (k ≪ k_núcleo) bloqueiam o calor — queda acentuada de T ao entrar no envelope.</p>
   </div>
   <div class="actions">
-    <button class="btn iso" id="btn-iso" type="button">Isolação multicamada</button>
+    <button class="btn iso" id="btn-iso" type="button">Isolação + materiais</button>
     <button class="btn" id="btn-pdf" type="button">Memória · PDF</button>
     <a class="btn ghost" href="https://github.com/EngRocha1/saet-forma-canonica" target="_blank" rel="noopener">GitHub</a>
   </div>
 </div>
 <div class="layout">
 <aside>
-  <p class="note" style="margin-top:0"><b style="color:var(--ink)">Núcleo hematita</b></p>
+  <p class="note" style="margin-top:0"><b style="color:var(--ink)">Geometria núcleo</b></p>
   <label>Raio R (m) <span id="v-R">6 m</span><input id="R" type="range" min="2" max="10" step="0.5" value="6"/></label>
   <label>Altura L (m) <span id="v-L">12 m</span><input id="L" type="range" min="4" max="20" step="0.5" value="12"/></label>
   <div class="row2">
-    <label>n<sub>r</sub> núcleo<input id="nr" type="number" min="3" max="6" value="4"/></label>
-    <label>n<sub>z</sub> núcleo<input id="nz" type="number" min="4" max="8" value="5"/></label>
+    <label>n<sub>r</sub><input id="nr" type="number" min="3" max="6" value="4"/></label>
+    <label>n<sub>z</sub><input id="nz" type="number" min="4" max="8" value="5"/></label>
   </div>
   <label>Tempo (h) <span id="v-hours">24 h</span><input id="hours" type="range" min="1" max="72" step="1" value="24"/></label>
   <label>Δt (s) <span id="v-dt">1800 s</span><input id="dt" type="range" min="900" max="3600" step="100" value="1800"/></label>
   <label>T carga ≤850 °C <span id="v-tc">850 °C</span><input id="tc" type="range" min="200" max="850" step="10" value="850"/></label>
-  <label>h injeção topo núcleo <span id="v-ht">100</span><input id="ht" type="range" min="20" max="300" step="5" value="100"/></label>
+  <label>h injeção (topo núcleo) <span id="v-ht">100</span><input id="ht" type="range" min="20" max="300" step="5" value="100"/></label>
   <label>h_ext perda <span id="v-hext">10</span><input id="hext" type="range" min="2" max="25" step="1" value="10"/></label>
-  <p class="note"><b style="color:var(--ink)">Isolação (cm)</b> · 1 nó/camada</p>
-  <label>IFB topo/lat <span id="v-e1">15</span><input id="e1" type="range" min="5" max="25" step="1" value="15"/></label>
-  <label>Perlita topo/lat <span id="v-e2">50</span><input id="e2" type="range" min="20" max="100" step="5" value="50"/></label>
-  <label>IFB face fria <span id="v-e3">15</span><input id="e3" type="range" min="5" max="25" step="1" value="15"/></label>
-  <label>IFB base <span id="v-eb1">15</span><input id="eb1" type="range" min="5" max="25" step="1" value="15"/></label>
+  <p class="note"><b style="color:var(--ink)">Espessuras isolação (cm)</b></p>
+  <label>IFB topo/lat <span id="v-e1">15</span><input id="e1" type="range" min="5" max="30" step="1" value="15"/></label>
+  <label>Perlita <span id="v-e2">50</span><input id="e2" type="range" min="20" max="100" step="5" value="50"/></label>
+  <label>IFB fria <span id="v-e3">15</span><input id="e3" type="range" min="5" max="30" step="1" value="15"/></label>
+  <label>IFB base <span id="v-eb1">15</span><input id="eb1" type="range" min="5" max="30" step="1" value="15"/></label>
   <label>Silicato base <span id="v-eb2">50</span><input id="eb2" type="range" min="20" max="100" step="5" value="50"/></label>
   <label>Vermiculita base <span id="v-eb3">50</span><input id="eb3" type="range" min="20" max="100" step="5" value="50"/></label>
+
+  <p class="note"><b style="color:var(--ink)">Propriedades (materiais.json · deslizantes)</b></p>
+  <div class="mat-block">
+    <h4>Hematita · k</h4>
+    <label>k (W/m·K) <span id="v-kh">1.20</span><input id="kh" type="range" min="0.4" max="3" step="0.05" value="1.2"/></label>
+    <label>ρ <span id="v-rh">3120</span><input id="rh" type="range" min="2000" max="4500" step="50" value="3120"/></label>
+    <label>Cp <span id="v-cph">650</span><input id="cph" type="range" min="400" max="1200" step="10" value="650"/></label>
+  </div>
+  <div class="mat-block">
+    <h4>IFB · k baixo</h4>
+    <label>k <span id="v-ki">0.15</span><input id="ki" type="range" min="0.08" max="0.35" step="0.01" value="0.15"/></label>
+  </div>
+  <div class="mat-block">
+    <h4>Perlita · barreira</h4>
+    <label>k <span id="v-kp">0.051</span><input id="kp" type="range" min="0.03" max="0.12" step="0.001" value="0.051"/></label>
+  </div>
+  <div class="mat-block">
+    <h4>Silicato / Vermiculita</h4>
+    <label>k silicato <span id="v-ks">0.059</span><input id="ks" type="range" min="0.04" max="0.12" step="0.001" value="0.059"/></label>
+    <label>k vermiculita <span id="v-kv">0.065</span><input id="kv" type="range" min="0.04" max="0.12" step="0.001" value="0.065"/></label>
+  </div>
+
   <div class="transport">
     <button class="btn play" id="btn-play" type="button">Play</button>
     <button class="btn ghost" id="btn-reset" type="button">t = 0</button>
@@ -107,54 +132,51 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
     <div><dt>Nós</dt><dd id="s-n">—</dd></div>
     <div><dt>Malha</dt><dd id="s-mesh">—</dd></div>
     <div><dt>T max núcleo</dt><dd id="s-tmax">—</dd></div>
-    <div><dt>T min</dt><dd id="s-tmin">—</dd></div>
+    <div><dt>ΔT interface</dt><dd id="s-dti">—</dd></div>
   </dl>
-  <div class="alert" id="bound-alert">Aguardando simulação…</div>
-  <p class="meta"><b>Autor:</b> Tarcísio Dias da Rocha<br/><b>Orientador:</b> Prof. Dr. Marcos A. T. Lira</p>
+  <div class="alert" id="bound-alert">Gradiente isolante: queda brusca de T na interface.</div>
+  <p class="meta"><b>Autor:</b> Tarcísio Dias da Rocha<br/><b>Orientador:</b> Prof. Dr. Marcos A. T. Lira<br/><b>Dados:</b> materiais.json + legado</p>
 </aside>
 <div>
   <div class="quote">
-    <p>«Injeção Robin no topo do leito; isolante com perdas no contorno externo; Neumann em r = 0. Malha contínua com propriedades por nó.»</p>
-    <cite>ROCHA; LIRA, XV CBPE 2026 §2.8–2.10</cite>
+    <p>«Isolantes com k ≪ k_hematita bloqueiam o fluxo. Na interface núcleo–isolante o gradiente é acentuado; o calor permanece no leito.»</p>
+    <cite>ROCHA; LIRA, XV CBPE 2026 §2.8 · INCROPERA et al. (2014)</cite>
   </div>
   <figure>
-    <figcaption>Campo T · malha contínua
-      <span class="sub">Amarelo no topo do núcleo = face de injeção. Isolante conectado por arestas (k médio).</span>
-      <span class="ref">Cf. Fig. 3b · EDP cilíndrica no domínio composto (§2.9–2.10).</span>
+    <figcaption>Campo T · núcleo quente, isolante com queda brusca
+      <span class="sub">Amarelo = injeção no topo do leito. Acima/ao lado: isolante (k baixo) — temperatura cai rapidamente. k de face = média harmônica.</span>
+      <span class="ref">Fig. 3b · EDP no domínio composto · §2.9–2.10</span>
     </figcaption>
     <canvas id="c-field" width="860" height="560"></canvas>
     <div class="legend" id="leg-field"></div>
   </figure>
   <figure>
     <figcaption>Convergência Newton · log₁₀‖R‖
-      <span class="sub">Queda do residual global a cada instante amostrado.</span>
-      <span class="ref">§2.10 — Euler implícito + Newton (BATHE, 1996; SOUZA, 2021).</span>
+      <span class="ref">§2.10 · BATHE (1996); SOUZA (2021)</span>
     </figcaption>
     <canvas id="c-conv" width="860" height="400"></canvas>
   </figure>
   <figure>
     <figcaption>Resíduos nodais |Rᵢ|
-      <span class="sub">Mapa no domínio completo após a última iteração.</span>
-      <span class="ref">Integridade do solver (§2.10).</span>
+      <span class="ref">Solver Newton–Jacobi no domínio composto</span>
     </figcaption>
     <canvas id="c-nres" width="860" height="280"></canvas>
   </figure>
   <figure>
-    <figcaption>Amostra Jacobiana (diag + vizinhos)
-      <span class="sub">Diagonal dominante: ρCp V/Δt + Robin de injeção (topo núcleo) e perdas.</span>
-      <span class="ref">BATHE (1996) · artigo §2.10.</span>
+    <figcaption>Diagonal de J (amostra)
+      <span class="ref">ρCp V/Δt + condução harmônica + Robin</span>
     </figcaption>
     <div id="jac-table" style="overflow:auto;background:#0c0b0a;color:#e7e5e4;font:12px/1.4 'IBM Plex Mono',monospace;padding:12px;border:1px solid #333"></div>
   </figure>
 </div>
 <div class="term-wrap">
   <div class="term-head"><span>Terminal</span><span id="term-status">—</span></div>
-  <div class="term" id="term-log">Carregando…</div>
+  <div class="term" id="term-log">Carregando materiais…</div>
   <div class="term-block"><h3>Newton · último passo</h3>
     <div id="iter-box" class="term" style="min-height:60px;max-height:110px;padding:8px;font-size:11px"></div>
   </div>
-  <div class="term-block"><h3>Zonas</h3>
-    <div id="zone-box" class="term" style="min-height:70px;max-height:120px;padding:8px;font-size:11px"></div>
+  <div class="term-block"><h3>Interface núcleo↔isolante</h3>
+    <div id="iface-box" class="term" style="min-height:70px;max-height:130px;padding:8px;font-size:11px"></div>
   </div>
 </div>
 </div>
@@ -162,30 +184,61 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 <div class="modal-bg" id="modal-iso">
   <div class="modal">
     <button class="close" id="iso-close" type="button">×</button>
-    <h2>Isolação multicamada</h2>
+    <h2>Materiais · defaults de materiais.json</h2>
+    <p style="color:var(--muted);font-size:13px">Valores do legado Carnot_Battery_Simulator + artigo. Ajuste pelos sliders; k de face entre materiais usa média harmônica 2/(1/k₁+1/k₂).</p>
     <div class="iso-grid">
-      <div class="iso-card"><h3>Topo / Lateral</h3><table id="tbl-lat"><thead><tr><th>Camada</th><th>e (m)</th><th>k</th><th>ρ</th><th>Cp</th></tr></thead><tbody></tbody></table></div>
-      <div class="iso-card"><h3>Base</h3><table id="tbl-base"><thead><tr><th>Camada</th><th>e (m)</th><th>k</th><th>ρ</th><th>Cp</th></tr></thead><tbody></tbody></table></div>
+      <div class="iso-card"><h3>Topo / Lateral</h3><table id="tbl-lat"><thead><tr><th>Camada</th><th>e</th><th>k</th><th>ρ</th><th>Cp</th></tr></thead><tbody></tbody></table></div>
+      <div class="iso-card"><h3>Base</h3><table id="tbl-base"><thead><tr><th>Camada</th><th>e</th><th>k</th><th>ρ</th><th>Cp</th></tr></thead><tbody></tbody></table></div>
     </div>
   </div>
 </div>
 <script>
 (function(){
 "use strict";
-const MAT = {
+/* Defaults espelham materiais.json (carregado se disponível) */
+var MAT = {
   hematita:{name:"Hematita seca",k:1.2,rho:3120,cp:650},
   ifb:{name:"IFB",k:0.15,rho:600,cp:900},
   perlita:{name:"Perlita",k:0.051,rho:105,cp:900},
   silicato:{name:"Silicato Ca",k:0.059,rho:190,cp:850},
   vermiculita:{name:"Vermiculita",k:0.065,rho:100,cp:900}
 };
-const Tamb=37, Tsolo=25, Tinit=25;
-const $ = function(id){ return document.getElementById(id); };
-function fmt(x,d){ d=d===undefined?2:d; if(!isFinite(x)) return "—"; var a=Math.abs(x); if(a!==0&&(a>=1e4||a<1e-3)) return x.toExponential(2); return x.toFixed(d); }
-function idx(i,j,nr){ return j*nr+i; }
-function norm(R){ var s=0; for(var i=0;i<R.length;i++) s+=R[i]*R[i]; return Math.sqrt(s); }
-
+var Tamb=37, Tsolo=25, Tinit=25;
 var LAST=null, frames=[], fullHist=[], playing=false, playTimer=null, frameIdx=0, MESH=null;
+var $ = function(id){ return document.getElementById(id); };
+function fmt(x,d){ d=d===undefined?2:d; if(!isFinite(x)) return "—"; var a=Math.abs(x); if(a!==0&&(a>=1e4||a<1e-3)) return x.toExponential(2); return (+x).toFixed(d); }
+function idx(i,j,nr){ return j*nr+i; }
+function norm(R){ var s=0,i; for(i=0;i<R.length;i++) s+=R[i]*R[i]; return Math.sqrt(s); }
+/** Média harmônica — correta para condução em série entre dois materiais */
+function kFace(k1,k2){
+  if(k1<1e-12||k2<1e-12) return 0;
+  return 2/(1/k1+1/k2);
+}
+function syncMatFromUI(){
+  MAT.hematita.k=+$("kh").value; MAT.hematita.rho=+$("rh").value; MAT.hematita.cp=+$("cph").value;
+  MAT.ifb.k=+$("ki").value;
+  MAT.perlita.k=+$("kp").value;
+  MAT.silicato.k=+$("ks").value;
+  MAT.vermiculita.k=+$("kv").value;
+}
+function loadMaterialsJSON(){
+  return fetch("materiais.json").then(function(r){
+    if(!r.ok) throw new Error("no json");
+    return r.json();
+  }).then(function(data){
+    ["hematita","ifb","perlita","silicato","vermiculita"].forEach(function(key){
+      if(data[key]){
+        if(data[key].k!=null) MAT[key].k=data[key].k;
+        if(data[key].rho!=null) MAT[key].rho=data[key].rho;
+        if(data[key].cp!=null) MAT[key].cp=data[key].cp;
+        if(data[key].name) MAT[key].name=data[key].name;
+      }
+    });
+    $("kh").value=MAT.hematita.k; $("rh").value=MAT.hematita.rho; $("cph").value=MAT.hematita.cp;
+    $("ki").value=MAT.ifb.k; $("kp").value=MAT.perlita.k; $("ks").value=MAT.silicato.k; $("kv").value=MAT.vermiculita.k;
+    updateLabels();
+  }).catch(function(){ /* defaults already set */ });
+}
 
 function buildMesh(){
   var R=+$("R").value, L=+$("L").value;
@@ -196,108 +249,82 @@ function buildMesh(){
   var latLayers=[{key:"ifb",e:e1},{key:"perlita",e:e2},{key:"ifb",e:e3}];
   var topLayers=[{key:"ifb",e:e1},{key:"perlita",e:e2},{key:"ifb",e:e3}];
   var baseLayers=[{key:"ifb",e:eb1},{key:"silicato",e:eb2},{key:"vermiculita",e:eb3}];
-
-  var rEdges=[0];
-  var i; for(i=1;i<=nrC;i++) rEdges.push(i*(R/nrC));
+  var rEdges=[0], i;
+  for(i=1;i<=nrC;i++) rEdges.push(i*(R/nrC));
   for(i=0;i<latLayers.length;i++) rEdges.push(rEdges[rEdges.length-1]+latLayers[i].e);
-
   var zEdges=[0];
   for(i=0;i<topLayers.length;i++) zEdges.push(zEdges[zEdges.length-1]+topLayers[i].e);
   var jCore0=zEdges.length-1;
   for(i=0;i<nzC;i++) zEdges.push(zEdges[zEdges.length-1]+(L/nzC));
   var jCoreEnd=zEdges.length-2;
   for(i=0;i<baseLayers.length;i++) zEdges.push(zEdges[zEdges.length-1]+baseLayers[i].e);
-
-  var nr=rEdges.length-1, nz=zEdges.length-1;
-  var iCoreEnd=nrC-1;
-  var mat=new Array(nr*nz);
-  var j,g;
+  var nr=rEdges.length-1, nz=zEdges.length-1, iCoreEnd=nrC-1;
+  var mat=new Array(nr*nz), j,g;
   for(j=0;j<nz;j++){
     for(i=0;i<nr;i++){
       g=idx(i,j,nr);
-      if(j<jCore0){
-        mat[g]=topLayers[Math.min(j,topLayers.length-1)].key;
-      } else if(j>jCoreEnd){
-        var jb=j-(jCoreEnd+1);
-        mat[g]=baseLayers[Math.min(jb,baseLayers.length-1)].key;
-      } else if(i>iCoreEnd){
-        var ir=i-(iCoreEnd+1);
-        mat[g]=latLayers[Math.min(ir,latLayers.length-1)].key;
-      } else {
-        mat[g]="hematita";
-      }
+      if(j<jCore0) mat[g]=topLayers[Math.min(j,topLayers.length-1)].key;
+      else if(j>jCoreEnd){ var jb=j-(jCoreEnd+1); mat[g]=baseLayers[Math.min(jb,baseLayers.length-1)].key; }
+      else if(i>iCoreEnd){ var ir=i-(iCoreEnd+1); mat[g]=latLayers[Math.min(ir,latLayers.length-1)].key; }
+      else mat[g]="hematita";
     }
   }
-  function rC(i){ return 0.5*(rEdges[i]+rEdges[i+1]); }
-  function zC(j){ return 0.5*(zEdges[j]+zEdges[j+1]); }
-  function dr(i){ return rEdges[i+1]-rEdges[i]; }
-  function dz(j){ return zEdges[j+1]-zEdges[j]; }
-  return {R:R,L:L,nr:nr,nz:nz,nrC:nrC,nzC:nzC,rEdges:rEdges,zEdges:zEdges,rC:rC,zC:zC,dr:dr,dz:dz,mat:mat,
-    iCoreEnd:iCoreEnd,jCore0:jCore0,jCoreEnd:jCoreEnd,latLayers:latLayers,topLayers:topLayers,baseLayers:baseLayers,
-    e1:e1,e2:e2,e3:e3,eb1:eb1,eb2:eb2,eb3:eb3};
+  return {
+    R:R,L:L,nr:nr,nz:nz,nrC:nrC,nzC:nzC,rEdges:rEdges,zEdges:zEdges,mat:mat,
+    iCoreEnd:iCoreEnd,jCore0:jCore0,jCoreEnd:jCoreEnd,
+    latLayers:latLayers,topLayers:topLayers,baseLayers:baseLayers,
+    e1:e1,e2:e2,e3:e3,eb1:eb1,eb2:eb2,eb3:eb3,
+    rC:function(i){return 0.5*(rEdges[i]+rEdges[i+1]);},
+    zC:function(j){return 0.5*(zEdges[j]+zEdges[j+1]);},
+    dr:function(i){return rEdges[i+1]-rEdges[i];},
+    dz:function(j){return zEdges[j+1]-zEdges[j];}
+  };
 }
 
-/** Residual + diagonal of J (for Newton-Jacobi). Linear conduction + Robin. */
-function residualDiag(T, Told, p, M, dt){
+function residualDiag(T,Told,p,M,dt){
   var nr=M.nr, nz=M.nz, N=nr*nz;
-  var R=new Float64Array(N);
-  var diag=new Float64Array(N);
+  var R=new Float64Array(N), diag=new Float64Array(N);
   var i,j,g;
   for(j=0;j<nz;j++){
     for(i=0;i<nr;i++){
       g=idx(i,j,nr);
       var m=MAT[M.mat[g]];
       var r=M.rC(i), dri=M.dr(i), dzj=M.dz(j);
-      var V=r*dri*dzj;
-      var rhoCp=m.rho*m.cp;
+      var V=r*dri*dzj, rhoCp=m.rho*m.cp;
       R[g]+=rhoCp*V*(T[g]-Told[g])/dt;
       diag[g]+=rhoCp*V/dt;
-
       if(i>0){
         var gL=idx(i-1,j,nr);
-        var kL=0.5*(MAT[M.mat[g]].k+MAT[M.mat[gL]].k);
-        var dist=M.rC(i)-M.rC(i-1);
-        var coef=M.rEdges[i]*kL/dist*dzj;
-        R[g]+=coef*(T[g]-T[gL]);
-        diag[g]+=coef;
+        var kf=kFace(MAT[M.mat[g]].k, MAT[M.mat[gL]].k);
+        var coef=M.rEdges[i]*kf/(M.rC(i)-M.rC(i-1))*dzj;
+        R[g]+=coef*(T[g]-T[gL]); diag[g]+=coef;
       }
       if(i<nr-1){
         var gR=idx(i+1,j,nr);
-        var kR=0.5*(MAT[M.mat[g]].k+MAT[M.mat[gR]].k);
-        var distR=M.rC(i+1)-M.rC(i);
-        var coefR=M.rEdges[i+1]*kR/distR*dzj;
-        R[g]-=coefR*(T[gR]-T[g]);
-        diag[g]+=coefR;
+        var kfR=kFace(MAT[M.mat[g]].k, MAT[M.mat[gR]].k);
+        var coefR=M.rEdges[i+1]*kfR/(M.rC(i+1)-M.rC(i))*dzj;
+        R[g]-=coefR*(T[gR]-T[g]); diag[g]+=coefR;
       } else {
         var coefO=M.rEdges[nr]*p.hExt*dzj;
-        R[g]+=coefO*(T[g]-Tamb);
-        diag[g]+=coefO;
+        R[g]+=coefO*(T[g]-Tamb); diag[g]+=coefO;
       }
-
       var area=r*dri;
       if(j>0){
         var gT=idx(i,j-1,nr);
-        var kT=0.5*(MAT[M.mat[g]].k+MAT[M.mat[gT]].k);
-        var distz=M.zC(j)-M.zC(j-1);
-        var coefT=area*kT/distz;
-        R[g]+=coefT*(T[g]-T[gT]);
-        diag[g]+=coefT;
+        var kfT=kFace(MAT[M.mat[g]].k, MAT[M.mat[gT]].k);
+        var coefT=area*kfT/(M.zC(j)-M.zC(j-1));
+        R[g]+=coefT*(T[g]-T[gT]); diag[g]+=coefT;
       } else {
-        R[g]+=area*p.hExt*(T[g]-Tamb);
-        diag[g]+=area*p.hExt;
+        R[g]+=area*p.hExt*(T[g]-Tamb); diag[g]+=area*p.hExt;
       }
       if(j<nz-1){
         var gB=idx(i,j+1,nr);
-        var kB=0.5*(MAT[M.mat[g]].k+MAT[M.mat[gB]].k);
-        var distzB=M.zC(j+1)-M.zC(j);
-        var coefB=area*kB/distzB;
-        R[g]-=coefB*(T[gB]-T[g]);
-        diag[g]+=coefB;
+        var kfB=kFace(MAT[M.mat[g]].k, MAT[M.mat[gB]].k);
+        var coefB=area*kfB/(M.zC(j+1)-M.zC(j));
+        R[g]-=coefB*(T[gB]-T[g]); diag[g]+=coefB;
       } else {
-        R[g]+=area*p.hExt*(T[g]-Tsolo);
-        diag[g]+=area*p.hExt;
+        R[g]+=area*p.hExt*(T[g]-Tsolo); diag[g]+=area*p.hExt;
       }
-      /* INJEÇÃO no topo do NÚCLEO */
       if(j===M.jCore0 && i<=M.iCoreEnd){
         R[g]+=area*p.hTop*(T[g]-p.Tcharge);
         diag[g]+=area*p.hTop;
@@ -307,45 +334,36 @@ function residualDiag(T, Told, p, M, dt){
   return {R:R, diag:diag};
 }
 
-function newtonStep(Told, p, M, dt){
-  var T=Told.slice();
-  var hist=[];
-  var nodeR=null;
-  var it,g,N=Told.length;
+function newtonStep(Told,p,M,dt){
+  var T=Told.slice(), hist=[], nodeR=null, it,g,N=Told.length;
   for(it=0;it<25;it++){
     var rd=residualDiag(T,Told,p,M,dt);
     var res=norm(rd.R);
     nodeR=Array.prototype.slice.call(rd.R).map(function(v){return Math.abs(v);});
     hist.push({iter:it+1, residual:res, nodeResiduals:nodeR.slice()});
     if(res<1e-4) break;
-    for(g=0;g<N;g++){
-      if(Math.abs(rd.diag[g])>1e-18) T[g]-=rd.R[g]/rd.diag[g];
-    }
+    for(g=0;g<N;g++) if(Math.abs(rd.diag[g])>1e-18) T[g]-=rd.R[g]/rd.diag[g];
   }
   return {T:T, hist:hist, nodeResiduals:nodeR};
 }
 
 function simulate(){
+  syncMatFromUI();
   MESH=buildMesh();
-  var M=MESH;
-  var dt=+$("dt").value;
-  var hours=+$("hours").value;
+  var M=MESH, dt=+$("dt").value, hours=+$("hours").value;
   var p={hTop:+$("ht").value, hExt:+$("hext").value, Tcharge:+$("tc").value};
-  var steps=Math.max(1, Math.round(hours*3600/dt));
-  var N=M.nr*M.nz;
-  var T=new Array(N); var i; for(i=0;i<N;i++) T[i]=Tinit;
+  var steps=Math.max(1,Math.round(hours*3600/dt)), N=M.nr*M.nz;
+  var T=new Array(N), i; for(i=0;i<N;i++) T[i]=Tinit;
   frames=[{tH:0,T:T.slice(),hist:[{iter:1,residual:0,nodeResiduals:new Array(N).fill(0)}],nodeResiduals:new Array(N).fill(0)}];
   fullHist=[];
-  var keepEvery=Math.max(1, Math.floor(steps/36));
-  var s;
+  var keepEvery=Math.max(1,Math.floor(steps/36)), s;
   for(s=1;s<=steps;s++){
-    var out=newtonStep(T,p,M,dt);
-    T=out.T;
+    var out=newtonStep(T,p,M,dt); T=out.T;
     fullHist.push({tH:s*dt/3600, hist:out.hist.map(function(h){return {iter:h.iter,residual:h.residual};}), nodeResiduals:out.nodeResiduals.slice()});
-    if(s%keepEvery===0 || s===steps)
-      frames.push({tH:s*dt/3600, T:T.slice(), hist:out.hist, nodeResiduals:out.nodeResiduals});
+    if(s%keepEvery===0||s===steps)
+      frames.push({tH:s*dt/3600,T:T.slice(),hist:out.hist,nodeResiduals:out.nodeResiduals});
   }
-  LAST={p:p, M:M, dt:dt, steps:steps, hours:hours, N:N, frames:frames, fullHist:fullHist};
+  LAST={p:p,M:M,dt:dt,steps:steps,hours:hours,N:N,frames:frames,fullHist:fullHist,matSnapshot:JSON.parse(JSON.stringify(MAT))};
   return LAST;
 }
 
@@ -359,63 +377,79 @@ function heatColor(t,tmin,tmax){
 
 function drawField(){
   var c=$("c-field"); if(!c||!LAST) return;
-  var ctx=c.getContext("2d");
-  var W=c.width, H=c.height;
+  var ctx=c.getContext("2d"), W=c.width, H=c.height;
   ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
-  var M=LAST.M, p=LAST.p;
-  var f=LAST.frames[Math.min(frameIdx, LAST.frames.length-1)];
-  var tmin=1e9,tmax=-1e9, tCoreMax=-1e9;
-  var g;
-  for(g=0;g<f.T.length;g++){ tmin=Math.min(tmin,f.T[g]); tmax=Math.max(tmax,f.T[g]); }
-  var i,j;
-  for(j=M.jCore0;j<=M.jCoreEnd;j++) for(i=0;i<=M.iCoreEnd;i++)
-    tCoreMax=Math.max(tCoreMax, f.T[idx(i,j,M.nr)]);
+  var M=LAST.M, p=LAST.p, f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
+  var tmin=1e9,tmax=-1e9,tCoreMax=-1e9,tIsoMax=-1e9, g,i,j;
+  for(g=0;g<f.T.length;g++){
+    tmin=Math.min(tmin,f.T[g]); tmax=Math.max(tmax,f.T[g]);
+    var ii=g%M.nr, jj=(g/M.nr)|0;
+    if(jj>=M.jCore0&&jj<=M.jCoreEnd&&ii<=M.iCoreEnd) tCoreMax=Math.max(tCoreMax,f.T[g]);
+    else tIsoMax=Math.max(tIsoMax,f.T[g]);
+  }
   if(tmax-tmin<1) tmax=tmin+1;
+  /* ΔT interface: mean T core top vs mean T insulation node just above */
+  var TcoreTop=0, nct=0, TisoAbove=0, nia=0;
+  for(i=0;i<=M.iCoreEnd;i++){
+    TcoreTop+=f.T[idx(i,M.jCore0,M.nr)]; nct++;
+    if(M.jCore0>0){ TisoAbove+=f.T[idx(i,M.jCore0-1,M.nr)]; nia++; }
+  }
+  TcoreTop/=Math.max(nct,1); TisoAbove/=Math.max(nia,1);
+  var dTiface=TcoreTop-TisoAbove;
 
   var rMax=M.rEdges[M.rEdges.length-1], zMax=M.zEdges[M.zEdges.length-1];
-  var padL=48, padR=160, padT=36, padB=36;
+  var padL=48,padR=160,padT=36,padB=36;
   var sx=(W-padL-padR)/rMax, sy=(H-padT-padB)/zMax;
-
   ctx.fillStyle="#fafaf9"; ctx.font="600 12px IBM Plex Sans";
-  ctx.fillText("Malha contínua · carga no topo do NÚCLEO", padL, 18);
+  ctx.fillText("Núcleo aquecido · isolante com k harmônico (queda na interface)", padL, 18);
 
   for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
     g=idx(i,j,M.nr);
     var x=padL+M.rEdges[i]*sx, y=padT+M.zEdges[j]*sy;
     var w=(M.rEdges[i+1]-M.rEdges[i])*sx, h=(M.zEdges[j+1]-M.zEdges[j])*sy;
     var col=heatColor(f.T[g],tmin,tmax);
-    ctx.fillStyle="rgb("+ (col[0]|0)+","+(col[1]|0)+","+(col[2]|0)+")";
+    ctx.fillStyle="rgb("+(col[0]|0)+","+(col[1]|0)+","+(col[2]|0)+")";
     ctx.fillRect(x,y,w+0.4,h+0.4);
-    ctx.strokeStyle=M.mat[g]==="hematita"?"rgba(251,146,60,0.45)":"rgba(34,211,238,0.35)";
-    ctx.strokeRect(x,y,w,h);
-    ctx.fillStyle="rgba(255,255,255,0.85)";
-    ctx.beginPath(); ctx.arc(x+w/2,y+h/2,1.6,0,Math.PI*2); ctx.fill();
+    var isCore=M.mat[g]==="hematita";
+    ctx.strokeStyle=isCore?"rgba(251,146,60,0.5)":"rgba(34,211,238,0.4)";
+    ctx.lineWidth=1; ctx.strokeRect(x,y,w,h);
+    /* label T on insulation near interface for clarity */
+    if(!isCore && (j===M.jCore0-1 || i===M.iCoreEnd+1) && M.nr*M.nz<=120){
+      ctx.fillStyle="#e0f2fe"; ctx.font="600 9px IBM Plex Mono";
+      ctx.fillText(fmt(f.T[g],0), x+2, y+h/2+3);
+    }
+    if(isCore && j===M.jCore0 && M.nr*M.nz<=120){
+      ctx.fillStyle="#fef08a"; ctx.font="600 9px IBM Plex Mono";
+      ctx.fillText(fmt(f.T[g],0), x+2, y+h/2+3);
+    }
+    ctx.fillStyle="rgba(255,255,255,0.8)";
+    ctx.beginPath(); ctx.arc(x+w/2,y+h/2,1.5,0,Math.PI*2); ctx.fill();
   }
   var xC0=padL, yC0=padT+M.zEdges[M.jCore0]*sy;
   var xC1=padL+M.rEdges[M.iCoreEnd+1]*sx, yC1=padT+M.zEdges[M.jCoreEnd+1]*sy;
-  ctx.strokeStyle="#f97316"; ctx.lineWidth=2.5;
-  ctx.strokeRect(xC0,yC0,xC1-xC0,yC1-yC0);
+  ctx.strokeStyle="#f97316"; ctx.lineWidth=2.5; ctx.strokeRect(xC0,yC0,xC1-xC0,yC1-yC0);
   ctx.strokeStyle="#facc15"; ctx.lineWidth=3;
   ctx.beginPath(); ctx.moveTo(xC0,yC0); ctx.lineTo(xC1,yC0); ctx.stroke();
   ctx.fillStyle="#facc15"; ctx.font="600 11px IBM Plex Sans";
-  ctx.fillText("INJEÇÃO ROBIN →", xC1+6, yC0+4);
+  ctx.fillText("INJEÇÃO →", xC1+6, yC0+4);
   ctx.fillStyle="#fdba74"; ctx.fillText("NÚCLEO", xC0+4, yC0+14);
+  ctx.fillStyle="#67e8f9"; ctx.font="600 10px IBM Plex Sans";
+  if(M.jCore0>0)
+    ctx.fillText("ΔT_iface="+fmt(dTiface,1)+" K (núcleo→isolante)", xC0, yC0-6);
 
   ctx.fillStyle="#e7e5e4"; ctx.font="11px IBM Plex Sans";
   ctx.fillText("r=0 Neumann", padL, padT+zMax*sy+16);
-  ctx.fillText("topo isolante: perda", padL+100, padT-6);
-  ctx.fillText("base: perda solo", padL+100, padT+zMax*sy+16);
+  ctx.fillText("k_hem="+fmt(MAT.hematita.k,2)+" | k_IFB="+fmt(MAT.ifb.k,2)+" | k_perl="+fmt(MAT.perlita.k,3), padL+100, padT+zMax*sy+16);
 
-  /* quarter view */
   var ox=W-90, oy=H*0.32, rad=55;
   ctx.beginPath(); ctx.arc(ox,oy,rad,0,Math.PI*2);
   ctx.strokeStyle="rgba(120,113,108,0.5)"; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
   ctx.beginPath(); ctx.moveTo(ox,oy); ctx.arc(ox,oy,rad,0,-Math.PI/2,true); ctx.closePath();
   ctx.fillStyle="rgba(234,88,12,0.3)"; ctx.fill();
   ctx.strokeStyle="#f97316"; ctx.lineWidth=2; ctx.stroke();
-  ctx.fillStyle="#fafaf9"; ctx.font="10px IBM Plex Sans"; ctx.fillText("90° MEF", ox+4, oy-6);
 
-  for(var yi=0;yi<100;yi++){
+  var yi;
+  for(yi=0;yi<100;yi++){
     var tt=tmax-(yi/100)*(tmax-tmin);
     var cc=heatColor(tt,tmin,tmax);
     ctx.fillStyle="rgb("+(cc[0]|0)+","+(cc[1]|0)+","+(cc[2]|0)+")";
@@ -425,49 +459,55 @@ function drawField(){
   ctx.fillText(fmt(tmax,0)+"°C", W-70, padT+10);
   ctx.fillText(fmt(tmin,0)+"°C", W-70, padT+100);
 
-  var ok = tCoreMax > Tinit+10;
-  $("leg-field").innerHTML='<span>t=<b>'+fmt(f.tH,2)+' h</b></span> <span>T∈['+fmt(tmin,1)+', '+fmt(tmax,1)+'] °C</span> <span>T_núcleo max='+fmt(tCoreMax,1)+' °C</span> <span>'+M.nr+'×'+M.nz+'='+(M.nr*M.nz)+' nós</span> <span style="color:'+(ok?'var(--ok)':'#ca8a04')+';font-weight:700">'+(ok?'✓ núcleo aquecendo':'… aquecendo')+'</span>';
+  var ok = tCoreMax > tIsoMax + 5;
+  $("leg-field").innerHTML='<span>t=<b>'+fmt(f.tH,2)+' h</b></span> <span>T_núcleo max=<b>'+fmt(tCoreMax,1)+'</b> °C</span> <span>T_isol max='+fmt(tIsoMax,1)+' °C</span> <span>ΔT_iface=<b>'+fmt(dTiface,1)+'</b> K</span> <span style="color:'+(ok?'var(--ok)':'#ca8a04')+';font-weight:700">'+(ok?'✓ isolante mais frio que núcleo':'verificar k')+'</span>';
   $("s-tmax").textContent=fmt(tCoreMax,1)+" °C";
-  $("s-tmin").textContent=fmt(tmin,1)+" °C";
+  $("s-dti").textContent=fmt(dTiface,1)+" K";
   $("s-n").textContent=String(M.nr*M.nz);
   $("s-mesh").textContent=M.nr+"×"+M.nz;
-  $("bound-alert").textContent=ok ? ("Núcleo aquecendo · T_core max="+fmt(tCoreMax,1)+" °C · injeção no topo do leito") : "Simulação em curso — calor entra pelo topo do núcleo";
+  $("bound-alert").textContent=ok
+    ? ("OK · núcleo "+fmt(tCoreMax,1)+" °C > isolante "+fmt(tIsoMax,1)+" °C · ΔT_iface="+fmt(dTiface,1)+" K")
+    : "Ajustar k isolante ou tempo de carga";
   $("bound-alert").style.background=ok?"#dcfce7":"#fef9c3";
+
+  var ib="T topo núcleo  = "+fmt(TcoreTop,1)+" °C\n";
+  ib+="T isolante acima = "+fmt(TisoAbove,1)+" °C\n";
+  ib+="ΔT interface   = "+fmt(dTiface,1)+" K\n";
+  ib+="k_face hem|IFB = "+fmt(kFace(MAT.hematita.k,MAT.ifb.k),4)+"\n";
+  ib+="(harmônica 2/(1/k1+1/k2))\n";
+  ib+="T_isol max global = "+fmt(tIsoMax,1)+" °C\n";
+  $("iface-box").textContent=ib;
 }
 
 function drawConv(){
   var c=$("c-conv"); if(!c||!LAST) return;
-  var ctx=c.getContext("2d");
-  var W=c.width, H=c.height;
-  var padL=56, padR=24, padT=28, padB=44;
+  var ctx=c.getContext("2d"), W=c.width, H=c.height;
+  var padL=56,padR=24,padT=28,padB=44;
   ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
-  var samples=LAST.frames.filter(function(_,i){ return i%Math.max(1,Math.floor(LAST.frames.length/8))===0||i===LAST.frames.length-1; });
+  var samples=LAST.frames.filter(function(_,i){return i%Math.max(1,Math.floor(LAST.frames.length/8))===0||i===LAST.frames.length-1;});
   var colors=["#f43f5e","#f97316","#eab308","#84cc16","#22d3ee","#a78bfa","#fb7185","#38bdf8"];
-  var minL=1e9, maxL=-1e9;
-  samples.forEach(function(s){ s.hist.forEach(function(h){ if(h.residual>0){ var L=Math.log10(h.residual); minL=Math.min(minL,L); maxL=Math.max(maxL,L);} }); });
+  var minL=1e9,maxL=-1e9;
+  samples.forEach(function(s){s.hist.forEach(function(h){if(h.residual>0){var L=Math.log10(h.residual);minL=Math.min(minL,L);maxL=Math.max(maxL,L);}});});
   if(!isFinite(minL)) return;
   minL-=0.5; maxL+=0.4;
   var gi;
   ctx.strokeStyle="rgba(120,113,108,0.35)";
   for(gi=0;gi<=6;gi++){
     var yy=padT+(H-padT-padB)*gi/6;
-    ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(W-padR,yy); ctx.stroke();
+    ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(W-padR,yy);ctx.stroke();
     ctx.fillStyle="#d6d3d1"; ctx.font="12px IBM Plex Mono";
-    ctx.fillText((maxL-(maxL-minL)*gi/6).toFixed(1), 8, yy+4);
+    ctx.fillText((maxL-(maxL-minL)*gi/6).toFixed(1),8,yy+4);
   }
   ctx.strokeStyle="#a8a29e"; ctx.beginPath(); ctx.moveTo(padL,padT); ctx.lineTo(padL,H-padB); ctx.lineTo(W-padR,H-padB); ctx.stroke();
   samples.forEach(function(s,si){
     var hist=s.hist.filter(function(h){return h.residual>0;}); if(!hist.length) return;
-    ctx.strokeStyle=colors[si%colors.length]; ctx.lineWidth=2.5;
-    ctx.beginPath();
+    ctx.strokeStyle=colors[si%colors.length]; ctx.lineWidth=2.5; ctx.beginPath();
     hist.forEach(function(h,ii){
       var x=padL+(ii/Math.max(hist.length-1,1))*(W-padL-padR);
       var y=H-padB-((Math.log10(h.residual)-minL)/(maxL-minL))*(H-padT-padB);
       if(ii) ctx.lineTo(x,y); else ctx.moveTo(x,y);
     });
     ctx.stroke();
-    ctx.fillStyle=colors[si%colors.length]; ctx.font="600 12px IBM Plex Sans";
-    ctx.fillText(fmt(s.tH,1)+"h", padL+((hist.length-1)/Math.max(hist.length-1,1))*(W-padL-padR)+4, H-padB-((Math.log10(hist[hist.length-1].residual)-minL)/(maxL-minL))*(H-padT-padB));
   });
   ctx.fillStyle="#fafaf9"; ctx.font="600 13px IBM Plex Sans";
   ctx.fillText("iteração Newton →", W/2-50, H-12);
@@ -475,22 +515,18 @@ function drawConv(){
 
 function drawNodeRes(){
   var c=$("c-nres"); if(!c||!LAST) return;
-  var ctx=c.getContext("2d");
-  var W=c.width, H=c.height, padL=48, padR=16, padT=28, padB=28;
+  var ctx=c.getContext("2d"), W=c.width, H=c.height, padL=48,padR=16,padT=28,padB=28;
   ctx.fillStyle="#0c0b0a"; ctx.fillRect(0,0,W,H);
-  var M=LAST.M;
-  var f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
-  var nR=f.nodeResiduals; if(!nR) return;
+  var M=LAST.M, f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)], nR=f.nodeResiduals;
+  if(!nR) return;
   var m=0; nR.forEach(function(v){m=Math.max(m,v);}); if(m<1e-18) m=1;
   var rMax=M.rEdges[M.rEdges.length-1], zMax=M.zEdges[M.zEdges.length-1];
-  var sx=(W-padL-padR)/rMax, sy=(H-padT-padB)/zMax;
-  var i,j,g;
+  var sx=(W-padL-padR)/rMax, sy=(H-padT-padB)/zMax, i,j,g;
   for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
     g=idx(i,j,M.nr);
-    var u=nR[g]/m;
     var x=padL+M.rEdges[i]*sx, y=padT+M.zEdges[j]*sy;
     var w=(M.rEdges[i+1]-M.rEdges[i])*sx, h=(M.zEdges[j+1]-M.zEdges[j])*sy;
-    ctx.fillStyle="rgba(14,165,233,"+(0.1+0.9*u)+")";
+    ctx.fillStyle="rgba(14,165,233,"+(0.1+0.9*(nR[g]/m))+")";
     ctx.fillRect(x,y,w+0.3,h+0.3);
     ctx.strokeStyle="rgba(255,255,255,0.12)"; ctx.strokeRect(x,y,w,h);
   }
@@ -500,46 +536,36 @@ function drawNodeRes(){
 
 function drawJac(){
   var el=$("jac-table"); if(!el||!LAST) return;
-  var M=LAST.M, p=LAST.p, dt=LAST.dt;
-  var f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
-  var rd=residualDiag(f.T, f.T, p, M, dt);
-  var nS=Math.min(8, LAST.N);
-  var h='<p style="color:#a8a29e;margin:0 0 8px">Diagonal de J (ρCp V/Δt + condução + Robin). Solver Newton–Jacobi.</p>';
-  h+='<table style="border-collapse:collapse"><tr>';
-  var i;
+  var rd=residualDiag(LAST.frames[Math.min(frameIdx,LAST.frames.length-1)].T,
+    LAST.frames[Math.min(frameIdx,LAST.frames.length-1)].T, LAST.p, LAST.M, LAST.dt);
+  var nS=Math.min(8,LAST.N), h='<table style="border-collapse:collapse"><tr>', i;
   for(i=0;i<nS;i++) h+='<th style="padding:4px 8px;color:#a8a29e">d'+i+'</th>';
   h+='</tr><tr>';
   for(i=0;i<nS;i++) h+='<td style="padding:4px 8px;color:#fbbf24">'+rd.diag[i].toExponential(3)+'</td>';
   h+='</tr></table>';
-  h+='<p style="color:#a8a29e;margin:8px 0 0">Injeção Robin ativa nos nós (i≤'+M.iCoreEnd+', j='+M.jCore0+') · topo do núcleo.</p>';
+  h+='<p style="color:#a8a29e;margin:8px 0 0">k_face hemática|IFB = '+fmt(kFace(MAT.hematita.k,MAT.ifb.k),4)+' (harmônica)</p>';
   el.innerHTML=h;
 }
 
 function renderTerminal(){
   if(!LAST) return;
-  var f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)];
-  var M=LAST.M, p=LAST.p;
-  var tmin=1e9,tmax=-1e9,tCore=-1e9;
+  var f=LAST.frames[Math.min(frameIdx,LAST.frames.length-1)], M=LAST.M, p=LAST.p;
+  var tCore=-1e9, tIso=-1e9;
   f.T.forEach(function(t,g){
-    tmin=Math.min(tmin,t); tmax=Math.max(tmax,t);
     var i=g%M.nr, j=(g/M.nr)|0;
     if(j>=M.jCore0&&j<=M.jCoreEnd&&i<=M.iCoreEnd) tCore=Math.max(tCore,t);
+    else tIso=Math.max(tIso,t);
   });
-  var log="SAET · malha contínua · carga no NÚCLEO\n";
+  var log="SAET · k harmônico · materiais deslizantes\n";
   log+="────────────────────────────────────\n";
-  log+="nós     : "+M.nr+" × "+M.nz+" = "+LAST.N+"\n";
-  log+="núcleo  : nrC="+M.nrC+" nzC="+M.nzC+" jCore0="+M.jCore0+"\n";
-  log+="T carga : "+p.Tcharge+" °C · hTop="+p.hTop+" · hExt="+p.hExt+"\n";
-  log+="T glob  : ["+fmt(tmin,1)+", "+fmt(tmax,1)+"] °C\n";
-  log+="T núcleo max : "+fmt(tCore,1)+" °C\n";
-  log+="CC injeção: topo do leito (não isolante)\n";
+  log+="k_hem="+MAT.hematita.k+"  k_IFB="+MAT.ifb.k+"  k_perl="+MAT.perlita.k+"\n";
+  log+="k_face(hem,IFB)="+fmt(kFace(MAT.hematita.k,MAT.ifb.k),4)+"\n";
+  log+="T_núcleo max="+fmt(tCore,1)+"  T_isol max="+fmt(tIso,1)+"\n";
+  log+="Injeção: topo núcleo | Isolante: barreira\n";
   log+="────────────────────────────────────\n";
   $("term-log").textContent=log;
   var ib=""; f.hist.forEach(function(h){ ib+="iter "+h.iter+": ‖R‖="+h.residual.toExponential(3)+(h.residual<1e-4?" OK":"")+"\n"; });
   $("iter-box").textContent=ib;
-  var counts={}; M.mat.forEach(function(k){ counts[k]=(counts[k]||0)+1; });
-  var zb=""; Object.keys(counts).forEach(function(k){ zb+=MAT[k].name+": "+counts[k]+" nós · k="+MAT[k].k+"\n"; });
-  $("zone-box").textContent=zb;
   $("term-status").textContent=(f.hist.length&&f.hist[f.hist.length-1].residual<1e-4)?"CONVERGIU":"…";
 }
 
@@ -549,7 +575,7 @@ function showFrame(i){
   $("prog").value=Math.round(100*frameIdx/Math.max(LAST.frames.length-1,1));
   $("v-prog").textContent=fmt(LAST.frames[frameIdx].tH,2)+" h";
   try{ drawField(); drawConv(); drawNodeRes(); drawJac(); renderTerminal(); }
-  catch(err){ console.error(err); $("term-log").textContent="Erro desenho: "+err.message; }
+  catch(err){ console.error(err); $("term-log").textContent="Erro: "+err.message; }
 }
 
 function updateLabels(){
@@ -561,22 +587,21 @@ function updateLabels(){
   $("v-R").textContent=$("R").value+" m";
   $("v-L").textContent=$("L").value+" m";
   ["e1","e2","e3","eb1","eb2","eb3"].forEach(function(id){ $("v-"+id).textContent=$(id).value; });
+  $("v-kh").textContent=(+$("kh").value).toFixed(2);
+  $("v-rh").textContent=$("rh").value;
+  $("v-cph").textContent=$("cph").value;
+  $("v-ki").textContent=(+$("ki").value).toFixed(2);
+  $("v-kp").textContent=(+$("kp").value).toFixed(3);
+  $("v-ks").textContent=(+$("ks").value).toFixed(3);
+  $("v-kv").textContent=(+$("kv").value).toFixed(3);
 }
 
 function run(){
   updateLabels();
   $("term-log").textContent="Calculando…";
-  $("term-status").textContent="…";
   setTimeout(function(){
-    try{
-      simulate();
-      showFrame(frames.length-1);
-    }catch(err){
-      console.error(err);
-      $("term-log").textContent="ERRO: "+err.message+"\n"+err.stack;
-      $("bound-alert").textContent="Erro na simulação — ver terminal";
-      $("bound-alert").style.background="#fee2e2";
-    }
+    try{ simulate(); showFrame(frames.length-1); }
+    catch(err){ console.error(err); $("term-log").textContent="ERRO: "+err.message; }
   }, 40);
 }
 
@@ -588,6 +613,7 @@ function togglePlay(){
 
 function fillIsoModal(){
   var M=MESH||buildMesh();
+  syncMatFromUI();
   var tbL=$("tbl-lat").querySelector("tbody"); tbL.innerHTML="";
   [{n:"IFB",e:M.e1,k:MAT.ifb},{n:"Perlita",e:M.e2,k:MAT.perlita},{n:"IFB",e:M.e3,k:MAT.ifb}].forEach(function(r){
     tbL.innerHTML+="<tr><td>"+r.n+"</td><td>"+fmt(r.e,3)+"</td><td>"+r.k.k+"</td><td>"+r.k.rho+"</td><td>"+r.k.cp+"</td></tr>";
@@ -600,91 +626,50 @@ function fillIsoModal(){
 
 function makePDF(){
   if(!LAST){ alert("Rode a simulação antes."); return; }
-  var jsPDF=window.jspdf.jsPDF;
-  var doc=new jsPDF({unit:"mm",format:"a4"});
-  var W=doc.internal.pageSize.getWidth(), Hpage=doc.internal.pageSize.getHeight(), m=14;
-  var y=0;
-  function need(h){ if(y+h>Hpage-14){ doc.addPage(); hdr(); } }
+  var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
+  var W=doc.internal.pageSize.getWidth(), Hp=doc.internal.pageSize.getHeight(), m=14, y=0;
+  function need(h){ if(y+h>Hp-14){ doc.addPage(); hdr(); } }
   function hdr(){ doc.setFillColor(154,52,18); doc.rect(0,0,W,11,"F");
     doc.setTextColor(255,247,237); doc.setFont("helvetica","bold"); doc.setFontSize(8.5);
-    doc.text("XV CBPE · PPGEE-UFPI · Memória integral SAET 2D",m,7.5); y=16; }
+    doc.text("XV CBPE · PPGEE-UFPI · Memória SAET · k harmônico",m,7.5); y=16; }
   function mono(t){ doc.setFont("courier","normal"); doc.setFontSize(7); doc.setTextColor(28,25,23);
     var lines=doc.splitTextToSize(t,W-2*m); need(lines.length*3.1+0.8); doc.text(lines,m,y); y+=lines.length*3.1+0.8; }
   function sub(t){ need(6); doc.setFont("helvetica","bold"); doc.setFontSize(9.5); doc.setTextColor(154,52,18); doc.text(t,m,y); y+=4.5; }
-
-  var M=LAST.M, p=LAST.p, N=LAST.N;
+  var M=LAST.M, p=LAST.p;
   hdr();
   doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(28,25,23);
-  doc.text("MEMÓRIA DE CÁLCULO INTEGRAL",m,y); y+=7;
+  doc.text("MEMÓRIA INTEGRAL — gradiente isolante correto",m,y); y+=7;
   mono("Autor: Tarcísio Dias da Rocha | Orientador: Prof. Dr. Marcos A. T. Lira");
-  mono("Repo: github.com/EngRocha1/saet-forma-canonica | "+new Date().toISOString());
-  sub("1. CCs corrigidas");
-  mono("Injeção Robin: topo do NÚCLEO (j=jCore0, i<=iCoreEnd) hTop*(T-Tcarga)");
-  mono("Topo isolante externo / lateral / base: Robin perda hExt");
-  mono("r=0: Neumann | Dirichlet: não usado");
-  sub("2. Malha");
-  mono("nr x nz = "+M.nr+" x "+M.nz+" = "+N+" | R="+M.R+" L="+M.L);
-  mono("jCore0="+M.jCore0+" jCoreEnd="+M.jCoreEnd+" iCoreEnd="+M.iCoreEnd);
-  mono("Δt="+LAST.dt+" steps="+LAST.steps+" h="+LAST.hours+" Tc="+p.Tcharge);
-  sub("3. Newton — todos os passos amostrados");
+  mono("k_face = 2/(1/k1+1/k2) | materiais.json + sliders");
+  sub("1. Propriedades");
+  mono("hematita k="+MAT.hematita.k+" rho="+MAT.hematita.rho+" Cp="+MAT.hematita.cp);
+  mono("IFB k="+MAT.ifb.k+" | perlita k="+MAT.perlita.k+" | silicato k="+MAT.silicato.k+" | verm k="+MAT.vermiculita.k);
+  mono("k_face(hem,IFB)="+kFace(MAT.hematita.k,MAT.ifb.k).toFixed(5));
+  sub("2. CCs");
+  mono("Injeção Robin no topo do NÚCLEO | perdas Robin no contorno isolante | Neumann r=0");
+  sub("3. Newton");
   var src=LAST.fullHist.length?LAST.fullHist:LAST.frames;
   var stride=src.length>50?Math.ceil(src.length/40):1;
   src.forEach(function(f,idx){
-    if(idx%stride!==0 && idx!==src.length-1) return;
+    if(idx%stride!==0&&idx!==src.length-1) return;
     mono("--- t="+f.tH.toFixed(4)+" h ---");
-    (f.hist||[]).forEach(function(h){
-      mono("  iter "+h.iter+": ||R||="+Number(h.residual).toExponential(5)+(h.residual<1e-4?" [OK]":""));
-    });
-    if(f.hist&&f.hist.length>=2){
-      var k; for(k=0;k<f.hist.length-1;k++){
-        var a=f.hist[k].residual, b=f.hist[k+1].residual;
-        if(a>1e-30) mono("  rho="+((b/(a*a)).toExponential(3)));
-      }
-    }
+    (f.hist||[]).forEach(function(h){ mono("  iter "+h.iter+" ||R||="+Number(h.residual).toExponential(5)+(h.residual<1e-4?" [OK]":"")); });
   });
-  sub("4. |R_i| final (todos os nós)");
-  var last=src[src.length-1];
-  var nR=last.nodeResiduals||LAST.frames[LAST.frames.length-1].nodeResiduals;
-  if(nR){
-    var j,i;
-    for(j=0;j<M.nz;j++) for(i=0;i<M.nr;i++){
-      var gg=idx(i,j,M.nr);
-      var core=(j>=M.jCore0&&j<=M.jCoreEnd&&i<=M.iCoreEnd);
-      mono("("+i+","+j+") "+M.mat[gg]+(core?" NUCLEO":"")+" |R|="+nR[gg].toExponential(4));
-    }
-  }
-  sub("5. Resultados");
+  sub("4. Interface");
   var Tf=LAST.frames[LAST.frames.length-1].T;
-  var tmn=1e9,tmx=-1e9,tc=-1e9;
-  Tf.forEach(function(t,gg){
-    tmn=Math.min(tmn,t); tmx=Math.max(tmx,t);
-    var ii=gg%M.nr, jj=(gg/M.nr)|0;
-    if(jj>=M.jCore0&&jj<=M.jCoreEnd&&ii<=M.iCoreEnd) tc=Math.max(tc,t);
-  });
-  mono("T global ["+tmn.toFixed(2)+", "+tmx.toFixed(2)+"] | T_nucleo max="+tc.toFixed(2));
-  var row="T topo nucleo: ";
-  for(i=0;i<=M.iCoreEnd;i++) row+=Tf[idx(i,M.jCore0,M.nr)].toFixed(1)+" ";
-  mono(row);
-  sub("6. Referências");
-  mono("ROCHA; LIRA (2026) XV CBPE. BATHE (1996). CENGEL; GHAJAR (2020).");
-  try{
-    doc.addPage(); hdr();
-    doc.addImage($("c-field").toDataURL("image/png"),"PNG",m,20,W-2*m,90);
-    doc.addImage($("c-conv").toDataURL("image/png"),"PNG",m,120,W-2*m,80);
-  }catch(e){}
-  doc.save("Memoria_Integral_SAET_2D_XV_CBPE.pdf");
+  var Tc=0,nc=0,Ti=0,ni=0,i;
+  for(i=0;i<=M.iCoreEnd;i++){ Tc+=Tf[idx(i,M.jCore0,M.nr)]; nc++; if(M.jCore0>0){Ti+=Tf[idx(i,M.jCore0-1,M.nr)]; ni++;} }
+  mono("T_core_top="+ (Tc/nc).toFixed(2)+" T_iso_above="+(Ti/Math.max(ni,1)).toFixed(2)+" dT="+(Tc/nc-Ti/Math.max(ni,1)).toFixed(2));
+  try{ doc.addPage(); hdr(); doc.addImage($("c-field").toDataURL("image/png"),"PNG",m,20,W-2*m,95); }catch(e){}
+  doc.save("Memoria_SAET_kHarmonico_XV_CBPE.pdf");
 }
 
-/* wire */
-["hours","dt","tc","ht","hext","R","L","e1","e2","e3","eb1","eb2","eb3"].forEach(function(id){
+["hours","dt","tc","ht","hext","R","L","e1","e2","e3","eb1","eb2","eb3","kh","rh","cph","ki","kp","ks","kv"].forEach(function(id){
   $(id).addEventListener("input", updateLabels);
   $(id).addEventListener("change", run);
 });
 ["nr","nz"].forEach(function(id){ $(id).addEventListener("change", run); });
-$("prog").addEventListener("input", function(){
-  if(!LAST) return;
-  showFrame(Math.round((+$("prog").value/100)*(LAST.frames.length-1)));
-});
+$("prog").addEventListener("input", function(){ if(!LAST) return; showFrame(Math.round((+$("prog").value/100)*(LAST.frames.length-1))); });
 $("btn-play").addEventListener("click", togglePlay);
 $("btn-reset").addEventListener("click", function(){ if(playing) togglePlay(); showFrame(0); });
 $("btn-pdf").addEventListener("click", makePDF);
@@ -692,7 +677,7 @@ $("btn-iso").addEventListener("click", function(){ fillIsoModal(); $("modal-iso"
 $("iso-close").addEventListener("click", function(){ $("modal-iso").classList.remove("on"); });
 $("modal-iso").addEventListener("click", function(e){ if(e.target.id==="modal-iso") $("modal-iso").classList.remove("on"); });
 
-run();
+loadMaterialsJSON().then(function(){ run(); }).catch(function(){ run(); });
 })();
 </script>
 </body>
