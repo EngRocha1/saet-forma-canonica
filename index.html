@@ -1109,88 +1109,140 @@ function fillIsoModal(){
 function makePDF(){
   if(!LAST){ alert("Rode a simulação antes."); return; }
   var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
-  var W=doc.internal.pageSize.getWidth(), Hp=doc.internal.pageSize.getHeight(), m=12;
+  var W=doc.internal.pageSize.getWidth(), Hp=doc.internal.pageSize.getHeight(), m=14;
   var y=0;
-  function need(h){ if(y+h>Hp-12){ doc.addPage(); hdr(); } }
+  function need(h){ if(y+h>Hp-14){ doc.addPage(); hdr(); } }
   function hdr(){
-    doc.setFillColor(154,52,18); doc.rect(0,0,W,10,"F");
+    doc.setFillColor(154,52,18); doc.rect(0,0,W,11,"F");
     doc.setTextColor(255,247,237); doc.setFont("helvetica","bold"); doc.setFontSize(8);
-    doc.text("XV CBPE · PPGEE-UFPI · Memória integral linha a linha · SAET 2D",m,6.8); y=14;
+    doc.text("XV CBPE · PPGEE-UFPI · Memoria de Calculo · Demonstrador (recorte de tese)", m, 7.2);
+    y=15;
   }
   function mono(t){
-    doc.setFont("courier","normal"); doc.setFontSize(6.5); doc.setTextColor(28,25,23);
-    var lines=doc.splitTextToSize(t,W-2*m); need(lines.length*2.9+0.6); doc.text(lines,m,y); y+=lines.length*2.9+0.6;
+    doc.setFont("courier","normal"); doc.setFontSize(7); doc.setTextColor(28,25,23);
+    var lines=doc.splitTextToSize(String(t), W-2*m);
+    need(lines.length*3.0+0.5); doc.text(lines, m, y); y+=lines.length*3.0+0.5;
   }
   function sub(t){
-    need(5.5); doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(154,52,18);
-    doc.text(t,m,y); y+=4.2;
+    need(6); doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(154,52,18);
+    doc.text(String(t), m, y); y+=5;
   }
   function body(t){
-    doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(41,37,36);
-    var lines=doc.splitTextToSize(t,W-2*m); need(lines.length*3.4+1); doc.text(lines,m,y); y+=lines.length*3.4+1;
+    doc.setFont("helvetica","normal"); doc.setFontSize(9); doc.setTextColor(41,37,36);
+    var lines=doc.splitTextToSize(String(t), W-2*m);
+    need(lines.length*3.8+1.2); doc.text(lines, m, y); y+=lines.length*3.8+1.2;
+  }
+  function concept(title, texto, ref, formulaAscii, subst){
+    sub(title);
+    body(texto);
+    if(ref){ mono("Referencia: "+ref); }
+    if(formulaAscii){
+      mono("Formula (notacao ASCII, legivel em qualquer PDF):");
+      mono(formulaAscii);
+    }
+    if(subst){
+      mono("Substituicao numerica (valores desta simulacao):");
+      mono(subst);
+    }
   }
 
-  var M=LAST.M, p=LAST.p, N=LAST.N, src=LAST.fullHist.length?LAST.fullHist:LAST.frames;
+  var M=LAST.M, p=LAST.p, N=LAST.N;
+  var src=LAST.fullHist.length?LAST.fullHist:LAST.frames;
+  var alpha=LAST.alpha|| (MAT.hematita.k/(MAT.hematita.rho*MAT.hematita.cp));
+  var kH=MAT.hematita.k, rH=MAT.hematita.rho, cH=MAT.hematita.cp;
+  var kf=kFace(kH, MAT.ifb.k);
+
   hdr();
-  doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.setTextColor(28,25,23);
-  doc.text("MEMÓRIA DE CÁLCULO INTEGRAL — T nodal + diagonal J",m,y); y+=6;
-  mono("Autor: Tarcísio Dias da Rocha | Orientador: Prof. Dr. Marcos A. T. Lira");
-  mono("Repo: github.com/EngRocha1/saet-forma-canonica | "+new Date().toISOString());
-  mono("Malha canônica uniforme "+M.nr+"x"+M.nz+"="+N+" | Δr="+(M.dr0||0).toFixed(4)+" m Δz="+(M.dz0||0).toFixed(4)+" m");
-  mono("R="+M.R+" L="+M.L+" Rtot="+(M.Rtot||0).toFixed(3)+" Ztot="+(M.Ztot||0).toFixed(3)+" | dias="+LAST.days+" dt="+LAST.dt+"s");
-  mono("Tcarga="+p.Tcharge+" hTop="+p.hTop+" hExt="+p.hExt+" keff="+p.keff+" tlim="+p.tlim);
+  doc.setFont("helvetica","bold"); doc.setFontSize(13); doc.setTextColor(28,25,23);
+  doc.text("MEMORIA DE CALCULO — DEMONSTRADOR SAET 2D", m, y); y+=6;
+  doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  body("Autor: Tarcisio Dias da Rocha  |  Orientador: Prof. Dr. Marcos Antonio Tavares Lira (PPGEE/UFPI)");
+  body("Evento: XV Congresso Brasileiro de Planejamento Energetico (XV CBPE) — Joao Pessoa-PB, 04 a 06/11/2026.");
 
-  sub("1. Propriedades e k de face (harmônica)");
-  mono("hematita: k="+MAT.hematita.k+" rho="+MAT.hematita.rho+" Cp="+MAT.hematita.cp);
-  mono("IFB k="+MAT.ifb.k+" | perlita k="+MAT.perlita.k+" | silicato k="+MAT.silicato.k+" | verm k="+MAT.vermiculita.k);
-  mono("k_face(hem,IFB)=2/(1/k1+1/k2)="+kFace(MAT.hematita.k,MAT.ifb.k).toExponential(6));
-  mono("alpha_hem="+LAST.alpha.toExponential(6)+" m2/s | t_diff modo1 ~ "+fmt(LAST.tDiffDays,2)+" d");
+  sub("0. Natureza deste documento (recorte de tese)");
+  body("Este PDF e a memoria de calculo do DEMONSTRADOR WEB publico elaborado para o XV CBPE. Trata-se de um RECORTE da pesquisa de mestrado em andamento no Programa de Pos-Graduacao em Engenharia Eletrica (PPGEE/UFPI). O codigo-fonte integral da tese — implementacao de referencia em Python com Metodo dos Elementos Finitos (Galerkin), matrizes de capacitancia C e condutividade K, e inversao da Jacobiana esparsa via SciPy — NAO esta disponivel publicamente nesta etapa. O demonstrador (JavaScript, volumes finitos estruturados, Newton-Jacobi) serve a comunicacao e verificacao conceitual no congresso; resultados definitivos reportam-se a plataforma da tese quando publicada.");
+  mono("Demo: https://engrocha1.github.io/saet-forma-canonica/");
+  mono("Repo demonstrador: https://github.com/EngRocha1/saet-forma-canonica");
+  mono("Data de geracao: "+new Date().toISOString());
 
-  sub("2. Formulação residual e diagonal da Jacobiana (por nó g)");
-  body("Para cada volume de controle g, o residual R_g e a diagonal J_gg do Newton–Jacobi são:");
-  mono("R_g = rho*Cp*V*(T_g - T_g^n)/dt + sum faces (fluxo) + Robin");
-  mono("J_gg = rho*Cp*V/dt + sum |coef_face| + h*Area  (contribuições Robin)");
-  mono("Atualização: T_g <- T_g - R_g / J_gg");
-  mono("Faces interiores: coef = k_face * (área geométrica) / distância entre centros");
-  mono("k_face = média harmônica; no núcleo axial multiplica-se keff.");
+  concept(
+    "1. Equacao governante (conceito)",
+    "A conservacao de energia em meio continuo, na forma de conducao termica transiente, afirma que a taxa de acumulo de energia interna em um volume e igual ao balanco liquido de calor que entra pelas faces (sem geracao volumetrica no demonstrador). Em coordenadas cilindricas com simetria azimutal (campo independente do angulo), o fluxo radial e axial e descrito pela lei de Fourier.",
+    "INCROPERA et al. (2014); CENGEL e GHAJAR (2020); artigo ROCHA e LIRA, XV CBPE, sec. 2.8-2.10.",
+    "rho * Cp * dT/dt = (1/r) * d/dr ( r * k * dT/dr ) + d/dz ( k * dT/dz )",
+    "rho="+rH+" kg/m3 | Cp="+cH+" J/(kg.K) | k_hem="+kH+" W/(m.K) | alpha=k/(rho*Cp)="+alpha.toExponential(4)+" m2/s"
+  );
 
-  sub("3. Newton — residual e diagonal J por iteração (passos amostrados)");
-  var stride=src.length>40?Math.ceil(src.length/35):1;
+  concept(
+    "2. Discretizacao espacial (malha canonica uniforme)",
+    "Adota-se malha estruturada no plano (r,z) com espacamento CONSTANTE em todo o dominio composto (nucleo + isolante). Cada celula e um volume de controle; propriedades termofisicas sao atribuidas pelo material do centro da celula. Nas faces entre materiais distintos, a condutividade de face usa media HARMONICA (adequada a conducao em serie).",
+    "PATANKAR (1980); VERSTEEG e MALALASEKERA (2007); artigo sec. 2.9.",
+    "dr = R_tot / n_r    |    dz = Z_tot / n_z    (uniformes)\nk_face = 2 / (1/k_a + 1/k_b)",
+    "n_r="+M.nr+" | n_z="+M.nz+" | N_nos="+N+"\ndr="+(M.dr0?M.dr0.toFixed(5):"?")+" m | dz="+(M.dz0?M.dz0.toFixed(5):"?")+" m\nR="+M.R+" m | L="+M.L+" m | R_tot="+(M.Rtot?M.Rtot.toFixed(3):"?")+" m | Z_tot="+(M.Ztot?M.Ztot.toFixed(3):"?")+" m\nk_face(hem,IFB)="+kf.toExponential(5)+" W/(m.K)"
+  );
+
+  concept(
+    "3. Condicoes de contorno",
+    "No eixo (r=0) impõe-se fluxo nulo por simetria (Neumann). A injecao renovavel e modelada por condicao de Robin no TOPO DO NUCLEO (nao no isolante externo). Nas fronteiras externas do envelope isolante aplica-se Robin de perda para o ambiente e para o solo.",
+    "Artigo ROCHA e LIRA, XV CBPE, sec. 2.9-2.10; INCROPERA et al. (2014).",
+    "Eixo:    q_r = 0  em  r = 0\nTopo nucleo:  -k dT/dz = h_top * (T - T_carga)\nExterno:      -k dT/dn = h_ext * (T - T_amb)   (ou T_solo na base)",
+    "h_top="+p.hTop+" W/(m2.K) | T_carga="+p.Tcharge+" C\nh_ext="+p.hExt+" W/(m2.K) | T_amb=37 C | T_solo=25 C\nkeff axial no nucleo (opcional)="+p.keff
+  );
+
+  concept(
+    "4. Euler implicito (avanco temporal)",
+    "O esquema de Euler implicito avalia os fluxos no instante futuro. E incondicionalmente estavel para o problema de difusao linear e adequado a passos de tempo longos (horas/dias de carga do SAET).",
+    "BATHE (1996); OZISIK (1993).",
+    "rho*Cp*V * (T^{n+1} - T^{n}) / dt  +  Fluxos(T^{n+1})  +  Robin(T^{n+1})  =  0",
+    "dt = "+LAST.dt+" s  ("+(LAST.dt/3600).toFixed(2)+" h) | horizonte = "+LAST.days+" dias ("+LAST.hours+" h) | passos = "+LAST.steps
+  );
+
+  concept(
+    "5. Newton e diagonal da Jacobiana (demonstrador)",
+    "A cada passo de tempo resolve-se o sistema nao linear no residual R(T)=0. No demonstrador web adota-se a aproximacao de Newton-Jacobi: usa-se apenas a DIAGONAL da Jacobiana J (derivada de R em relacao a T em cada no), o que e suficiente para convergir o residual em malhas moderadas e evita inversao densa no navegador. A implementacao de tese emprega Jacobiana esparsa completa (SciPy).",
+    "BATHE (1996); SOUZA (2021).",
+    "R_g = termo_capacitivo + sum(fluxos nas faces) + termos Robin\nJ_gg = dR_g/dT_g  (diagonal)\nAtualizacao:  T_g  <-  T_g  -  R_g / J_gg",
+    "Criterio de parada: ||R|| < 1e-4\nJ_gg inclui: rho*Cp*V/dt + coeficientes de face + h*Area"
+  );
+
+  sub("6. Iteracoes no tempo — residual, razao quadratica e diagonal J");
+  body("Para cada instante amostrado: (i) conceito = satisfazer R(T)=0 no passo implicito; (ii) formula de atualizacao acima; (iii) substituicao com ||R|| por iteracao e amostra de J_gg; (iv) razao rho = ||R||_{k+1} / ||R||_k^2 (valores tipicos pequenos indicam queda acelerada).");
+  var stride=src.length>36?Math.ceil(src.length/30):1;
   var si;
   for(si=0;si<src.length;si++){
     if(si%stride!==0 && si!==src.length-1) continue;
     var step=src[si];
-    mono("======== t = "+Number(step.tH).toFixed(4)+" h ========");
+    mono("-------- t = "+Number(step.tH).toFixed(4)+" h --------");
     (step.hist||[]).forEach(function(h){
-      mono("  iter "+h.iter+": ||R|| = "+Number(h.residual).toExponential(6)+(h.residual<1e-4?"  [OK]":""));
+      mono("  iter "+h.iter+": ||R|| = "+Number(h.residual).toExponential(5)+(h.residual<1e-4?"  [convergido]":""));
       if(h.diag && h.diag.length){
-        // first 8 and last note
-        var nShow=Math.min(12, h.diag.length);
-        var line="    diag J[0.."+ (nShow-1) +"]: ";
-        var di;
+        var nShow=Math.min(10, h.diag.length), line="    J_gg[0.."+(nShow-1)+"] = ", di;
         for(di=0;di<nShow;di++) line+=Number(h.diag[di]).toExponential(3)+(di<nShow-1?" | ":"");
         mono(line);
-        if(h.diag.length>nShow) mono("    ... ("+h.diag.length+" elementos na diagonal)");
       }
     });
     if(step.hist && step.hist.length>=2){
       var k;
       for(k=0;k<step.hist.length-1;k++){
         var a=step.hist[k].residual, b=step.hist[k+1].residual;
-        if(a>1e-30) mono("  rho_"+ (k+1) +" = ||R||_{k+1}/||R||_k^2 = "+(b/(a*a)).toExponential(4));
+        if(a>1e-30) mono("  rho_"+(k+1)+" = ||R||next / ||R||^2 = "+(b/(a*a)).toExponential(4));
       }
     }
   }
 
-  sub("4. Temperaturas nodais T(i,j) em cada tempo amostrado");
-  body("Coordenadas: g = j*nr + i | i=0..nr-1 (r) | j=0..nz-1 (z). Núcleo: j in [jCore0,jCoreEnd], i<=iCoreEnd.");
-  mono("jCore0="+M.jCore0+" jCoreEnd="+M.jCoreEnd+" iCoreEnd="+M.iCoreEnd);
+  sub("7. Temperaturas nodais T(i,j) — substituicao a cada tempo amostrado");
+  body("Conceito: apos a convergencia de Newton no passo n, o campo T e o estado termico do dominio. Indice g = j*n_r + i. Marcador N = nucleo (hematita), I = isolante.");
+  mono("jCore0="+M.jCore0+" | jCoreEnd="+M.jCoreEnd+" | iCoreEnd="+M.iCoreEnd);
   for(si=0;si<src.length;si++){
     if(si%stride!==0 && si!==src.length-1) continue;
     var step2=src[si];
-    var Tv=step2.T || (LAST.frames.filter(function(fr){return Math.abs(fr.tH-step2.tH)<1e-9;})[0]||{}).T;
+    var Tv=step2.T;
+    if(!Tv){
+      var fr=LAST.frames.filter(function(f){return Math.abs(f.tH-step2.tH)<1e-6;})[0];
+      if(fr) Tv=fr.T;
+    }
     if(!Tv) continue;
-    mono("----- T [°C] em t = "+Number(step2.tH).toFixed(4)+" h -----");
+    mono("----- T [C] em t = "+Number(step2.tH).toFixed(4)+" h -----");
     var j,i,line;
     for(j=0;j<M.nz;j++){
       line="z"+j+": ";
@@ -1203,55 +1255,59 @@ function makePDF(){
     }
   }
 
-  sub("5. Diagonal J final (último passo) completa");
+  sub("8. Diagonal J completa no estado final (todos os nos)");
+  body("Conceito: J_gg concentra a sensibilidade local do residual a temperatura do proprio no. Valores elevados indicam forte acoplamento capacitivo e/ou contorno Robin.");
   var last=src[src.length-1];
   var dfin=last.diag;
   if(!dfin && last.hist && last.hist.length) dfin=last.hist[last.hist.length-1].diag;
   if(dfin){
-    for(var g=0;g<dfin.length;g++){
-      var i=g%M.nr, j=(g/M.nr)|0;
-      mono("J["+g+"] (i="+i+",j="+j+", mat="+M.mat[g]+") = "+Number(dfin[g]).toExponential(6));
+    var g;
+    for(g=0;g<dfin.length;g++){
+      var ii=g%M.nr, jj=(g/M.nr)|0;
+      mono("J_gg["+g+"] i="+ii+" j="+jj+" mat="+M.mat[g]+" = "+Number(dfin[g]).toExponential(6));
     }
-  } else mono("(diagonal não armazenada neste passo — rode novamente a simulação)");
+  } else mono("(Execute novamente a simulacao apos esta versao para gravar a diagonal.)");
 
-  sub("6. Resíduos nodais |R_i| no estado final");
-  var nR=last.nodeResiduals || (LAST.frames[LAST.frames.length-1]||{}).nodeResiduals;
+  sub("9. Residuos nodais |R_i| finais");
+  body("Conceito: |R_i| e o desequilibrio de energia no volume de controle i apos a ultima iteracao. Ordem 1e-4 a 1e-12 indica conservacao discreta satisfatoria.");
+  var nR=last.nodeResiduals||(LAST.frames[LAST.frames.length-1]||{}).nodeResiduals;
   if(nR){
     for(g=0;g<nR.length;g++){
-      i=g%M.nr; j=(g/M.nr)|0;
-      mono("|R|("+i+","+j+") mat="+M.mat[g]+" = "+Number(nR[g]).toExponential(5));
+      ii=g%M.nr; jj=(g/M.nr)|0;
+      mono("|R|("+ii+","+jj+") "+M.mat[g]+" = "+Number(nR[g]).toExponential(5));
     }
   }
 
-  sub("7. Energia e termoclina");
-  mono("E_util max = "+((LAST.EmaxUseful||0)/1e9).toFixed(4)+" GJ");
-  if(LAST.tFrontBreak>0) mono("Fim termoclina em t = "+LAST.tFrontBreak.toFixed(2)+" h");
-  else mono("Termoclina intacta no horizonte");
-  var Tf=(LAST.frames[LAST.frames.length-1]||{}).T;
-  if(Tf){
-    var tmn=1e9,tmx=-1e9,tc=-1e9;
-    Tf.forEach(function(t,gg){
-      tmn=Math.min(tmn,t); tmx=Math.max(tmx,t);
-      var ii=gg%M.nr, jj=(gg/M.nr)|0;
-      if(jj>=M.jCore0&&jj<=M.jCoreEnd&&ii<=M.iCoreEnd) tc=Math.max(tc,t);
-    });
-    mono("T global ["+tmn.toFixed(2)+", "+tmx.toFixed(2)+"] | T_nucleo max="+tc.toFixed(2));
-  }
+  sub("10. Energia armazenada e termoclina");
+  body("Conceito: a energia termica armazenada no nucleo e a integral de rho*Cp*(T-T0) no volume de hematita. A carga maxima UTIL e o valor de E no instante em que a temperatura media da BASE do nucleo atinge o limite escolhido (preservacao da estratificacao / protecao da fundacao).");
+  mono("E_util_max = "+((LAST.EmaxUseful||0)/1e9).toFixed(4)+" GJ");
+  if(LAST.tFrontBreak>0) mono("Fim da termoclina (T_base >= limite) em t = "+LAST.tFrontBreak.toFixed(2)+" h");
+  else mono("Termoclina intacta no horizonte simulado");
+  mono("limite T_base = "+p.tlim+" C | alpha = "+alpha.toExponential(4)+" m2/s | t_diff modo1 ~ "+fmt(LAST.tDiffDays,2)+" dias");
 
-  sub("8. Referências");
-  mono("ROCHA; LIRA (2026) XV CBPE §2.8-2.10. BATHE (1996). CENGEL; GHAJAR (2020). INCROPERA et al. (2014).");
+  sub("11. Penetracao termica (interpretacao fisica)");
+  body("Por conducao pura, a espessura tipica da frente e da ordem de sqrt(alpha * t). Com alpha da hematita ~ 6e-7 m2/s, dezenas de horas aquecem apenas a faixa superior do leito; a frente completa da Fig. 3 do artigo, em prazos curtos, pressupoe transporte efetivo no packed bed (contato/radiacao), representado no demonstrador pelo fator keff axial opcional.");
+  mono("sqrt(alpha * t_final) ~ "+Math.sqrt(alpha*LAST.hours*3600).toFixed(3)+" m  (keff=1)");
+  mono("sqrt(alpha * keff * t_final) ~ "+Math.sqrt(alpha*(p.keff||1)*LAST.hours*3600).toFixed(3)+" m");
 
+  sub("12. Referencias");
+  mono("ROCHA, T. D.; LIRA, M. A. T. Otimizacao geometrica, economica e termofisica para SAET. XV CBPE, 2026.");
+  mono("BATHE, K. J. Finite Element Procedures. 1996.");
+  mono("INCROPERA, F. P. et al. Fundamentals of Heat and Mass Transfer. 2014.");
+  mono("CENGEL, Y.; GHAJAR, A. Heat and Mass Transfer. 2020.");
+  mono("PATANKAR, S. V. Numerical Heat Transfer and Fluid Flow. 1980.");
+  mono("SOUZA (2021) — metodologia numerica citada no artigo.");
+  mono("VIRTANEN et al. (2020) SciPy; HARRIS et al. (2020) NumPy — plataforma da TESE (nao deste demonstrador).");
+
+  sub("13. Figuras da sessao");
   try{
-    doc.addPage(); hdr();
-    doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.setTextColor(28,25,23);
-    doc.text("Figuras da simulação",m,y); y+=6;
-    if($("c-field")){ doc.addImage($("c-field").toDataURL("image/png"),"PNG",m,y,W-2*m,88); y+=92; }
-    if(y>160){ doc.addPage(); hdr(); }
-    if($("c-charge")){ doc.addImage($("c-charge").toDataURL("image/png"),"PNG",m,y,W-2*m,70); y+=76; }
-    if($("c-conv")){ need(70); doc.addImage($("c-conv").toDataURL("image/png"),"PNG",m,y,W-2*m,65); }
+    if($("c-field")){ need(90); doc.addImage($("c-field").toDataURL("image/png"),"PNG",m,y,W-2*m,85); y+=90; }
+    if($("c-charge")){ need(75); doc.addImage($("c-charge").toDataURL("image/png"),"PNG",m,y,W-2*m,68); y+=72; }
+    if($("c-conv")){ need(70); doc.addImage($("c-conv").toDataURL("image/png"),"PNG",m,y,W-2*m,62); y+=66; }
   }catch(e){ mono("Figuras: "+e.message); }
 
-  doc.save("Memoria_Integral_SAET_T_Jacobiana_XV_CBPE.pdf");
+  body("Fim da memoria. Documento gerado pelo demonstrador XV CBPE — recorte de tese PPGEE/UFPI; codigo completo da dissertacao ainda nao publico.");
+  doc.save("Memoria_Integral_SAET_Demonstrador_XV_CBPE_PPGEE_UFPI.pdf");
 }
 
 ["days","dt","tlim","tc","ht","hext","keff","R","L","e1","e2","e3","eb1","eb2","eb3","kh","rh","cph","ki","kp","ks","kv"].forEach(function(id){
