@@ -33,13 +33,7 @@ A implementação **robusta** (MEF Galerkin, matrizes esparsas, solver Newton co
 
 Equação no domínio axissimétrico:
 
-\[
-\rho C_p \frac{\partial T}{\partial t}
-=
-\frac{1}{r}\frac{\partial}{\partial r}\!\left(r k \frac{\partial T}{\partial r}\right)
-+
-\frac{\partial}{\partial z}\!\left(k \frac{\partial T}{\partial z}\right)
-\]
+ρ⋅Cp⋅∂T/∂t=1/r  ∂/∂r  (r⋅k⋅∂T/∂r)+∂/∂z(k⋅∂T/∂z)
 
 | Item | Configuração do demonstrador |
 |------|------------------------------|
