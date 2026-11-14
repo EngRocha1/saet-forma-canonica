@@ -72,7 +72,7 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
   <div>
     <p class="kicker">XV CBPE · PPGEE-UFPI · k harmônico · materiais.json</p>
     <h1>SAET 2D · Núcleo quente · isolante com gradiente brusco</h1>
-    <p class="lede">Calor acumula no leito de hematita. Nas interfaces, k de face = média harmônica. Isolantes (k ≪ k_núcleo) bloqueiam o calor — queda acentuada de T ao entrar no envelope.</p>
+    <p class="lede">Carga resistiva no topo do núcleo (sem gás no leito). k de face = média harmônica. Sem fator oculto de condutividade. Núcleo: areia, alumina ou hematita, com ρ de leito = (1−ε)·ρ_sólido.</p>
   </div>
   <div class="actions">
     <button class="btn iso" id="btn-iso" type="button">Isolação + materiais</button>
@@ -95,11 +95,12 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
   <label>Δt (h) <span id="v-dt">1 h</span><input id="dt" type="range" min="0.5" max="12" step="0.5" value="2"/></label>
   <label>T_base limite termoclina (°C) <span id="v-tlim">80</span><input id="tlim" type="range" min="40" max="400" step="10" value="80"/></label>
   <p class="note" style="font-size:11px">Carga “máxima sem destruir a frente”: parar quando T na base do núcleo ≥ limite (estratificação ainda intacta).</p>
-  <label>T carga ≤850 °C <span id="v-tc">850 °C</span><input id="tc" type="range" min="200" max="850" step="10" value="850"/></label>
+  <label>T carga resistiva (°C) <span id="v-tc">1000 °C</span><input id="tc" type="range" min="200" max="1000" step="10" value="1000"/></label>
   <label>h injeção (topo núcleo) <span id="v-ht">100</span><input id="ht" type="range" min="20" max="300" step="5" value="100"/></label>
   <label>h_ext perda <span id="v-hext">10</span><input id="hext" type="range" min="2" max="25" step="1" value="10"/></label>
-  <p class="note"><b style="color:var(--ink)">Transporte no núcleo</b> · puro = condução real (√αt≈0,4 m em 72 h). Efetivo ≈ frente do artigo (contato + radiação no leito).</p>
-  <label>k_axial efetivo / k_hem <span id="v-keff">1.0</span><input id="keff" type="range" min="1" max="80" step="1" value="1"/></label>
+  <p class="note"><b style="color:var(--ink)">Condução pura</b> · não há multiplicador axial. √(αt) é o alcance físico com o k do deslizante.</p>
+  <label>Porosidade do leito ε <span id="v-eps">0.40</span><input id="eps" type="range" min="0.20" max="0.60" step="0.01" value="0.40"/></label>
+  <p class="note" style="font-size:11px">ε = 0,40 é o valor da Eq. (2) da dissertação. ρ usada na energia = (1−ε)·ρ_sólido. Não é um fator escondido.</p>
   <p class="note" id="note-alpha" style="font-size:11px">α e √(αt) calculados após simular.</p>
   <p class="note"><b style="color:var(--ink)">Espessuras isolação (cm)</b></p>
   <label>IFB topo/lat <span id="v-e1">15</span><input id="e1" type="range" min="5" max="30" step="1" value="15"/></label>
@@ -109,12 +110,32 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
   <label>Silicato base <span id="v-eb2">50</span><input id="eb2" type="range" min="20" max="100" step="5" value="50"/></label>
   <label>Vermiculita base <span id="v-eb3">50</span><input id="eb3" type="range" min="20" max="100" step="5" value="50"/></label>
 
-  <p class="note"><b style="color:var(--ink)">Propriedades (materiais.json · deslizantes)</b></p>
-  <div class="mat-block">
-    <h4>Hematita · k</h4>
-    <label>k (W/m·K) <span id="v-kh">1.20</span><input id="kh" type="range" min="0.4" max="3" step="0.05" value="1.2"/></label>
-    <label>ρ <span id="v-rh">3120</span><input id="rh" type="range" min="2000" max="4500" step="50" value="3120"/></label>
-    <label>Cp <span id="v-cph">650</span><input id="cph" type="range" min="400" max="1200" step="10" value="650"/></label>
+  <p class="note"><b style="color:var(--ink)">Núcleo ativo</b></p>
+  <label>Material do núcleo
+    <select id="core-sel">
+      <option value="areia">Areia de sílica</option>
+      <option value="alumina">Alumina calcinada</option>
+      <option value="hematita" selected>Hematita</option>
+    </select>
+  </label>
+  <p class="note" style="font-size:11px">ρ e Cp iniciais: dissertação §10.2 (Incropera et al., 2014; Anthony et al., 1990). k é o k efetivo do leito usado na EDP, ajustável, sem keff.</p>
+  <div class="mat-block" id="blk-areia">
+    <h4>Areia de sílica · sólido</h4>
+    <label>k efetivo <span id="v-ka">1.20</span><input id="ka" type="range" min="0.05" max="5" step="0.05" value="1.2"/></label>
+    <label>ρ sólido <span id="v-ra">2650</span><input id="ra" type="range" min="1500" max="3000" step="10" value="2650"/></label>
+    <label>Cp <span id="v-cpa">885</span><input id="cpa" type="range" min="400" max="1500" step="5" value="885"/></label>
+  </div>
+  <div class="mat-block" id="blk-alumina">
+    <h4>Alumina calcinada · sólido</h4>
+    <label>k efetivo <span id="v-kal">1.20</span><input id="kal" type="range" min="0.05" max="5" step="0.05" value="1.2"/></label>
+    <label>ρ sólido <span id="v-ral">3970</span><input id="ral" type="range" min="2500" max="4500" step="10" value="3970"/></label>
+    <label>Cp <span id="v-cpal">1000</span><input id="cpal" type="range" min="400" max="1500" step="5" value="1000"/></label>
+  </div>
+  <div class="mat-block" id="blk-hematita">
+    <h4>Hematita · sólido</h4>
+    <label>k efetivo <span id="v-kh">1.20</span><input id="kh" type="range" min="0.05" max="5" step="0.05" value="1.2"/></label>
+    <label>ρ sólido <span id="v-rh">5150</span><input id="rh" type="range" min="4000" max="5500" step="10" value="5150"/></label>
+    <label>Cp <span id="v-cph">800</span><input id="cph" type="range" min="400" max="1500" step="5" value="800"/></label>
   </div>
   <div class="mat-block">
     <h4>IFB · k baixo</h4>
@@ -151,7 +172,7 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 </aside>
 <div>
   <div class="quote">
-    <p>«Penetração por condução: √(αt). Com α≈6×10⁻⁷ m²/s, em 72 h √(αt)≈0,4 m — só o topo do leito aquece. Frente rápida do artigo exige transporte efetivo (contato/radiação) ou keff>1.»</p>
+    <p>«Penetração por condução pura: √(αt). Não há fator de amplificação da condutividade. A frente avança só com o k efetivo escolhido no controle.»</p>
     <cite>ROCHA; LIRA, XV CBPE 2026 §2.8 · INCROPERA et al. (2014)</cite>
   </div>
   <figure>
@@ -169,6 +190,7 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
     </figcaption>
     <canvas id="c-charge" width="860" height="320"></canvas>
     <div class="legend" id="leg-charge"></div>
+    <div id="cmp-box" class="note" style="font-size:12px;margin-top:8px;white-space:pre-line">Comparação dos três núcleos (mesma geometria, mesmo ε, condução pura) aparece após simular.</div>
   </figure>
   <figure>
     <figcaption>Convergência Newton · log₁₀‖R‖
@@ -217,13 +239,24 @@ canvas{width:100%;height:auto;display:block;background:#111;border:1px solid #33
 (function(){
 "use strict";
 /* Defaults espelham materiais.json (carregado se disponível) */
+var CORE = "hematita";
+var SOLIDS = {
+  areia:{name:"Areia de sílica",k:1.2,rho:2650,cp:885},
+  alumina:{name:"Alumina calcinada",k:1.2,rho:3970,cp:1000},
+  hematita:{name:"Hematita",k:1.2,rho:5150,cp:800}
+};
 var MAT = {
-  hematita:{name:"Hematita seca",k:1.2,rho:3120,cp:650},
+  areia:{name:"Areia de sílica",k:1.2,rho:1590,cp:885,rhoSolid:2650},
+  alumina:{name:"Alumina calcinada",k:1.2,rho:2382,cp:1000,rhoSolid:3970},
+  hematita:{name:"Hematita",k:1.2,rho:3090,cp:800,rhoSolid:5150},
   ifb:{name:"IFB",k:0.15,rho:600,cp:900},
   perlita:{name:"Perlita",k:0.051,rho:105,cp:900},
   silicato:{name:"Silicato Ca",k:0.059,rho:190,cp:850},
   vermiculita:{name:"Vermiculita",k:0.065,rho:100,cp:900}
 };
+function isCore(name){ return name==="areia"||name==="alumina"||name==="hematita"; }
+function epsNow(){ var e=+$("eps").value; if(!(e>0&&e<0.95)) e=0.40; return e; }
+
 var Tamb=37, Tsolo=25, Tinit=25;
 var LAST=null, frames=[], fullHist=[], playing=false, playTimer=null, frameIdx=0, MESH=null;
 var showArrows=false, showLabels=true;
@@ -237,7 +270,20 @@ function kFace(k1,k2){
   return 2/(1/k1+1/k2);
 }
 function syncMatFromUI(){
-  MAT.hematita.k=+$("kh").value; MAT.hematita.rho=+$("rh").value; MAT.hematita.cp=+$("cph").value;
+  CORE = $("core-sel").value || "hematita";
+  var e = epsNow();
+  var spec = {
+    areia:["ka","ra","cpa"],
+    alumina:["kal","ral","cpal"],
+    hematita:["kh","rh","cph"]
+  };
+  Object.keys(spec).forEach(function(key){
+    var ids = spec[key];
+    MAT[key].k = +$(ids[0]).value;
+    MAT[key].rhoSolid = +$(ids[1]).value;
+    MAT[key].cp = +$(ids[2]).value;
+    MAT[key].rho = (1-e)*MAT[key].rhoSolid;
+  });
   MAT.ifb.k=+$("ki").value;
   MAT.perlita.k=+$("kp").value;
   MAT.silicato.k=+$("ks").value;
@@ -248,7 +294,7 @@ function loadMaterialsJSON(){
     if(!r.ok) throw new Error("no json");
     return r.json();
   }).then(function(data){
-    ["hematita","ifb","perlita","silicato","vermiculita"].forEach(function(key){
+    ["ifb","perlita","silicato","vermiculita"].forEach(function(key){
       if(data[key]){
         if(data[key].k!=null) MAT[key].k=data[key].k;
         if(data[key].rho!=null) MAT[key].rho=data[key].rho;
@@ -256,7 +302,7 @@ function loadMaterialsJSON(){
         if(data[key].name) MAT[key].name=data[key].name;
       }
     });
-    $("kh").value=MAT.hematita.k; $("rh").value=MAT.hematita.rho; $("cph").value=MAT.hematita.cp;
+    $("kh").value=SOLIDS.hematita.k; $("rh").value=SOLIDS.hematita.rho; $("cph").value=SOLIDS.hematita.cp;
     $("ki").value=MAT.ifb.k; $("kp").value=MAT.perlita.k; $("ks").value=MAT.silicato.k; $("kv").value=MAT.vermiculita.k;
     updateLabels();
   }).catch(function(){ /* defaults already set */ });
@@ -301,7 +347,7 @@ function buildMesh(){
       if(rl < e1+e2) return "perlita";
       return "ifb";
     }
-    return "hematita";
+    return CORE;
   }
 
   var mat=new Array(nr*nz);
@@ -312,7 +358,7 @@ function buildMesh(){
       var zc=0.5*(zEdges[j]+zEdges[j+1]);
       var g=idx(i,j,nr);
       mat[g]=matAt(rc,zc);
-      if(mat[g]==="hematita"){
+      if(isCore(mat[g])){
         if(i>iCoreEnd) iCoreEnd=i;
         if(j<jCore0) jCore0=j;
         if(j>jCoreEnd) jCoreEnd=j;
@@ -338,7 +384,6 @@ function buildMesh(){
 function residualDiag(T,Told,p,M,dt){
   var nr=M.nr, nz=M.nz, N=nr*nz;
   var R=new Float64Array(N), diag=new Float64Array(N);
-  var keff = (p && p.keff) ? p.keff : 1.0;
   var i,j,g;
   for(j=0;j<nz;j++){
     for(i=0;i<nr;i++){
@@ -367,8 +412,6 @@ function residualDiag(T,Told,p,M,dt){
       if(j>0){
         var gT=idx(i,j-1,nr);
         var k1=MAT[M.mat[g]].k, k2=MAT[M.mat[gT]].k;
-        // reforço axial só dentro do núcleo (frente térmica efetiva / artigo)
-        if(M.mat[g]==="hematita" && M.mat[gT]==="hematita"){ k1*=keff; k2*=keff; }
         var kfT=kFace(k1,k2);
         var coefT=area*kfT/(M.zC(j)-M.zC(j-1));
         R[g]+=coefT*(T[g]-T[gT]); diag[g]+=coefT;
@@ -378,7 +421,6 @@ function residualDiag(T,Told,p,M,dt){
       if(j<nz-1){
         var gB=idx(i,j+1,nr);
         var k1b=MAT[M.mat[g]].k, k2b=MAT[M.mat[gB]].k;
-        if(M.mat[g]==="hematita" && M.mat[gB]==="hematita"){ k1b*=keff; k2b*=keff; }
         var kfB=kFace(k1b,k2b);
         var coefB=area*kfB/(M.zC(j+1)-M.zC(j));
         R[g]-=coefB*(T[gB]-T[g]); diag[g]+=coefB;
@@ -416,7 +458,9 @@ function coreEnergy(T,M){
       g=idx(i,j,M.nr);
       var r=M.rC(i), V=r*M.dr(i)*M.dz(j);
       // axisymmetric ring volume already as r*dr*dz * 1 rad? model uses 2D slice factor r*dr*dz as relative measure
-      E += MAT.hematita.rho*MAT.hematita.cp*(T[g]-Tinit)*V;
+      var mk = M.mat[g];
+      if(!isCore(mk)) continue;
+      E += MAT[mk].rho*MAT[mk].cp*(T[g]-Tinit)*V;
     }
   }
   // scale as full cylinder: multiply by 2π for physical Joules of full tank
@@ -440,7 +484,7 @@ function simulate(){
   var dt=+$("dt").value*3600; // hours -> seconds
   var hours=days*24;
   var tlim=+$("tlim").value;
-  var p={hTop:+$("ht").value, hExt:+$("hext").value, Tcharge:+$("tc").value, keff:+$("keff").value, tlim:tlim};
+  var p={hTop:+$("ht").value, hExt:+$("hext").value, Tcharge:+$("tc").value, tlim:tlim, core:CORE, eps:epsNow()};
   var steps=Math.max(1,Math.round(hours*3600/dt)), N=M.nr*M.nz;
   var T=new Array(N), i; for(i=0;i<N;i++) T[i]=Tinit;
   var E0=coreEnergy(T,M);
@@ -467,13 +511,30 @@ function simulate(){
     }
   }
   // theoretical times
-  var alpha=MAT.hematita.k/(MAT.hematita.rho*MAT.hematita.cp);
+  var alpha=MAT[CORE].k/(MAT[CORE].rho*MAT[CORE].cp);
   var tDiffDays = (M.L*M.L)/(Math.PI*Math.PI*alpha) / 86400; // first mode
   var tDiffDays2 = (M.L*M.L)/alpha / 86400;
   LAST={p:p,M:M,dt:dt,steps:steps,hours:hours,days:days,N:N,frames:frames,fullHist:fullHist,
     chargeCurve:chargeCurve,tFrontBreak:tFrontBreak,EmaxUseful:EmaxUseful,
     tDiffDays:tDiffDays,tDiffDays2:tDiffDays2,alpha:alpha,
     matSnapshot:JSON.parse(JSON.stringify(MAT))};
+
+  var cmp = {};
+  ["areia","alumina","hematita"].forEach(function(key){
+    var cap = MAT[key].rho*MAT[key].cp;
+    var capS = cap / Math.max(MAT.areia.rho*MAT.areia.cp, 1e-9);
+    cmp[key] = {rho:MAT[key].rho, rhoS:MAT[key].rhoSolid, cp:MAT[key].cp, k:MAT[key].k, capRel:capS};
+  });
+  LAST.cmp = cmp;
+  if($("cmp-box")){
+    var lines = ["Mesma geometria. ε="+fmt(p.eps,2)+". ρ_leito=(1−ε)·ρ_sólido. Sem keff. T_carga="+p.Tcharge+" °C. Núcleo desenhado: "+CORE+"."];
+    ["areia","alumina","hematita"].forEach(function(key){
+      var c = cmp[key];
+      lines.push(MAT[key].name+": ρ_s="+fmt(c.rhoS,0)+" kg/m³ · ρ_leito="+fmt(c.rho,0)+" · Cp="+fmt(c.cp,0)+" · k="+fmt(c.k,2)+" · (ρCp)/(ρCp)_areia="+fmt(c.capRel,3));
+    });
+    $("cmp-box").textContent = lines.join("\n");
+  }
+
   return LAST;
 }
 
@@ -536,7 +597,7 @@ function drawField(){
       qr=-kFace(k,MAT[M.mat[idx(i+1,j,M.nr)]].k)*(T[idx(i+1,j,M.nr)]-T[g])/(M.rC(i+1)-M.rC(i));
     else if(i>0)
       qr=-kFace(k,MAT[M.mat[idx(i-1,j,M.nr)]].k)*(T[g]-T[idx(i-1,j,M.nr)])/(M.rC(i)-M.rC(i-1));
-    var kAx=k*(M.mat[g]==="hematita"?(p.keff||1):1);
+    var kAx=k;
     if(j>0&&j<M.nz-1) qz=-kAx*(T[idx(i,j+1,M.nr)]-T[idx(i,j-1,M.nr)])/(M.zC(j+1)-M.zC(j-1));
     else if(j<M.nz-1) qz=-kAx*(T[idx(i,j+1,M.nr)]-T[g])/(M.zC(j+1)-M.zC(j));
     else if(j>0) qz=-kAx*(T[g]-T[idx(i,j-1,M.nr)])/(M.zC(j)-M.zC(j-1));
@@ -569,7 +630,7 @@ function drawField(){
     var col=heatColor(T[g],tmin,tmax);
     ctx.fillStyle="rgb("+(col[0]|0)+","+(col[1]|0)+","+(col[2]|0)+")";
     ctx.fillRect(x+0.4,y+0.4,Math.max(ww-0.8,1),Math.max(hh-0.8,1));
-    ctx.strokeStyle=M.mat[g]==="hematita"?"rgba(251,146,60,0.95)":"rgba(34,211,238,0.85)";
+    ctx.strokeStyle=isCore(M.mat[g])?"rgba(251,146,60,0.95)":"rgba(34,211,238,0.85)";
     ctx.lineWidth=1.1; ctx.strokeRect(x,y,ww,hh);
     var cx=x+ww/2, cy=y+hh/2, ink=smartInk(T[g]);
     ctx.fillStyle=ink;
@@ -990,7 +1051,7 @@ function drawNodeRes(){
       if(mx>=ce.x&&mx<=ce.x+ce.w&&my>=ce.y&&my<=ce.y+ce.h){ hit=ce; break; }
     }
     if(!hit){ tipHide(); return; }
-    var core = hit.mat==="hematita";
+    var core = isCore(hit.mat);
     tipShow(ev, "<b>nó (i="+hit.i+", j="+hit.j+")</b> g="+hit.g+
       "<br/>material: "+hit.mat+(core?" [NÚCLEO]":" [isolante]")+
       "<br/>|R| = "+hit.val.toExponential(4)+
@@ -1008,7 +1069,7 @@ function drawJac(){
   h+='</tr><tr>';
   for(i=0;i<nS;i++) h+='<td style="padding:4px 8px;color:#fbbf24">'+rd.diag[i].toExponential(3)+'</td>';
   h+='</tr></table>';
-  h+='<p style="color:#a8a29e;margin:8px 0 0">k_face hemática|IFB = '+fmt(kFace(MAT.hematita.k,MAT.ifb.k),4)+' (harmônica)</p>';
+  h+='<p style="color:#a8a29e;margin:8px 0 0">k_face núcleo|IFB = '+fmt(kFace(MAT[CORE].k,MAT.ifb.k),4)+' (harmônica)</p>';
   el.innerHTML=h;
 }
 
@@ -1021,26 +1082,24 @@ function renderTerminal(){
     if(j>=M.jCore0&&j<=M.jCoreEnd&&i<=M.iCoreEnd) tCore=Math.max(tCore,t);
     else tIso=Math.max(tIso,t);
   });
-  var alpha = MAT.hematita.k/(MAT.hematita.rho*MAT.hematita.cp);
+  var alpha = MAT[CORE].k/(MAT[CORE].rho*MAT[CORE].cp);
   var tSec = f.tH*3600;
   var delta = Math.sqrt(alpha*tSec);
-  var deltaEff = Math.sqrt(alpha*(p.keff||1)*tSec);
   var log="SAET · penetração térmica √(αt)\n";
   log+="Malha canônica Δr=Δ constante, Δz=Δ constante\n";
   log+="────────────────────────────────────\n";
   log+="α_hem = "+alpha.toExponential(3)+" m²/s\n";
   log+="√(αt) = "+fmt(delta,3)+" m  (condução pura)\n";
-  log+="√(α·keff·t) = "+fmt(deltaEff,3)+" m  (keff="+fmt(p.keff||1,1)+")\n";
-  log+="L núcleo = "+M.L+" m → Fo = "+(alpha*tSec/(M.L*M.L)).toExponential(2)+"\n";
-  log+="k_hem="+MAT.hematita.k+" IFB="+MAT.ifb.k+" perl="+MAT.perlita.k+"\n";
+    log+="L núcleo = "+M.L+" m → Fo = "+(alpha*tSec/(M.L*M.L)).toExponential(2)+"\n";
+  log+="k_nuc="+MAT[CORE].k+" rho_leito="+fmt(MAT[CORE].rho,1)+" IFB="+MAT.ifb.k+" perl="+MAT.perlita.k+"\n";
   log+="T_núcleo max="+fmt(tCore,1)+"  T_isol max="+fmt(tIso,1)+"\n";
   if(LAST.tFrontBreak>0) log+="Fim termoclina @ "+fmt(LAST.tFrontBreak,1)+" h\n";
   else log+="Termoclina OK no horizonte\n";
   log+="E_útil max = "+fmt((LAST.EmaxUseful||0)/1e9,3)+" GJ\n";
   log+="t_diff modo1 ≈ "+fmt(LAST.tDiffDays,1)+" dias\n";
   log+="────────────────────────────────────\n";
-  if($("note-horizon")) $("note-horizon").textContent="≈ "+LAST.days+" d ("+LAST.hours+" h) · t_diff≈"+fmt(LAST.tDiffDays,1)+" d · keff="+fmt(p.keff||1,1);
-  if($("note-alpha")) $("note-alpha").textContent="α="+alpha.toExponential(2)+" | √(αt)="+fmt(delta,2)+" m | √(α·keff·t)="+fmt(deltaEff,2)+" m | Fo_L="+(alpha*tSec/(M.L*M.L)).toExponential(2);
+  if($("note-horizon")) $("note-horizon").textContent="≈ "+LAST.days+" d ("+LAST.hours+" h) · t_diff≈"+fmt(LAST.tDiffDays,1)+" d";
+  if($("note-alpha")) $("note-alpha").textContent="α="+alpha.toExponential(2)+" | √(αt)="+fmt(delta,2)+" m | Fo_L="+(alpha*tSec/(M.L*M.L)).toExponential(2);
   $("term-log").textContent=log;
   var ib=""; f.hist.forEach(function(h){ ib+="iter "+h.iter+": ‖R‖="+h.residual.toExponential(3)+(h.residual<1e-4?" OK":"")+"\n"; });
   $("iter-box").textContent=ib;
@@ -1065,13 +1124,19 @@ function updateLabels(){
   $("v-tc").textContent=$("tc").value+" °C";
   $("v-ht").textContent=$("ht").value;
   $("v-hext").textContent=$("hext").value;
-  if($("v-keff")) $("v-keff").textContent=(+$("keff").value).toFixed(1);
-  $("v-R").textContent=$("R").value+" m";
+    $("v-R").textContent=$("R").value+" m";
   $("v-L").textContent=$("L").value+" m";
   ["e1","e2","e3","eb1","eb2","eb3"].forEach(function(id){ $("v-"+id).textContent=$(id).value; });
   $("v-kh").textContent=(+$("kh").value).toFixed(2);
   $("v-rh").textContent=$("rh").value;
   $("v-cph").textContent=$("cph").value;
+  $("v-ka").textContent=(+$("ka").value).toFixed(2);
+  $("v-ra").textContent=$("ra").value;
+  $("v-cpa").textContent=$("cpa").value;
+  $("v-kal").textContent=(+$("kal").value).toFixed(2);
+  $("v-ral").textContent=$("ral").value;
+  $("v-cpal").textContent=$("cpal").value;
+  if($("v-eps")) $("v-eps").textContent=(+$("eps").value).toFixed(2);
   $("v-ki").textContent=(+$("ki").value).toFixed(2);
   $("v-kp").textContent=(+$("kp").value).toFixed(3);
   $("v-ks").textContent=(+$("ks").value).toFixed(3);
@@ -1148,8 +1213,8 @@ function makePDF(){
 
   var M=LAST.M, p=LAST.p, N=LAST.N;
   var src=LAST.fullHist.length?LAST.fullHist:LAST.frames;
-  var alpha=LAST.alpha|| (MAT.hematita.k/(MAT.hematita.rho*MAT.hematita.cp));
-  var kH=MAT.hematita.k, rH=MAT.hematita.rho, cH=MAT.hematita.cp;
+  var alpha=LAST.alpha|| (MAT[CORE].k/(MAT[CORE].rho*MAT[CORE].cp));
+  var kH=MAT[CORE].k, rH=MAT[CORE].rho, cH=MAT[CORE].cp;
   var kf=kFace(kH, MAT.ifb.k);
 
   hdr();
@@ -1186,7 +1251,7 @@ function makePDF(){
     "No eixo (r=0) impõe-se fluxo nulo por simetria (Neumann). A injecao renovavel e modelada por condicao de Robin no TOPO DO NUCLEO (nao no isolante externo). Nas fronteiras externas do envelope isolante aplica-se Robin de perda para o ambiente e para o solo.",
     "Artigo ROCHA e LIRA, XV CBPE, sec. 2.9-2.10; INCROPERA et al. (2014).",
     "Eixo:    q_r = 0  em  r = 0\nTopo nucleo:  -k dT/dz = h_top * (T - T_carga)\nExterno:      -k dT/dn = h_ext * (T - T_amb)   (ou T_solo na base)",
-    "h_top="+p.hTop+" W/(m2.K) | T_carga="+p.Tcharge+" C\nh_ext="+p.hExt+" W/(m2.K) | T_amb=37 C | T_solo=25 C\nkeff axial no nucleo (opcional)="+p.keff
+    "h_top="+p.hTop+" W/(m2.K) | T_carga="+p.Tcharge+" C | carga resistiva, sem escoamento no leito\nh_ext="+p.hExt+" W/(m2.K) | T_amb=37 C | T_solo=25 C\neps="+p.eps+" | rho_leito=(1-eps)*rho_solido | sem keff"
   );
 
   concept(
@@ -1286,9 +1351,9 @@ function makePDF(){
   mono("limite T_base = "+p.tlim+" C | alpha = "+alpha.toExponential(4)+" m2/s | t_diff modo1 ~ "+fmt(LAST.tDiffDays,2)+" dias");
 
   sub("11. Penetracao termica (interpretacao fisica)");
-  body("Por conducao pura, a espessura tipica da frente e da ordem de sqrt(alpha * t). Com alpha da hematita ~ 6e-7 m2/s, dezenas de horas aquecem apenas a faixa superior do leito; a frente completa da Fig. 3 do artigo, em prazos curtos, pressupoe transporte efetivo no packed bed (contato/radiacao), representado no demonstrador pelo fator keff axial opcional.");
-  mono("sqrt(alpha * t_final) ~ "+Math.sqrt(alpha*LAST.hours*3600).toFixed(3)+" m  (keff=1)");
-  mono("sqrt(alpha * keff * t_final) ~ "+Math.sqrt(alpha*(p.keff||1)*LAST.hours*3600).toFixed(3)+" m");
+  body("Por conducao pura, a espessura tipica da frente e da ordem de sqrt(alpha * t), com o k efetivo do deslizante. Nao ha fator de multiplicacao da condutividade. rho do nucleo na energia e (1-eps)*rho_solido, com eps declarado (dissertacao, Eq. 2, eps=0,40).");
+  mono("sqrt(alpha * t_final) ~ "+Math.sqrt(alpha*LAST.hours*3600).toFixed(3)+" m");
+  mono("nucleo="+CORE+" | eps="+p.eps+" | rho_solido="+MAT[CORE].rhoSolid+" | rho_leito="+MAT[CORE].rho.toFixed(1)+" | Cp="+MAT[CORE].cp+" | k="+MAT[CORE].k);
 
   sub("12. Referencias");
   mono("ROCHA, T. D.; LIRA, M. A. T. Otimizacao geometrica, economica e termofisica para SAET. XV CBPE, 2026.");
@@ -1310,11 +1375,12 @@ function makePDF(){
   doc.save("Memoria_Integral_SAET_Demonstrador_XV_CBPE_PPGEE_UFPI.pdf");
 }
 
-["days","dt","tlim","tc","ht","hext","keff","R","L","e1","e2","e3","eb1","eb2","eb3","kh","rh","cph","ki","kp","ks","kv"].forEach(function(id){
+["days","dt","tlim","tc","ht","hext","eps","R","L","e1","e2","e3","eb1","eb2","eb3","ka","ra","cpa","kal","ral","cpal","kh","rh","cph","ki","kp","ks","kv"].forEach(function(id){
   $(id).addEventListener("input", updateLabels);
   $(id).addEventListener("change", run);
 });
 ["nr","nz"].forEach(function(id){ $(id).addEventListener("change", run); });
+$("core-sel").addEventListener("change", run);
 $("prog").addEventListener("input", function(){ if(!LAST) return; showFrame(Math.round((+$("prog").value/100)*(LAST.frames.length-1))); });
 
 $("btn-arrows").addEventListener("click", function(){

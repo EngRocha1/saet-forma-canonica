@@ -4,7 +4,7 @@
     "k": 1.2,
     "rho_solido": 2650,
     "cp": 885,
-    "note": "rho e cp: dissertacao secao 10.2.1 (Incropera et al., 2014). k efetivo do leito e deslizante."
+    "note": "rho e cp: dissertacao secao 10.2.1, Incropera et al. 2014. k efetivo do leito e deslizante, sem fator oculto."
   },
   "alumina": {
     "name": "Alumina calcinada",
@@ -18,31 +18,39 @@
     "k": 1.2,
     "rho_solido": 5150,
     "cp": 800,
-    "note": "rho e cp: dissertacao secao 10.2.3. rho_leito=(1-eps)*rho_solido com eps=0.40 da Eq. 2."
+    "note": "rho e cp: dissertacao secao 10.2.3. rho de leito = (1-eps)*rho_solido, eps=0.40 na Eq. 2."
   },
   "ifb": {
     "name": "Tijolo refratario isolante (IFB)",
     "k": 0.15,
     "rho": 600,
-    "cp": 900
+    "cp": 900,
+    "k_min": 0.08,
+    "k_max": 0.35
   },
   "perlita": {
     "name": "Perlita expandida",
     "k": 0.051,
     "rho": 105,
-    "cp": 900
+    "cp": 900,
+    "k_min": 0.03,
+    "k_max": 0.12
   },
   "silicato": {
     "name": "Silicato de calcio",
     "k": 0.059,
     "rho": 190,
-    "cp": 850
+    "cp": 850,
+    "k_min": 0.04,
+    "k_max": 0.12
   },
   "vermiculita": {
     "name": "Vermiculita expandida",
     "k": 0.065,
     "rho": 100,
-    "cp": 900
+    "cp": 900,
+    "k_min": 0.04,
+    "k_max": 0.12
   },
   "leito": {
     "eps": 0.4,
