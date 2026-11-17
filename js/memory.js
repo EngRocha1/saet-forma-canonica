@@ -124,9 +124,14 @@ export function buildMemory(s) {
   );
 
   lines.push("Eixos");
-  lines.push("Cilindro: r de −" + n(s.mesh.rEdges[s.mesh.nr], 3) + " a " + n(s.mesh.rEdges[s.mesh.nr], 3) + " m; z de 0 a " + n(s.mesh.zEdges[s.mesh.nz], 3) + " m. O retângulo laranja é o núcleo. O detalhe amplia o canto do topo sem mudar a escala do cilindro.");
+  lines.push("Cilindro: r de −" + n(s.mesh.rEdges[s.mesh.nr], 3) + " a " + n(s.mesh.rEdges[s.mesh.nr], 3) + " m; z de 0 a " + n(s.mesh.zEdges[s.mesh.nz], 3) + " m. Laranja = núcleo. Branco = envelope externo. Amarelo = plano de carga, no centro, sob o isolamento.");
   lines.push("Perdas: uma barra por subcamada, em kW.");
   lines.push("Newton: log10 ‖R‖ contra o número da iteração.");
   lines.push("Tempo: erro da sonda contra o Δt mais fino, na janela de " + (tempo ? n(tempo.hours, 2) : "—") + " h.");
+  if (s.volumeNote) {
+    lines.push("");
+    lines.push("Volume dos três substratos");
+    lines.push(s.volumeNote);
+  }
   return lines.join("\n");
 }

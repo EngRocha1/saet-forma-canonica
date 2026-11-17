@@ -91,8 +91,31 @@
     </aside>
     <div>
       <figure>
+        <figcaption>Volume dos três substratos, mesma energia
+          <span>Areia de sílica = 100%. A fórmula, a substituição e o percentual ficam logo abaixo do gráfico.</span>
+        </figcaption>
+        <canvas id="c-vol" width="860" height="280"></canvas>
+        <label class="check"><input id="iso" type="checkbox" checked/> Comparação isotérmica: os três usam 150 °C a 573 °C</label>
+        <div id="ranges" class="ranges" hidden>
+          <div class="mat"><h2>Areia · teto 573 °C</h2>
+            <label>T mín <input id="areia-tmin" type="number" min="0" max="572" value="150"/></label>
+            <label>T máx <input id="areia-tmax" type="number" min="1" max="573" value="573"/></label>
+          </div>
+          <div class="mat"><h2>Alumina · teto 1000 °C</h2>
+            <label>T mín <input id="alumina-tmin" type="number" min="0" max="999" value="150"/></label>
+            <label>T máx <input id="alumina-tmax" type="number" min="1" max="1000" value="1000"/></label>
+          </div>
+          <div class="mat"><h2>Hematita · teto 1000 °C</h2>
+            <label>T mín <input id="hematita-tmin" type="number" min="0" max="999" value="150"/></label>
+            <label>T máx <input id="hematita-tmax" type="number" min="1" max="1000" value="1000"/></label>
+          </div>
+        </div>
+        <p class="note">Desmarque a caixa para editar T mín e T máx de cada substrato. O default da areia é 573 °C, a inversão α–β do quartzo (847 K). 575 °C é arredondamento e não é usado. O mínimo de comparação permanece 150 °C. Alumina e hematita não têm essa inversão; o teto do controle é 1 000 °C.</p>
+        <pre id="vol-box">Calculando…</pre>
+      </figure>
+      <figure>
         <figcaption>Corte do cilindro
-          <span>Escala real, espelhado em r = 0. O retângulo laranja é o núcleo. O detalhe à direita amplia o canto do topo; a escala dele não é a do cilindro.</span>
+          <span>Escala real, eixo no centro. O retângulo laranja é o núcleo; o branco é o externo, com o isolamento em camadas. A linha amarela é a carga, sob o isolamento, de um lado ao outro do núcleo.</span>
         </figcaption>
         <canvas id="c-field" width="860" height="560"></canvas>
       </figure>

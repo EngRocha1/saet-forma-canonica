@@ -135,12 +135,25 @@ export function drawField(canvas, state, frame) {
   paintElements(ctx, mesh, T, tmin, tmax, xr, yz);
   ctx.restore();
 
-  ctx.strokeStyle = "rgba(255,255,255,0.85)";
-  ctx.lineWidth = 1.5;
-  ctx.strokeRect(xr(0), yz(zMax), 0.01, meshH);
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(xr(-rMax), yz(zMax), 2 * rMax * sc, zMax * sc);
   ctx.strokeStyle = "#fb923c";
-  ctx.strokeRect(xr(0), yz(mesh.zCoreTop), mesh.R * sc, (mesh.zCoreTop - mesh.zCore0) * sc);
-  ctx.strokeRect(xr(-mesh.R), yz(mesh.zCoreTop), mesh.R * sc, (mesh.zCoreTop - mesh.zCore0) * sc);
+  ctx.lineWidth = 3;
+  const coreH = (mesh.zCoreTop - mesh.zCore0) * sc;
+  ctx.strokeRect(xr(-mesh.R), yz(mesh.zCoreTop), 2 * mesh.R * sc, coreH);
+  strokeInsulation(ctx, mesh, xr, yz);
+  ctx.strokeStyle = "#fef08a";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(xr(-mesh.R), yz(mesh.zCoreTop));
+  ctx.lineTo(xr(mesh.R), yz(mesh.zCoreTop));
+  ctx.stroke();
+  ctx.fillStyle = "#fef08a";
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.fillText("carga no centro, sob o isolamento", xr(0), yz(mesh.zCoreTop) - 4);
 
   ctx.fillStyle = "#e7e5e4";
   ctx.font = "11px IBM Plex Mono, monospace";
@@ -148,7 +161,7 @@ export function drawField(canvas, state, frame) {
   ctx.textBaseline = "top";
   for (const r of rTicks) ctx.fillText(label(r), xr(r), y0 + meshH + 4);
   ctx.font = "12px IBM Plex Sans, sans-serif";
-  ctx.fillText("r (m)  ·  corte do cilindro", x0 + meshW / 2, y0 + meshH + 22);
+  ctx.fillText("r (m)  ·  eixo no centro", x0 + meshW / 2, y0 + meshH + 22);
   ctx.textAlign = "right";
   ctx.textBaseline = "middle";
   ctx.font = "11px IBM Plex Mono, monospace";
@@ -162,8 +175,8 @@ export function drawField(canvas, state, frame) {
   ctx.fillText("z (m)", 0, 0);
   ctx.restore();
 
-  const bx = x0 + meshW + 16;
-  const bh = Math.min(meshH, 180);
+  const bx = x0 + meshW + 18;
+  const bh = Math.min(meshH * 0.42, 160);
   for (let i = 0; i < bh; i++) {
     const t = tmax - (tmax - tmin) * (i / bh);
     const col = heat(t, tmin, tmax);
@@ -176,56 +189,82 @@ export function drawField(canvas, state, frame) {
   ctx.font = "11px IBM Plex Mono, monospace";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  for (const tv of ticks(tmin, tmax, 5)) {
+  for (const tv of ticks(tmin, tmax, 4)) {
     const yy = y0 + (tmax - tv) / (tmax - tmin) * bh;
     ctx.fillText(label(tv) + " °C", bx + 16, yy);
   }
-
-  drawInset(ctx, mesh, T, tmin, tmax, bx, y0 + bh + 28, 170, 150);
+  const infoY = y0 + bh + 22;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  const lines = [
+    "Núcleo (laranja)",
+    "R = " + mesh.R.toFixed(2) + " m",
+    "L = " + mesh.L.toFixed(2) + " m",
+    "Externo (branco)",
+    "R = " + rMax.toFixed(2) + " m",
+    "H = " + zMax.toFixed(2) + " m",
+    "IFB · perlita · silicato · vermiculita",
+    "contorno colorido em cada camada"
+  ];
+  lines.forEach((line, i) => ctx.fillText(line, bx, infoY + i * 16));
 }
 
-function drawInset(ctx, mesh, T, tmin, tmax, x, y, w, h) {
-  const r0 = mesh.R - 0.02;
-  const r1 = mesh.rEdges[mesh.nr];
-  const z0 = mesh.zCoreTop - 0.08;
-  const z1 = mesh.zEdges[mesh.nz];
-  ctx.fillStyle = "#1c1917";
-  ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = "#e7e5e4";
-  ctx.strokeRect(x, y, w, h);
-  const xr = (r) => x + 8 + (r - r0) / (r1 - r0) * (w - 16);
-  const yz = (z) => y + 8 + (z1 - z) / (z1 - z0) * (h - 22);
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x + 1, y + 1, w - 2, h - 2);
-  ctx.clip();
+function strokeInsulation(ctx, mesh, xr, yz) {
+  ctx.lineWidth = 1.5;
   for (const el of mesh.elements) {
-    const er0 = mesh.rEdges[el.i];
-    const er1 = mesh.rEdges[el.i + 1];
-    const ez0 = mesh.zEdges[el.j];
-    const ez1 = mesh.zEdges[el.j + 1];
-    if (er1 < r0 || er0 > r1 || ez1 < z0 || ez0 > z1) continue;
-    let t = 0;
-    for (const n of el.n) t += T[n];
-    t /= 4;
-    const col = heat(t, tmin, tmax);
-    ctx.fillStyle = "rgb(" + (col[0] | 0) + "," + (col[1] | 0) + "," + (col[2] | 0) + ")";
-    const px = xr(Math.max(er0, r0));
-    const py = yz(Math.min(ez1, z1));
-    const pw = xr(Math.min(er1, r1)) - px;
-    const ph = yz(Math.max(ez0, z0)) - py;
-    ctx.fillRect(px, py, Math.max(pw, 1), Math.max(ph, 1));
-    if (!el.core) {
-      ctx.strokeStyle = MAT[el.mat] || "#fff";
-      ctx.strokeRect(px, py, pw, ph);
+    if (el.core) continue;
+    const y1 = yz(mesh.zEdges[el.j]);
+    const y2 = yz(mesh.zEdges[el.j + 1]);
+    const y = Math.min(y1, y2);
+    const h = Math.abs(y2 - y1);
+    ctx.strokeStyle = MAT[el.mat] || "#fff";
+    for (const sign of [1, -1]) {
+      const x1 = xr(sign * mesh.rEdges[el.i]);
+      const x2 = xr(sign * mesh.rEdges[el.i + 1]);
+      ctx.strokeRect(Math.min(x1, x2), y, Math.abs(x2 - x1), h);
     }
   }
-  ctx.restore();
+}
+
+export function drawVolume(canvas, pack) {
+  const W = canvas.clientWidth || 860;
+  const H = 280;
+  const ctx = fit(canvas, W, H);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, W, H);
+  if (!pack || !pack.rows) return;
+  const rows = pack.rows;
+  const vmax = Math.max(...rows.map((r) => r.V)) * 1.15;
+  const pad = { l: 56, r: 16, t: 16, b: 48 };
+  const w = W - pad.l - pad.r;
+  const h = H - pad.t - pad.b;
+  const slot = w / rows.length;
+  const Y = (v) => pad.t + (1 - v / vmax) * h;
+  const yt = ticks(0, vmax, 5);
+  grid(ctx, pad.l, pad.t, w, h, [], yt.map(Y));
   ctx.fillStyle = "#e7e5e4";
-  ctx.font = "11px IBM Plex Sans, sans-serif";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillText("detalhe do topo, escala própria", x + 6, y + h - 4);
+  ctx.font = "11px IBM Plex Mono, monospace";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (const t of yt) ctx.fillText(label(t), pad.l - 6, Y(t));
+  rows.forEach((r, i) => {
+    const x = pad.l + i * slot + slot * 0.22;
+    const bw = slot * 0.56;
+    const y = Y(r.V);
+    ctx.fillStyle = i === 0 ? "#a8a29e" : "#fb923c";
+    ctx.fillRect(x, y, bw, pad.t + h - y);
+    ctx.fillStyle = "#e7e5e4";
+    ctx.textAlign = "center";
+    ctx.font = "12px IBM Plex Sans, sans-serif";
+    ctx.fillText(r.name, x + bw / 2, pad.t + h + 8);
+    ctx.font = "11px IBM Plex Mono, monospace";
+    ctx.fillText(r.V.toFixed(1) + " m³", x + bw / 2, y - 16);
+    ctx.fillText(r.pct.toFixed(1) + "%", x + bw / 2, y - 2);
+  });
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("V (m³) para a mesma energia da areia  ·  areia = 100%", W / 2, H - 8);
 }
 
 export function drawLosses(canvas, frame) {

@@ -1,7 +1,8 @@
 import { FORMULAS } from "./formulas.js";
 import { SOLIDS, INSULATORS, applyJson, coreProps } from "./materials.js";
 import { simulate } from "./simulate.js";
-import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal } from "./charts.js";
+import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal, drawVolume } from "./charts.js";
+import { volumeCompare, volumeText, TMAX } from "./volume.js";
 import { createPlayer } from "./animate.js";
 import { buildMemory } from "./memory.js";
 import { saveMemory } from "./pdf-memory.js";
@@ -24,6 +25,46 @@ const player = createPlayer({
 });
 
 function num(id) { return +$(id).value; }
+
+function volumeSpec(input) {
+  const solids = {};
+  for (const key of ["areia", "alumina", "hematita"]) {
+    solids[key] = { name: SOLIDS[key].name, rho: input.solids[key].rho, cp: input.solids[key].cp };
+  }
+  return {
+    eps: input.eps,
+    R: input.R,
+    L: input.L,
+    isothermal: $("iso").checked,
+    solids,
+    ranges: {
+      areia: { tmin: num("areia-tmin"), tmax: num("areia-tmax") },
+      alumina: { tmin: num("alumina-tmin"), tmax: num("alumina-tmax") },
+      hematita: { tmin: num("hematita-tmin"), tmax: num("hematita-tmax") }
+    }
+  };
+}
+
+function clampTempInputs() {
+  for (const key of ["areia", "alumina", "hematita"]) {
+    const cap = TMAX[key];
+    const tmax = $(key + "-tmax");
+    const tmin = $(key + "-tmin");
+    if (+tmax.value > cap) tmax.value = String(cap);
+    if (+tmin.value < 0) tmin.value = "0";
+    if (+tmin.value >= +tmax.value) tmin.value = String(+tmax.value - 1);
+  }
+}
+
+function paintVolume(input) {
+  clampTempInputs();
+  $("ranges").hidden = $("iso").checked;
+  const pack = volumeCompare(volumeSpec(input));
+  drawVolume($("c-vol"), pack);
+  const text = volumeText(pack);
+  $("vol-box").textContent = text;
+  return text;
+}
 
 function readInput() {
   const key = $("core-sel").value;
@@ -106,10 +147,12 @@ function run() {
   updateLabels();
   const input = readInput();
   comparison(input);
+  const volumeNote = paintVolume(input);
   $("term-log").textContent = "Calculando…";
   window.setTimeout(() => {
     try {
       state = simulate(input);
+      state.volumeNote = volumeNote;
       drawCharge($("c-charge"), state);
       drawResidual($("c-res"), state);
       drawTemporal($("c-time"), state);
@@ -142,6 +185,11 @@ function bind() {
   for (const id of ids) {
     $(id).addEventListener("input", updateLabels);
     $(id).addEventListener("change", run);
+  }
+  $("iso").addEventListener("change", () => { paintVolume(readInput()); });
+  for (const key of ["areia", "alumina", "hematita"]) {
+    $(key + "-tmin").addEventListener("change", () => paintVolume(readInput()));
+    $(key + "-tmax").addEventListener("change", () => paintVolume(readInput()));
   }
   ["nr","nz","core-sel"].forEach((id) => $(id).addEventListener("change", run));
   $("btn-play").addEventListener("click", () => state && player.toggle(state.frames.length));
