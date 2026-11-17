@@ -3,6 +3,7 @@ import { SOLIDS, INSULATORS, applyJson, coreProps } from "./materials.js";
 import { simulate } from "./simulate.js";
 import { drawField, drawCharge, drawResidual } from "./charts.js";
 import { createPlayer } from "./animate.js";
+import { buildMemory } from "./memory.js";
 import { saveMemory } from "./pdf-memory.js";
 
 const $ = (id) => document.getElementById(id);
@@ -111,6 +112,7 @@ function run() {
       state = simulate(input);
       drawCharge($("c-charge"), state);
       drawResidual($("c-res"), state);
+      $("memory-box").textContent = buildMemory(state);
       terminal(input);
       player.last(state.frames.length);
       $("s-n").textContent = String(state.mesh.nn);

@@ -94,7 +94,16 @@ export function assembleOperators(mesh, props, bc) {
     }
   }
 
-  return { n, kRows: K.rows(n), cRows: C.rows(n), bRobin };
+  const cRows = lumpRows(C.rows(n));
+  return { n, kRows: K.rows(n), cRows, bRobin };
+}
+
+function lumpRows(rows) {
+  return rows.map((row, i) => {
+    let d = 0;
+    for (const e of row) d += e.v;
+    return [{ j: i, v: d }];
+  });
 }
 
 export function systemForDt(op, dt) {

@@ -12,10 +12,43 @@ function linspace(a, b, n) {
   return out;
 }
 
+function gradedCore(a, b, n, dzTop) {
+  const L = b - a;
+  const nInt = Math.max(1, n);
+  if (L / nInt <= dzTop * 1.02) return linspace(a, b, nInt);
+  let lo = 1.0000001;
+  let hi = 8;
+  for (let k = 0; k < 48; k++) {
+    const q = 0.5 * (lo + hi);
+    const sum = dzTop * (Math.pow(q, nInt) - 1) / (q - 1);
+    if (sum > L) hi = q;
+    else lo = q;
+  }
+  const q = 0.5 * (lo + hi);
+  const lens = [];
+  let dz = dzTop;
+  for (let i = 0; i < nInt; i++) {
+    lens.push(dz);
+    dz *= q;
+  }
+  const s = lens.reduce((p, c) => p + c, 0);
+  const out = [b];
+  let z = b;
+  for (let i = 0; i < nInt - 1; i++) {
+    z -= lens[i] * (L / s);
+    out.push(z);
+  }
+  out.push(a);
+  return out.reverse();
+}
+
 function pushSegment(edges, tags, a, b, n, tag) {
-  const pts = linspace(a, b, n);
+  pushPoints(edges, tags, linspace(a, b, n), tag);
+}
+
+function pushPoints(edges, tags, pts, tag) {
   for (let i = 0; i < pts.length; i++) {
-    if (edges.length && Math.abs(edges[edges.length - 1] - pts[i]) < 1e-9) continue;
+    if (edges.length && Math.abs(edges[edges.length - 1] - pts[i]) < 1e-8) continue;
     edges.push(pts[i]);
     if (edges.length > 1) tags.push(tag);
   }
@@ -49,7 +82,8 @@ export function buildMesh(spec) {
     pushSegment(zEdges, zTags, spec.eb3 + spec.eb2, eBase, nLayer, { region: "base", mat: "ifb" });
   }
   const zCore0 = mode === "refinada" ? eBase : 0;
-  pushSegment(zEdges, zTags, zCore0, zCore0 + L, nCoreZ, { region: "core", mat: spec.coreKey });
+  const dzTop = 0.05;
+  pushPoints(zEdges, zTags, gradedCore(zCore0, zCore0 + L, nCoreZ, dzTop), { region: "core", mat: spec.coreKey });
   if (mode === "refinada") {
     const z1 = zCore0 + L;
     pushSegment(zEdges, zTags, z1, z1 + spec.e3, nLayer, { region: "top", mat: "ifb" });
@@ -121,6 +155,7 @@ export function buildMesh(spec) {
     mode, R, L, eLat, eTop, eBase, zCore0, zCoreTop,
     rEdges, zEdges, rTags, zTags, nr, nz, nn, elements, faces, id,
     nLayer,
+    dzTopTarget: dzTop,
     minLayerM: Number.isFinite(minLayer) ? minLayer : null,
     nodeR: (p) => rEdges[p % (nr + 1)],
     nodeZ: (p) => zEdges[Math.floor(p / (nr + 1))]

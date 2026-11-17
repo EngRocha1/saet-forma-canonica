@@ -22,8 +22,8 @@ export const FORMULAS = [
   {
     id: "solver",
     title: "Solver linear",
-    expr: "Gauss–Seidel em (C/Δt + K). Taxa linear: ‖R‖_{m+1} / ‖R‖_m ≈ constante.",
-    ref: "Não é Newton–Raphson. Com k, ρ e cp constantes no passo, o sistema é linear e a convergência quadrática não se aplica."
+    expr: "C concentrada por soma de linha. Gauss–Seidel em (C/Δt + K). Taxa linear.",
+    ref: "Bathe (2014), massa concentrada. Evita temperatura negativa quando a frente é mais fina que o elemento. Não é Newton–Raphson."
   },
   {
     id: "eps",

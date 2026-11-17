@@ -4,12 +4,28 @@ Demo: https://engrocha1.github.io/saet-forma-canonica/
 
 Protótipo de navegador para a qualificação no PPGEE-UFPI. Não é o código Python/SciPy da dissertação (lá k e cp podem depender de T e o solver da tese é outro). Este repositório implementa, em JavaScript, a forma fraca de Galerkin da mesma equação de difusão.
 
+## Gráficos
+
+Cada figura tem grade e coordenadas numéricas.
+
+| Figura | Eixo horizontal | Eixo vertical |
+| --- | --- | --- |
+| Campo | r (m), do eixo até a face externa | z (m), da base até o topo |
+| Energia | t (h) | E (GJ), só no núcleo |
+| Resíduo | iteração m do Gauss–Seidel | log10 da norma do resíduo |
+
+A cor do campo vai da menor temperatura do quadro à maior, com marcas em °C. Um valor negativo nesse eixo era oscilação numérica: o elemento do núcleo (cerca de 1,5 m) era mais grosso que a frente √(αt). O núcleo agora é graduado, com o primeiro intervalo de 5 cm no topo quente, e a massa é concentrada por soma de linha (Bathe, 2014).
+
+## Memória de cálculo
+
+Abaixo dos gráficos e no PDF, cada passo segue a ordem: fórmula, substituição dos números, resultado, referência. A referência não aparece antes do valor. Δt entra em segundos como `Δt_h × 3600`.
+
 ## O que mudou em relação ao demonstrador anterior
 
 | Antes | Agora |
 | --- | --- |
-| Volumes finitos e fator axial `keff` (1 a 80) | Sem `keff`. Galerkin Q1, massa consistente |
-| Malha uniforme: 15 cm de IFB cabiam numa célula de ~1 m | Modo **refinada**: 2 elementos em cada subcamada (15 cm → dois de 7,5 cm) |
+| Volumes finitos e fator axial `keff` (1 a 80) | Sem `keff`. Galerkin Q1 com massa concentrada (soma de linha) |
+| Malha uniforme: 15 cm de IFB cabiam numa célula de ~1 m | Camadas com 2 elementos. Núcleo graduado: 5 cm no topo quente |
 | Isolante só desenhado | Modo **resistência equivalente**: `1/U = Σ(e/k) + 1/h` (Incropera et al., 2014) |
 | Rótulo “Newton” e convergência quadrática | Gauss–Seidel. O gráfico é `log‖R‖` do solver **linear**. A razão `‖R‖_{m+1}/‖R‖_m` fica no terminal |
 | `Δt` parecia diferença de temperatura | Caixa própria: **Δt é o passo de tempo do Euler implícito** |

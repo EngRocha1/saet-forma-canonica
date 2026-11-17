@@ -69,8 +69,10 @@ input[type=number], select { width: 100%; min-height: 40px; border: 1px solid va
 dl { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 12.5px; margin: 8px 0 0; }
 dt { color: var(--muted); } dd { margin: 0; font-weight: 700; }
 canvas { width: 100%; height: auto; background: #111; border-radius: 2px; display: block; }
-#c-field { height: 460px; } #c-charge { height: 280px; } #c-res { height: 260px; }
 .term { background: var(--term); color: #e7e5e4; font: 12px/1.45 "IBM Plex Mono", monospace; padding: 10px; white-space: pre-wrap; min-height: 160px; }
+.sheet { background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 12px; }
+.sheet h2 { font-family: "Source Serif 4", Georgia, serif; font-size: 1.15rem; margin: 0 0 4px; }
+#memory-box { white-space: pre-wrap; font: 12.5px/1.45 "IBM Plex Mono", monospace; background: #fff; border: 1px solid var(--rule); padding: 12px; max-height: 480px; overflow: auto; }
 .term-head { display: flex; justify-content: space-between; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
 #cmp-box { white-space: pre-line; }
 dialog { border: 1px solid var(--rule); border-radius: 6px; max-width: 720px; width: calc(100% - 24px); background: var(--panel); color: var(--ink); }

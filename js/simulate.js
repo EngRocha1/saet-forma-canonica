@@ -87,6 +87,6 @@ export function simulate(input) {
     Ulat, Utop, Ubase,
     T0, TAMB, TSOLO,
     core, mode: input.mode, Tcharge: input.Tcharge, hTop: input.hTop, hExt: input.hExt,
-    tlim: input.tlim
+    tlim: input.tlim, thick: input.thick, kIns: input.kIns
   };
 }
