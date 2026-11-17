@@ -15,7 +15,7 @@
     <div>
       <p class="kicker">XV CBPE · PPGEE-UFPI · Galerkin</p>
       <h1>SAET · condução axissimétrica com malha de camadas</h1>
-      <p class="lede">Carga resistiva no topo do núcleo, sem gás no leito. O passo Δt é tempo. A malha refinada resolve cada camada; o outro modo troca o envelope por resistência equivalente. O gráfico de resíduo é o solver linear, não uma convergência quadrática.</p>
+      <p class="lede">Corte do cilindro em escala real. Carga resistiva no topo do núcleo, sem gás no leito. Cada camada de isolamento tem nós próprios. O resíduo desenhado é o de Newton–Raphson, vindo da radiação εσT⁴.</p>
     </div>
     <div class="actions">
       <button class="btn ghost" id="btn-formulas" type="button">Fórmulas</button>
@@ -25,13 +25,7 @@
   </header>
   <div class="layout">
     <aside>
-      <label>Modo
-        <select id="mode-sel">
-          <option value="refinada" selected>Malha refinada nas camadas</option>
-          <option value="equivalente">Resistência equivalente</option>
-        </select>
-      </label>
-      <p class="note">Refinada: 2 elementos em cada subcamada (15 cm não viram uma célula). Equivalente: 1/U = Σ e/k + 1/h.</p>
+      <p class="note">n_r e n_z mudam só o núcleo. Cada subcamada de isolamento fica com 2 elementos, mesmo no valor mínimo do controle.</p>
       <label>Núcleo
         <select id="core-sel">
           <option value="areia">Areia de sílica</option>
@@ -52,6 +46,7 @@
       <label>T de carga resistiva <span id="v-tc">1000 °C</span><input id="tc" type="range" min="200" max="1000" step="10" value="1000"/></label>
       <label>h de injeção <span id="v-ht">100</span><input id="ht" type="range" min="20" max="300" step="5" value="100"/></label>
       <label>h externo <span id="v-hext">10</span><input id="hext" type="range" min="2" max="25" step="1" value="10"/></label>
+      <label>Emissividade ε <span id="v-epsr">0.80</span><input id="epsr" type="range" min="0" max="0.95" step="0.01" value="0.80"/></label>
       <label>Porosidade ε <span id="v-eps">0.40</span><input id="eps" type="range" min="0.20" max="0.60" step="0.01" value="0.40"/></label>
       <p class="note">ε = 0,40 é o da Eq. (2) da dissertação. ρ do leito = (1−ε) ρ sólido.</p>
       <h2 class="note">Espessuras</h2>
@@ -96,10 +91,16 @@
     </aside>
     <div>
       <figure>
-        <figcaption>Campo de temperatura
-          <span>Cada subcamada tem malha própria no modo refinado. Contorno laranja é o núcleo.</span>
+        <figcaption>Corte do cilindro
+          <span>Escala real, espelhado em r = 0. O retângulo laranja é o núcleo. O detalhe à direita amplia o canto do topo; a escala dele não é a do cilindro.</span>
         </figcaption>
-        <canvas id="c-field" width="860" height="460"></canvas>
+        <canvas id="c-field" width="860" height="560"></canvas>
+      </figure>
+      <figure>
+        <figcaption>Perda na face interna de cada camada
+          <span>Materiais e espessuras diferentes. Positivo é calor saindo do núcleo. No transiente as faces da mesma pilha não coincidem, porque a camada acumula energia.</span>
+        </figcaption>
+        <canvas id="c-loss" width="860" height="320"></canvas>
       </figure>
       <figure>
         <figcaption>Energia armazenada no núcleo
@@ -109,10 +110,16 @@
         <p class="note" id="cmp-box"></p>
       </figure>
       <figure>
-        <figcaption>Resíduo do último passo de tempo
-          <span>Gauss–Seidel sobre (C/Δt + K). A queda de log‖R‖ é convergência linear do solver. k, ρ e cp são constantes no passo, então não há Newton–Raphson nem taxa quadrática.</span>
+        <figcaption>Resíduo de Newton–Raphson
+          <span>‖R(T)‖ a cada correção. A Jacobiana inclui ∂(εσT⁴)/∂T. O Gauss–Seidel que inverte a Jacobiana é linear e não é esta curva.</span>
         </figcaption>
         <canvas id="c-res" width="860" height="300"></canvas>
+      </figure>
+      <figure>
+        <figcaption>Convergência temporal
+          <span>Mesma malha, janela de 4 Δt. A barra é o erro da sonda contra o passo mais fino. Euler implícito é de ordem 1.</span>
+        </figcaption>
+        <canvas id="c-time" width="860" height="260"></canvas>
       </figure>
       <section class="sheet">
         <h2>Memória do cálculo</h2>

@@ -1,7 +1,8 @@
-/** Galerkin Q1, massa consistente, Euler implícito, Gauss–Seidel (taxa linear). */
+/** Galerkin Q1, Euler implícito, Newton–Raphson na radiação, Gauss–Seidel no sistema linear. */
 
 const GP = 1 / Math.sqrt(3);
 const GS = [-GP, GP];
+export const SIGMA = 5.67e-8;
 
 function shape(xi, eta) {
   return {
@@ -37,6 +38,14 @@ Sparse.prototype.rows = function (n) {
   return rows;
 };
 
+function lumpRows(rows) {
+  return rows.map((row, i) => {
+    let d = 0;
+    for (const e of row) d += e.v;
+    return [{ j: i, v: d }];
+  });
+}
+
 export function assembleOperators(mesh, props, bc) {
   const n = mesh.nn;
   const K = new Sparse();
@@ -55,11 +64,11 @@ export function assembleOperators(mesh, props, bc) {
     for (const xi of GS) {
       for (const eta of GS) {
         const { N, dxi, deta } = shape(xi, eta);
-        const r = Math.max(r0 + ((xi + 1) / 2) * dr, 0);
+        const r = Math.max(r0 + ((xi + 1) / 2) * dr, 1e-8);
         const wm = p.rho * p.cp * r * det;
         const wk = p.k * r * det;
-        const dNdr = [0, 0, 0, 0];
-        const dNdz = [0, 0, 0, 0];
+        const dNdr = new Array(4);
+        const dNdz = new Array(4);
         for (let a = 0; a < 4; a++) {
           dNdr[a] = dxi[a] * (2 / dr);
           dNdz[a] = deta[a] * (2 / dz);
@@ -77,6 +86,63 @@ export function assembleOperators(mesh, props, bc) {
   for (const face of mesh.faces) {
     const spec = bc[face.kind];
     if (!spec || spec.h <= 0) continue;
+    addLinearRobin(mesh, face, spec, K, bRobin);
+  }
+
+  return { n, kRows: K.rows(n), cRows: lumpRows(C.rows(n)), bRobin };
+}
+
+function addLinearRobin(mesh, face, spec, K, bRobin) {
+  const rA = mesh.nodeR(face.n0);
+  const zA = mesh.nodeZ(face.n0);
+  const rB = mesh.nodeR(face.n1);
+  const zB = mesh.nodeZ(face.n1);
+  const len = Math.hypot(rB - rA, zB - zA);
+  const nodes = [face.n0, face.n1];
+  for (const xi of GS) {
+    const N = edgeN(xi);
+    const r = Math.max(rA + ((xi + 1) / 2) * (rB - rA), 1e-6);
+    const w = spec.h * r * (len / 2);
+    for (let a = 0; a < 2; a++) {
+      bRobin[nodes[a]] += w * N[a] * spec.Tref;
+      for (let b = 0; b < 2; b++) K.add(nodes[a], nodes[b], w * N[a] * N[b]);
+    }
+  }
+}
+
+function baseRows(op, dt) {
+  const n = op.n;
+  const rows = Array.from({ length: n }, () => []);
+  for (let i = 0; i < n; i++) {
+    const acc = new Map();
+    for (const e of op.kRows[i]) acc.set(e.j, (acc.get(e.j) || 0) + e.v);
+    for (const e of op.cRows[i]) acc.set(e.j, (acc.get(e.j) || 0) + e.v / dt);
+    for (const [j, v] of acc) rows[i].push({ j, v });
+  }
+  return rows;
+}
+
+function cloneRows(rows) {
+  return rows.map((row) => row.map((e) => ({ j: e.j, v: e.v })));
+}
+
+function addEntry(rows, i, j, v) {
+  const row = rows[i];
+  for (let q = 0; q < row.length; q++) {
+    if (row[q].j === j) { row[q].v += v; return; }
+  }
+  row.push({ j, v });
+}
+
+function radiation(mesh, T, eps, tInfC) {
+  const n = mesh.nn;
+  const res = new Float64Array(n);
+  const jac = [];
+  const tInfK = tInfC + 273.15;
+  const tInf4 = tInfK * tInfK * tInfK * tInfK;
+  if (eps <= 0) return { res, jac };
+  for (const face of mesh.faces) {
+    if (!face.rad) continue;
     const rA = mesh.nodeR(face.n0);
     const zA = mesh.nodeZ(face.n0);
     const rB = mesh.nodeR(face.n1);
@@ -86,96 +152,121 @@ export function assembleOperators(mesh, props, bc) {
     for (const xi of GS) {
       const N = edgeN(xi);
       const r = Math.max(rA + ((xi + 1) / 2) * (rB - rA), 1e-6);
-      const w = spec.h * r * (len / 2);
+      const w = r * (len / 2);
+      let ts = 0;
+      for (let a = 0; a < 2; a++) ts += N[a] * T[nodes[a]];
+      const tk = Math.max(ts + 273.15, 1);
+      const q = eps * SIGMA * (tk * tk * tk * tk - tInf4);
+      const dq = eps * SIGMA * 4 * tk * tk * tk;
       for (let a = 0; a < 2; a++) {
-        bRobin[nodes[a]] += w * N[a] * spec.Tref;
-        for (let b = 0; b < 2; b++) K.add(nodes[a], nodes[b], w * N[a] * N[b]);
+        res[nodes[a]] += w * N[a] * q;
+        for (let b = 0; b < 2; b++) jac.push([nodes[a], nodes[b], w * N[a] * dq * N[b]]);
       }
     }
   }
-
-  const cRows = lumpRows(C.rows(n));
-  return { n, kRows: K.rows(n), cRows, bRobin };
+  return { res, jac };
 }
 
-function lumpRows(rows) {
-  return rows.map((row, i) => {
-    let d = 0;
-    for (const e of row) d += e.v;
-    return [{ j: i, v: d }];
-  });
-}
-
-export function systemForDt(op, dt) {
-  const n = op.n;
-  const rows = Array.from({ length: n }, () => []);
-  for (let i = 0; i < n; i++) {
-    const acc = new Map();
-    for (const e of op.kRows[i]) acc.set(e.j, (acc.get(e.j) || 0) + e.v);
-    for (const e of op.cRows[i]) acc.set(e.j, (acc.get(e.j) || 0) + e.v / dt);
-    for (const [j, v] of acc) rows[i].push({ j, v });
-  }
-  return { n, rows, cRows: op.cRows, bRobin: op.bRobin, dt };
-}
-
-export function rhs(system, told) {
-  const b = new Float64Array(system.n);
-  for (let i = 0; i < system.n; i++) {
-    let s = system.bRobin[i];
-    const row = system.cRows[i];
-    for (let q = 0; q < row.length; q++) s += (row[q].v / system.dt) * told[row[q].j];
-    b[i] = s;
-  }
-  return b;
-}
-
-export function gaussSeidel(system, b, told, maxIter = 80, tol = 1e-5) {
-  const n = system.n;
-  const T = Float64Array.from(told);
-  const hist = [];
-  let residual = Infinity;
-  for (let m = 0; m < maxIter; m++) {
-    for (let i = 0; i < n; i++) {
-      let sigma = b[i];
-      let diag = 0;
-      const row = system.rows[i];
-      for (let q = 0; q < row.length; q++) {
-        const e = row[q];
-        if (e.j === i) diag = e.v;
-        else sigma -= e.v * T[e.j];
-      }
-      if (diag !== 0) T[i] = sigma / diag;
-    }
-    residual = residualNorm(system.rows, T, b);
-    hist.push(residual);
-    if (residual / Math.max(norm(b), 1e-30) < tol) break;
-  }
-  const rate = hist.length > 1 ? hist[hist.length - 1] / Math.max(hist[hist.length - 2], 1e-30) : null;
-  return {
-    T: Array.from(T),
-    hist,
-    residual,
-    rate,
-    converged: residual / Math.max(norm(b), 1e-30) < tol * 5
-  };
-}
-
-function residualNorm(rows, T, b) {
-  let s = 0;
-  for (let i = 0; i < T.length; i++) {
-    let ax = 0;
+function applyLinear(op, rows, T, told, dt) {
+  const y = new Float64Array(op.n);
+  for (let i = 0; i < op.n; i++) {
+    let s = 0;
     const row = rows[i];
-    for (let q = 0; q < row.length; q++) ax += row[q].v * T[row[q].j];
-    const r = ax - b[i];
-    s += r * r;
+    for (let q = 0; q < row.length; q++) s += row[q].v * T[row[q].j];
+    s -= (op.cRows[i][0].v / dt) * told[i];
+    s -= op.bRobin[i];
+    y[i] = s;
   }
-  return Math.sqrt(s);
+  return y;
 }
 
 function norm(v) {
   let s = 0;
   for (let i = 0; i < v.length; i++) s += v[i] * v[i];
   return Math.sqrt(s);
+}
+
+export function gaussSeidel(rows, b, guess, maxIter = 80, tol = 1e-6) {
+  const n = b.length;
+  const x = Float64Array.from(guess);
+  const hist = [];
+  let residual = Infinity;
+  const nb = Math.max(norm(b), 1e-30);
+  for (let m = 0; m < maxIter; m++) {
+    for (let i = 0; i < n; i++) {
+      let sigma = b[i];
+      let diag = 0;
+      const row = rows[i];
+      for (let q = 0; q < row.length; q++) {
+        const e = row[q];
+        if (e.j === i) diag = e.v;
+        else sigma -= e.v * x[e.j];
+      }
+      if (diag !== 0) x[i] = sigma / diag;
+    }
+    residual = residualOf(rows, x, b);
+    hist.push(residual);
+    if (residual / nb < tol) break;
+  }
+  const rate = hist.length > 1 ? hist[hist.length - 1] / Math.max(hist[hist.length - 2], 1e-30) : null;
+  return { x: Array.from(x), hist, residual, rate, converged: residual / nb < tol * 5 };
+}
+
+function residualOf(rows, x, b) {
+  let s = 0;
+  for (let i = 0; i < x.length; i++) {
+    let ax = 0;
+    const row = rows[i];
+    for (let q = 0; q < row.length; q++) ax += row[q].v * x[row[q].j];
+    const r = ax - b[i];
+    s += r * r;
+  }
+  return Math.sqrt(s);
+}
+
+export function newtonStep(op, told, dt, mesh, eps, tAmb) {
+  const linear = baseRows(op, dt);
+  let T = Float64Array.from(told);
+  const hist = [];
+  let lastInner = null;
+  let radSample = null;
+  for (let k = 0; k < 8; k++) {
+    const top = radiation(mesh, T, eps, tAmb);
+    const R = applyLinear(op, linear, T, told, dt);
+    for (let i = 0; i < op.n; i++) R[i] += top.res[i];
+    const res = norm(R);
+    hist.push(res);
+    if (k === 0) radSample = sampleRadiation(mesh, T, eps, tAmb);
+    const scale = Math.max(norm(op.bRobin), 1);
+    if (res / scale < 1e-8) break;
+    const rows = cloneRows(linear);
+    for (const [i, j, v] of top.jac) addEntry(rows, i, j, v);
+    const b = new Float64Array(op.n);
+    for (let i = 0; i < op.n; i++) b[i] = -R[i];
+    const gs = gaussSeidel(rows, b, new Float64Array(op.n), 60, 1e-7);
+    lastInner = gs;
+    for (let i = 0; i < op.n; i++) T[i] += gs.x[i];
+  }
+  let order = null;
+  if (hist.length >= 3 && hist[0] > 0 && hist[1] > 0 && hist[1] < hist[0]) {
+    order = Math.log(Math.max(hist[2], 1e-30) / hist[1]) / Math.log(hist[1] / hist[0]);
+  }
+  return { T: Array.from(T), hist, order, inner: lastInner, radSample };
+}
+
+function sampleRadiation(mesh, T, eps, tAmb) {
+  const face = mesh.faces.find((f) => f.kind === "ext-top");
+  if (!face) return null;
+  const tA = T[face.n0];
+  const tB = T[face.n1];
+  const ts = 0.5 * (tA + tB);
+  const tk = ts + 273.15;
+  const tink = tAmb + 273.15;
+  return {
+    ts, tk, tink,
+    q: eps * SIGMA * (tk ** 4 - tink ** 4),
+    dq: eps * SIGMA * 4 * tk ** 3
+  };
 }
 
 export function coreEnergy(mesh, props, T, T0) {
@@ -210,4 +301,108 @@ export function faceMean(mesh, T, zValue, rMax) {
     }
   }
   return c ? s / c : NaN;
+}
+
+export function insulationLosses(mesh, props, T) {
+  const groups = new Map();
+  for (const el of mesh.elements) {
+    if (!el.layer) continue;
+    if (!groups.has(el.layer)) groups.set(el.layer, []);
+    groups.get(el.layer).push(el);
+  }
+  const out = [];
+  for (const [layer, els] of groups) {
+    let face = els;
+    if (els[0].out === "r") {
+      const imin = Math.min(...els.map((e) => e.i));
+      face = els.filter((e) => e.i === imin);
+    } else if (els[0].out === "z+") {
+      const jmin = Math.min(...els.map((e) => e.j));
+      face = els.filter((e) => e.j === jmin);
+    } else {
+      const jmax = Math.max(...els.map((e) => e.j));
+      face = els.filter((e) => e.j === jmax);
+    }
+    let Q = 0;
+    for (const el of face) Q += elementFlux(mesh, props, T, el);
+    out.push({ layer, Q, elements: els.length });
+  }
+  return out;
+}
+
+function elementFlux(mesh, props, T, el) {
+  const p = props[el.mat];
+  const r0 = mesh.rEdges[el.i];
+  const r1 = mesh.rEdges[el.i + 1];
+  const z0 = mesh.zEdges[el.j];
+  const z1 = mesh.zEdges[el.j + 1];
+  const n = el.n;
+  const dr = r1 - r0;
+  const dz = z1 - z0;
+  if (el.out === "r") {
+    const tin = 0.5 * (T[n[0]] + T[n[3]]);
+    const tout = 0.5 * (T[n[1]] + T[n[2]]);
+    const rm = 0.5 * (r0 + r1);
+    return p.k * (tin - tout) / dr * (2 * Math.PI * rm * dz);
+  }
+  const rc = 0.5 * (r0 + r1);
+  const area = 2 * Math.PI * rc * dr;
+  if (el.out === "z+") {
+    const tin = 0.5 * (T[n[0]] + T[n[1]]);
+    const tout = 0.5 * (T[n[3]] + T[n[2]]);
+    return p.k * (tin - tout) / dz * area;
+  }
+  const tin = 0.5 * (T[n[3]] + T[n[2]]);
+  const tout = 0.5 * (T[n[0]] + T[n[1]]);
+  return p.k * (tin - tout) / dz * area;
+}
+
+export function surfaceLoss(mesh, T, h, eps, tAmb, tSolo) {
+  let conv = 0;
+  let rad = 0;
+  for (const face of mesh.faces) {
+    if (face.kind !== "ext-top" && face.kind !== "ext-lat" && face.kind !== "ext-base") continue;
+    const tRef = face.kind === "ext-base" ? tSolo : tAmb;
+    const useRad = face.rad && eps > 0;
+    const rA = mesh.nodeR(face.n0);
+    const zA = mesh.nodeZ(face.n0);
+    const rB = mesh.nodeR(face.n1);
+    const zB = mesh.nodeZ(face.n1);
+    const len = Math.hypot(rB - rA, zB - zA);
+    for (const xi of GS) {
+      const N = edgeN(xi);
+      const r = Math.max(rA + ((xi + 1) / 2) * (rB - rA), 1e-6);
+      const dA = 2 * Math.PI * r * (len / 2);
+      const ts = N[0] * T[face.n0] + N[1] * T[face.n1];
+      conv += h * (ts - tRef) * dA;
+      if (useRad) {
+        const tk = ts + 273.15;
+        const tink = tRef + 273.15;
+        rad += eps * SIGMA * (tk ** 4 - tink ** 4) * dA;
+      }
+    }
+  }
+  return { conv, rad };
+}
+
+export function discretizationSample(mesh, props) {
+  let el = null;
+  for (const item of mesh.elements) {
+    if (!item.core) continue;
+    if (item.i !== 0) continue;
+    if (Math.abs(mesh.zEdges[item.j + 1] - mesh.zCoreTop) < 1e-6) el = item;
+  }
+  if (!el) return null;
+  const p = props[el.mat];
+  const r0 = mesh.rEdges[el.i];
+  const r1 = mesh.rEdges[el.i + 1];
+  const z0 = mesh.zEdges[el.j];
+  const z1 = mesh.zEdges[el.j + 1];
+  const dr = r1 - r0;
+  const dz = z1 - z0;
+  const det = (dr * dz) / 4;
+  const xi = GP;
+  const r = Math.max(r0 + ((xi + 1) / 2) * dr, 1e-8);
+  const z = z0 + ((xi + 1) / 2) * dz;
+  return { dr, dz, det, xi, r, z, k: p.k, rho: p.rho, cp: p.cp, wk: p.k * r * det, wm: p.rho * p.cp * r * det };
 }

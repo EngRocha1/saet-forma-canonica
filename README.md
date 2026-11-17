@@ -4,7 +4,29 @@ Demo: https://engrocha1.github.io/saet-forma-canonica/
 
 Protótipo de navegador para a qualificação no PPGEE-UFPI. Não é o código Python/SciPy da dissertação (lá k e cp podem depender de T e o solver da tese é outro). Este repositório implementa, em JavaScript, a forma fraca de Galerkin da mesma equação de difusão.
 
+## Discretização
+
+Quadriláteros bilineares, integral 2×2 de Gauss com peso r. O núcleo usa n_r e n_z. Cada subcamada de isolamento tem sempre dois elementos, mesmo no mínimo dos controles.
+
+## Newton–Raphson
+
+A radiação εσ(T+273,15)⁴ torna o resíduo não linear. A Jacobiana leva a derivada 4εσ(T+273,15)³. O gráfico de resíduo é essa norma, não a do Gauss–Seidel. O Gauss–Seidel só resolve Jδ = −R e a taxa dele continua linear.
+
+A ordem 2 é assintótica. No primeiro passo o campo sai de 25 °C, longe da raiz, e as primeiras quedas não precisam ser quadráticas. A memória lista ‖R‖ iteração a iteração.
+
+## Convergência temporal
+
+Na janela de 4 Δt a sonda do eixo é comparada em Δt, Δt/2 e Δt/4. A ordem observada fica ao lado do valor 1 do Euler implícito.
+
 ## Gráficos
+
+| Figura | Leitura |
+| --- | --- |
+| Cilindro | r de −R_ext a +R_ext, z em metros, escala real. Detalhe do topo à parte |
+| Perdas | kW na face interna de cada material |
+| Energia | t (h) e E (GJ) no núcleo |
+| Newton | log10 ‖R‖ por iteração |
+| Tempo | erro da sonda contra o Δt mais fino |
 
 Cada figura tem grade e coordenadas numéricas.
 

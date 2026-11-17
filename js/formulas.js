@@ -21,9 +21,9 @@ export const FORMULAS = [
   },
   {
     id: "solver",
-    title: "Solver linear",
-    expr: "C concentrada por soma de linha. Gauss–Seidel em (C/Δt + K). Taxa linear.",
-    ref: "Bathe (2014), massa concentrada. Evita temperatura negativa quando a frente é mais fina que o elemento. Não é Newton–Raphson."
+    title: "Newton–Raphson",
+    expr: "R(T) = C/Δt (T − T_antigo) + K T − b + R_rad(T). J δ = −R.",
+    ref: "Bathe (2014). J inclui ∂(εσT^4)/∂T. A queda de ‖R‖ é a de Newton. O Gauss–Seidel interno, que resolve Jδ = −R, é linear."
   },
   {
     id: "eps",
@@ -51,9 +51,9 @@ export const FORMULAS = [
   },
   {
     id: "robin",
-    title: "Contorno de Robin",
-    expr: "−k ∂T/∂n = h (T − Tref)",
-    ref: "Incropera et al. (2014); Çengel e Ghajar (2020). Carga resistiva: Tref = T_carga no topo do núcleo."
+    title: "Contorno com radiação",
+    expr: "−k ∂T/∂n = h (T − T∞) + ε σ [(T+273,15)^4 − (T∞+273,15)^4]",
+    ref: "Dissertação. σ = 5,67×10⁻⁸. ε é dado de contorno. A base enterrada não leva o termo em T^4."
   },
   {
     id: "energia",

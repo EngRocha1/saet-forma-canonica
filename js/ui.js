@@ -1,7 +1,7 @@
 import { FORMULAS } from "./formulas.js";
 import { SOLIDS, INSULATORS, applyJson, coreProps } from "./materials.js";
 import { simulate } from "./simulate.js";
-import { drawField, drawCharge, drawResidual } from "./charts.js";
+import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal } from "./charts.js";
 import { createPlayer } from "./animate.js";
 import { buildMemory } from "./memory.js";
 import { saveMemory } from "./pdf-memory.js";
@@ -14,6 +14,7 @@ const player = createPlayer({
     if (!state) return;
     const frame = state.frames[i];
     drawField($("c-field"), state, frame);
+    drawLosses($("c-loss"), frame);
     $("v-prog").textContent = frame.tH.toFixed(1) + " h";
     $("prog").value = String(Math.round(100 * i / Math.max(state.frames.length - 1, 1)));
     $("s-tmax").textContent = frame.Tt.toFixed(1) + " °C";
@@ -33,7 +34,7 @@ function readInput() {
   };
   const eps = num("eps");
   return {
-    mode: $("mode-sel").value,
+    mode: "refinada",
     R: num("R"),
     L: num("L"),
     nCoreR: num("nr"),
@@ -44,6 +45,7 @@ function readInput() {
     Tcharge: num("tc"),
     hTop: num("ht"),
     hExt: num("hext"),
+    epsRad: num("epsr"),
     core: coreProps(key, sliders[key], eps),
     thick: {
       e1: num("e1") / 100, e2: num("e2") / 100, e3: num("e3") / 100,
@@ -66,6 +68,7 @@ function updateLabels() {
   $("v-tc").textContent = $("tc").value + " °C";
   $("v-ht").textContent = $("ht").value;
   $("v-hext").textContent = $("hext").value;
+  $("v-epsr").textContent = (+$("epsr").value).toFixed(2);
   $("v-eps").textContent = (+$("eps").value).toFixed(2);
   ["e1","e2","e3","eb1","eb2","eb3"].forEach((id) => { $("v-" + id).textContent = $(id).value + " cm"; });
   ["ka","kal","kh","ki"].forEach((id) => { $("v-" + id).textContent = (+$(id).value).toFixed(2); });
@@ -76,7 +79,7 @@ function updateLabels() {
 }
 
 function comparison(input) {
-  const lines = ["Capacidade do leito, mesma ε = " + input.eps.toFixed(2) + ". O campo desenhado é só o núcleo selecionado."];
+  const lines = ["Capacidade do leito, ε = " + input.eps.toFixed(2) + ". O cilindro usa o núcleo selecionado; os três materiais ficam abaixo para comparação."];
   for (const key of ["areia", "alumina", "hematita"]) {
     const c = coreProps(key, input.solids[key], input.eps);
     lines.push(c.name + ": ρ_s " + c.rhoSolid + " · ρ_leito " + c.rho.toFixed(0) + " · cp " + c.cp + " · k " + c.k.toFixed(2));
@@ -84,22 +87,19 @@ function comparison(input) {
   $("cmp-box").textContent = lines.join("\n");
 }
 
-function terminal(input) {
+function terminal() {
   const m = state.mesh;
-  const layer = m.minLayerM == null ? "camadas fora da malha (U equivalente)" : "menor Δ de camada = " + m.minLayerM.toFixed(3) + " m";
-  const rate = state.lastRate == null ? "—" : state.lastRate.toFixed(3);
+  const last = state.newtonHist[state.newtonHist.length - 1];
   $("term-log").textContent = [
-    "Galerkin Q1 · Euler implícito · Gauss–Seidel",
-    "modo " + state.mode + " · elementos " + m.nr + "×" + m.nz + " · " + layer,
-    "Δt = " + state.dtHours + " h · passos = " + state.steps + " · horizonte = " + state.days + " d",
-    "α = " + state.alpha.toExponential(3) + " m²/s · √(αt) = " + state.depth.toFixed(3) + " m",
-    "Bi = " + state.biot.toFixed(2) + " (h_topo, Lc=R/2, k do controle)",
-    "E_útil = " + (state.eUseful / 1e9).toFixed(3) + " GJ",
-    "termoclina: " + (state.tBreak == null ? "intacta no horizonte" : "limite em " + state.tBreak.toFixed(1) + " h"),
-    "último passo: ‖R‖ " + state.lastHist[state.lastHist.length - 1].toExponential(2) + " · razão " + rate + " · " + (state.lastConv ? "atingiu a tolerância" : "não atingiu a tolerância"),
-    "A razão perto de uma constante indica convergência linear do solver. Não é Newton quadrático."
+    "Newton–Raphson · Galerkin Q1 · Euler implícito",
+    "malha " + m.nr + "×" + m.nz + " · nós " + m.nn + " · menor camada " + m.minLayerM.toFixed(3) + " m",
+    "Δt = " + state.dtHours + " h · passos = " + state.steps,
+    "‖R‖ Newton: " + state.newtonHist.map((v) => v.toExponential(2)).join(" → "),
+    "Gauss–Seidel interno, razão " + (state.innerRate == null ? "—" : state.innerRate.toFixed(3)) + " (linear)",
+    "ordem temporal p = " + (state.temporal.p == null ? "—" : state.temporal.p.toFixed(2)) + " na janela de " + state.temporal.hours + " h",
+    "E_útil = " + (state.eUseful / 1e9).toFixed(3) + " GJ"
   ].join("\n");
-  $("term-status").textContent = state.lastConv ? "resíduo ok" : "ver resíduo";
+  $("term-status").textContent = last < 1e-4 ? "Newton ok" : "ver resíduo";
 }
 
 function run() {
@@ -112,8 +112,9 @@ function run() {
       state = simulate(input);
       drawCharge($("c-charge"), state);
       drawResidual($("c-res"), state);
+      drawTemporal($("c-time"), state);
       $("memory-box").textContent = buildMemory(state);
-      terminal(input);
+      terminal();
       player.last(state.frames.length);
       $("s-n").textContent = String(state.mesh.nn);
       $("s-mesh").textContent = state.mesh.nr + "×" + state.mesh.nz;
@@ -137,12 +138,12 @@ function renderFormulas() {
 }
 
 function bind() {
-  const ids = ["R","L","days","dt","tlim","tc","ht","hext","eps","e1","e2","e3","eb1","eb2","eb3","ka","ra","cpa","kal","ral","cpal","kh","rh","cph","ki","kp","ks","kv"];
+  const ids = ["R","L","days","dt","tlim","tc","ht","hext","epsr","eps","e1","e2","e3","eb1","eb2","eb3","ka","ra","cpa","kal","ral","cpal","kh","rh","cph","ki","kp","ks","kv"];
   for (const id of ids) {
     $(id).addEventListener("input", updateLabels);
     $(id).addEventListener("change", run);
   }
-  ["nr","nz","core-sel","mode-sel"].forEach((id) => $(id).addEventListener("change", run));
+  ["nr","nz","core-sel"].forEach((id) => $(id).addEventListener("change", run));
   $("btn-play").addEventListener("click", () => state && player.toggle(state.frames.length));
   $("btn-reset").addEventListener("click", () => state && player.show(0, state.frames.length));
   $("prog").addEventListener("input", () => state && player.scrub(+$("prog").value / 100, state.frames.length));
