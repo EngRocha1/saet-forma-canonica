@@ -1,78 +1,67 @@
-# SAET · Demonstrador 2D axissimétrico · XV CBPE / PPGEE-UFPI
+# SAET · demonstrador Galerkin · XV CBPE / PPGEE-UFPI
 
-> **Papel deste repositório:** protótipo **web de demonstração** para o XV Congresso Brasileiro de Planejamento Energético (XV CBPE, 2026).  
-> **Não constitui** o código-fonte integral da tese nem o simulador de referência em Python/SciPy.
+Demo: https://engrocha1.github.io/saet-forma-canonica/
 
-**Demo pública:** https://engrocha1.github.io/saet-forma-canonica/
+Protótipo de navegador para a qualificação no PPGEE-UFPI. Não é o código Python/SciPy da dissertação (lá k e cp podem depender de T e o solver da tese é outro). Este repositório implementa, em JavaScript, a forma fraca de Galerkin da mesma equação de difusão.
 
----
+## O que mudou em relação ao demonstrador anterior
 
-## 1. O que este site é
+| Antes | Agora |
+| --- | --- |
+| Volumes finitos e fator axial `keff` (1 a 80) | Sem `keff`. Galerkin Q1, massa consistente |
+| Malha uniforme: 15 cm de IFB cabiam numa célula de ~1 m | Modo **refinada**: 2 elementos em cada subcamada (15 cm → dois de 7,5 cm) |
+| Isolante só desenhado | Modo **resistência equivalente**: `1/U = Σ(e/k) + 1/h` (Incropera et al., 2014) |
+| Rótulo “Newton” e convergência quadrática | Gauss–Seidel. O gráfico é `log‖R‖` do solver **linear**. A razão `‖R‖_{m+1}/‖R‖_m` fica no terminal |
+| `Δt` parecia diferença de temperatura | Caixa própria: **Δt é o passo de tempo do Euler implícito** |
+| Um único arquivo | `css/` e `js/` separados |
 
-Ferramenta **didática e interativa** para visualizar, no navegador:
+## Pastas
 
-- o campo \(T(r,z,t)\) em corte diametral de um reservatório cilíndrico (SAET / bateria de Carnot);
-- a malha estruturada no domínio composto (núcleo de hematita + envelope isolante);
-- a convergência do residual e a curva de carga com critério de integridade da termoclina;
-- a geração de uma **memória de cálculo** em PDF para discussão no congresso.
+| Arquivo | Responsabilidade |
+| --- | --- |
+| `index.html` | Marcação |
+| `css/app.css` | Aparência, foco, contraste, layout |
+| `js/formulas.js` | Todas as relações usadas, sem estado |
+| `js/materials.js` | Areia, alumina, hematita, isolantes, ε |
+| `js/mesh.js` | Malha refinada ou domínio só do núcleo |
+| `js/galerkin.js` | Matrizes C e K, Euler implícito, Gauss–Seidel, energia |
+| `js/simulate.js` | Laço no tempo e termoclina |
+| `js/charts.js` | Canvas |
+| `js/animate.js` | Play, pausa e progresso. Não calcula física |
+| `js/pdf-memory.js` | Memória de cálculo |
+| `js/ui.js` | Liga os controles ao cálculo |
+| `materiais.json` | k dos isolantes e ρ, cp de referência |
 
-Objetivo: **comunicação e verificação conceitual** das condições de contorno e da física do artigo — não substituir a plataforma computacional completa da pesquisa.
+A média harmônica de face não é reaplicada. No Galerkin, cada elemento tem o seu k e a continuidade de fluxo na interface fica na forma fraca (Özisik, 1993; Bathe, 2014).
 
-## 2. O que este site não é
+## Equação e tempo
 
-| Afirmação do artigo (§2.11) | Neste demonstrador |
-|----------------------------|-------------------|
-| MEF Galerkin com matrizes **C** e **K** | Discretização por **volumes finitos** estruturados (residual por VC) |
-| Newton–Raphson com Jacobiana esparsa SciPy | Iteração tipo Newton com **aproximação diagonal** (Jacobi) |
-| Python + NumPy + SciPy (LIL/CSR) | **JavaScript** no navegador (GitHub Pages) |
-| Matplotlib / Plotly | Canvas HTML5 |
+ρ cp ∂T/∂t = (1/r) ∂/∂r (r k ∂T/∂r) + ∂/∂z (k ∂T/∂z)
 
-A implementação **robusta** (MEF Galerkin, matrizes esparsas, solver Newton completo) integra o **projeto de tese** (PPGEE-UFPI) e permanece em repositório de trabalho, ainda **não disponibilizado publicamente**.
+O passo Δt entra só aqui:
 
-## 3. Modelo físico (alinhado ao artigo)
+(C/Δt + K) T^{n+1} = (C/Δt) T^n + b
 
-Equação no domínio axissimétrico:
+Δt é lido em horas na tela e convertido a segundos na matriz. Não é um salto de temperatura.
 
-ρ⋅Cp⋅∂T/∂t=1/r  ∂/∂r  (r⋅k⋅∂T/∂r)+∂/∂z(k⋅∂T/∂z)
+## Materiais
 
-| Item | Configuração do demonstrador |
-|------|------------------------------|
-| Malha | Estruturada **uniforme** \(\Delta r\), \(\Delta z\) no domínio composto |
-| Materiais | Hematita (núcleo) + IFB / perlita / silicato / vermiculita (envelope) |
-| \(k\) de face | Média **harmônica** nas interfaces |
-| CCs | **Neumann** em \(r=0\) · **Robin** (injeção no topo do núcleo; perdas no contorno externo) |
-| Tempo | Euler **implícito** |
-| Nonlinearidade | Iterações sobre o residual de energia (queda de \(\|R\|\)) |
+ρ_leito = (1 − ε) ρ_sólido, com ε = 0,40 na abertura (dissertação, Eq. 2).
 
-Parâmetros geométricos e termofísicos são editáveis na interface (incl. `materiais.json`).
+| Núcleo | ρ sólido | cp | Fonte na dissertação |
+| --- | ---: | ---: | --- |
+| Areia de sílica | 2650 kg/m³ | 885 J/(kg·K) | §10.2.1, Incropera et al. (2014) |
+| Alumina calcinada | 3970 kg/m³ | 1000 J/(kg·K) | §10.2.2 |
+| Hematita | 5150 kg/m³ | 800 J/(kg·K) | §10.2.3 |
 
-## 4. Interface
+k inicial 1,2 W/(m·K) é o valor efetivo do leito no controle, não a condutividade do cristal e não um multiplicador.
 
-- Campo \(T\) no plano \((r,z)\) e vista esquemática de ½/¾ de cilindro (casca externa = isolante)
-- Botões **Setas q** e **Números T** (exibição opcional, para não poluir a figura)
-- Horizonte em **dias**, curva de carga \(E(t)\), limite de termoclina (\(T_{\mathrm{base}}\))
-- Terminal com \(\sqrt{\alpha t}\), Fo, interface núcleo–isolante
-- **Memória de Cálculo (PDF):** temperaturas nodais amostradas, residual por iteração e diagonal de \(J\)
+A carga é resistiva (Robin no topo do núcleo). Não há escoamento de gás no leito.
 
-## 5. Como citar / como apresentar
+## Gráfico de resíduo
 
-**Uso recomendado na oral ou no slide:**
+Permanece porque mostra se o sistema linear de cada passo foi resolvido. Não é convergência quadrática: k, ρ e cp são constantes dentro do passo, então Newton–Raphson não tem o que fazer. O texto da figura diz isso.
 
-> Demonstrador interativo 2D elaborado para o XV CBPE. A implementação completa em Python/SciPy (MEF Galerkin, Jacobiana esparsa) integra o projeto de tese e ainda não está em repositório público.
+## Citação
 
-**Citação sugerida do demonstrador:**
-
-> ROCHA, T. D.; LIRA, M. A. T. *SAET — demonstrador 2D axissimétrico* (XV CBPE / PPGEE-UFPI), 2026. Disponível em: https://engrocha1.github.io/saet-forma-canonica/
-
-## 6. Autoria e afiliação
-
-| | |
-|--|--|
-| **Autor** | Tarcísio Dias da Rocha — mestrando, PPGEE-UFPI |
-| **Orientador** | Prof. Dr. Marcos Antônio Tavares Lira — DEE / UFPI |
-| **Evento** | XV CBPE — 04 a 06 de novembro de 2026 |
-| **Trabalho** | Otimização geométrica, econômica e termofísica para SAET |
-
-## 7. Licença e uso
-
-Código deste repositório destinado a **fins acadêmicos de demonstração** no âmbito do XV CBPE e do PPGEE-UFPI. Reprodução com crédito aos autores. Resultados quantitativos definitivos devem reportar-se à implementação de referência da tese, quando publicada.
+ROCHA, T. D.; LIRA, M. A. T. SAET — demonstrador Galerkin 2D (XV CBPE / PPGEE-UFPI), 2026. https://engrocha1.github.io/saet-forma-canonica/
