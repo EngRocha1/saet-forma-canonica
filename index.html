@@ -126,11 +126,29 @@
         <canvas id="c-loss" width="860" height="320"></canvas>
       </figure>
       <figure>
-        <figcaption>Energia no núcleo dos três substratos
-          <span>E(t) só no leito. Areia, alumina e hematita no mesmo eixo de tempo.</span>
+        <figcaption>Energia no núcleo e temperatura da base
+          <span>Linha contínua: energia, eixo esquerdo, em GJ. Tracejado: T_base, eixo direito. A linha rosa é o limite da termoclina. O valor em joule está no texto abaixo.</span>
         </figcaption>
-        <canvas id="c-charge" width="860" height="280"></canvas>
+        <canvas id="c-charge" width="860" height="340"></canvas>
         <p class="note" id="cmp-box"></p>
+      </figure>
+      <figure>
+        <figcaption>Perfil de profundidade no eixo
+          <span>Profundidade zero é a face quente do núcleo. A distância da frente é o ponto em que a temperatura cai à média entre o topo e a base.</span>
+        </figcaption>
+        <canvas id="c-depth" width="860" height="320"></canvas>
+      </figure>
+      <figure>
+        <figcaption>Isolamento lateral, camada por camada
+          <span>Corte na cota do topo do núcleo, do raio interno para fora. A queda segue a malha, não uma resistência concentrada.</span>
+        </figcaption>
+        <canvas id="c-wall" width="860" height="320"></canvas>
+      </figure>
+      <figure>
+        <figcaption>Isolamento da base, camada por camada
+          <span>Espessura medida a partir do núcleo, no eixo. Se o horizonte for curto, a base inteira permanece na temperatura inicial: a frente ainda não chegou.</span>
+        </figcaption>
+        <canvas id="c-base" width="860" height="320"></canvas>
       </figure>
       <figure>
         <figcaption>Resíduo de Newton–Raphson dos três substratos

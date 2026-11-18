@@ -1,7 +1,8 @@
 import { FORMULAS } from "./formulas.js";
 import { SOLIDS, INSULATORS, applyJson, coreProps } from "./materials.js";
 import { simulateAll } from "./simulate.js";
-import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal, drawVolume } from "./charts.js";
+import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal, drawVolume, drawDepth, drawWall, drawBase } from "./charts.js";
+import { frontReport } from "./profiles.js";
 import { volumeCompare, volumeText, TMAX } from "./volume.js";
 import { createPlayer } from "./animate.js";
 import { buildTrioMemory } from "./memory.js";
@@ -17,6 +18,9 @@ const player = createPlayer({
     const frame = active.frames[Math.min(i, active.frames.length - 1)];
     drawField($("c-field"), state, i);
     drawLosses($("c-loss"), state, i);
+    drawDepth($("c-depth"), state, i);
+    drawWall($("c-wall"), state, i);
+    drawBase($("c-base"), state, i);
     $("v-prog").textContent = frame.tH.toFixed(1) + " h";
     $("prog").value = String(Math.round(100 * i / Math.max(active.frames.length - 1, 1)));
     $("s-tmax").textContent = frame.Tt.toFixed(1) + " °C";
@@ -120,13 +124,18 @@ function updateLabels() {
   $("dt-callout").textContent = "Δt = " + dt + " h é o passo de tempo do Euler implícito. Cada passo avança o relógio em " + dt + " h. Não é ΔT de temperatura.";
 }
 
-function comparison(input) {
-  const lines = ["Capacidade do leito, ε = " + input.eps.toFixed(2) + ". Os gráficos calculam os três substratos ao mesmo tempo."];
-  for (const key of ["areia", "alumina", "hematita"]) {
-    const c = coreProps(key, input.solids[key], input.eps);
-    lines.push(c.name + ": ρ_s " + c.rhoSolid + " · ρ_leito " + c.rho.toFixed(0) + " · cp " + c.cp + " · k " + c.k.toFixed(2));
+function energyReport(pack) {
+  const lines = ["Energia armazenada no núcleo, E = ∫ ρ cp (T − T0) 2π r dr dz. O número em joule é o da última linha da curva, sem arredondar para o gráfico."];
+  for (const key of pack.keys) {
+    const s = pack.byKey[key];
+    const frame = s.frames[s.frames.length - 1];
+    const r = frontReport(s.mesh, frame.T, s);
+    const front = r.zHalf == null ? "a frente não cruza a média topo-base" : "frente (média topo-base) a " + r.zHalf.toFixed(3) + " m da face quente";
+    const where = r.zLim == null ? "a isoterma de " + s.tlim.toFixed(1) + " °C não aparece no núcleo" : "a isoterma de " + s.tlim.toFixed(1) + " °C está a " + r.zLim.toFixed(3) + " m da face quente; restam " + r.remaining.toFixed(3) + " m de núcleo abaixo dela";
+    const base = r.reached ? "T_base = " + r.Tb.toFixed(3) + " °C e já passou do limite" : "T_base = " + r.Tb.toFixed(3) + " °C e ainda está abaixo do limite";
+    lines.push(s.core.name + ": E = " + r.E.toExponential(8) + " J = " + (r.E / 1e9).toFixed(6) + " GJ; T_médio da energia = " + r.Tmean.toFixed(3) + " °C; T_topo = " + r.Tt.toFixed(3) + " °C; " + front + "; " + where + "; " + base);
   }
-  $("cmp-box").textContent = lines.join("\n");
+  return lines.join("\n");
 }
 
 function terminal() {
@@ -146,7 +155,7 @@ function terminal() {
 function run() {
   updateLabels();
   const input = readInput();
-  comparison(input);
+  $("cmp-box").textContent = "Calculando a energia dos três substratos…";
   const volumeNote = paintVolume(input);
   $("term-log").textContent = "Calculando…";
   window.setTimeout(() => {
@@ -160,6 +169,7 @@ function run() {
       drawResidual($("c-res"), state);
       drawTemporal($("c-time"), state);
       $("memory-box").textContent = buildTrioMemory(state);
+      $("cmp-box").textContent = energyReport(state);
       terminal();
       player.last(active.frames.length);
       $("s-n").textContent = String(active.mesh.nn);

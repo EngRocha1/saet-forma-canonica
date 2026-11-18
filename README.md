@@ -4,6 +4,8 @@ Demo: https://engrocha1.github.io/saet-forma-canonica/
 
 Protótipo de navegador para a qualificação no PPGEE-UFPI. Não é o código Python/SciPy da dissertação (lá k e cp podem depender de T e o solver da tese é outro). Este repositório implementa, em JavaScript, a forma fraca de Galerkin da mesma equação de difusão.
 
+O gráfico de energia traz E(t) e T_base. O texto abaixo escreve a energia em joule, a cota da isoterma do limite e a temperatura da base. Há também o perfil axial no eixo, o corte radial da parede e o corte da base.
+
 O sistema linear de cada correção de Newton é resolvido por eliminação de Gauss em banda. A ordem escrita no gráfico usa os três últimos resíduos, não a primeira queda. Areia, alumina e hematita entram em todos os gráficos. A memória traz R″ = e/k de cada camada de isolamento, a soma e o U.
 
 ## Volume dos três substratos

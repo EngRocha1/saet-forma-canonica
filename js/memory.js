@@ -3,6 +3,7 @@
 import { SIGMA } from "./galerkin.js";
 import { stackLayers } from "./materials.js";
 import { seriesBreakdown } from "./formulas.js";
+import { frontReport } from "./profiles.js";
 
 function n(v, d) {
   if (!Number.isFinite(v)) return "—";
@@ -49,12 +50,15 @@ export function buildTrioMemory(pack) {
   const lines = ["Os três substratos usam a mesma malha, o mesmo passo e o mesmo isolamento. Mudam ρ, cp e k do núcleo."];
   for (const key of pack.keys) {
     const s = pack.byKey[key];
-    const last = s.curve[s.curve.length - 1];
     lines.push("");
     lines.push(s.core.name);
     lines.push("Fórmula: ρ_leito = (1 − ε) ρ_sólido");
     lines.push("Substituição: (1 − " + n(s.core.eps, 2) + ") · " + n(s.core.rhoSolid, 1) + " = " + n(s.core.rho, 2) + " kg/m³; cp = " + n(s.core.cp, 1) + " J/(kg·K); k = " + n(s.core.k, 3) + " W/(m·K)");
-    lines.push("E(" + n(last.tH, 1) + " h) = " + n(last.E / 1e9, 3) + " GJ; T_topo = " + n(last.Tt, 2) + " °C; T_base = " + n(last.Tb, 2) + " °C");
+    const frame = s.frames[s.frames.length - 1];
+    const front = frontReport(s.mesh, frame.T, s);
+    lines.push("E exata = " + front.E.toExponential(8) + " J = " + n(front.E / 1e9, 6) + " GJ");
+    lines.push("T_médio da energia = T0 + E / (ρ cp V) = " + n(front.Tmean, 3) + " °C");
+    lines.push("Frente, profundidade em que T cai à média entre topo e base: " + (front.zHalf == null ? "não houve cruzamento" : n(front.zHalf, 3) + " m") + ". T_base no eixo = " + n(front.Tb, 3) + " °C. Limite = " + n(s.tlim, 1) + " °C. " + (front.reached ? "A base já cruzou o limite." : "A base ainda não cruzou o limite."));
     lines.push("Newton ‖R‖: " + (s.newtonHist || []).map((v) => n(v, 3)).join(" → "));
     lines.push("Ordem assintótica, três últimos resíduos: " + (s.newtonOrder == null ? "—" : n(s.newtonOrder, 3)) + ". Resíduo da eliminação: " + (s.linearResidual == null ? "—" : s.linearResidual.toExponential(3)));
     lines.push("Ordem temporal p = " + (s.temporal && s.temporal.p != null ? n(s.temporal.p, 3) : "—"));
