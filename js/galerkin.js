@@ -186,32 +186,53 @@ function norm(v) {
   return Math.sqrt(s);
 }
 
-export function gaussSeidel(rows, b, guess, maxIter = 80, tol = 1e-6) {
-  const n = b.length;
-  const x = Float64Array.from(guess);
-  const hist = [];
-  let residual = Infinity;
-  const nb = Math.max(norm(b), 1e-30);
-  for (let m = 0; m < maxIter; m++) {
-    for (let i = 0; i < n; i++) {
-      let sigma = b[i];
-      let diag = 0;
-      const row = rows[i];
-      for (let q = 0; q < row.length; q++) {
-        const e = row[q];
-        if (e.j === i) diag = e.v;
-        else sigma -= e.v * x[e.j];
-      }
-      if (diag !== 0) x[i] = sigma / diag;
-    }
-    residual = residualOf(rows, x, b);
-    hist.push(residual);
-    if (residual / nb < tol) break;
+function bandWidth(rows) {
+  let bw = 1;
+  for (let i = 0; i < rows.length; i++) {
+    for (const e of rows[i]) bw = Math.max(bw, Math.abs(e.j - i));
   }
-  const rate = hist.length > 1 ? hist[hist.length - 1] / Math.max(hist[hist.length - 2], 1e-30) : null;
-  return { x: Array.from(x), hist, residual, rate, converged: residual / nb < tol * 5 };
+  return bw;
 }
 
+/** Eliminação de Gauss em banda. A Jacobiana do Q1 axissimétrico cabe na banda nr+2. */
+export function solveBand(rows, b) {
+  const n = b.length;
+  const bw = bandWidth(rows);
+  const a = Array.from({ length: n }, () => new Float64Array(2 * bw + 1));
+  for (let i = 0; i < n; i++) {
+    for (const e of rows[i]) a[i][e.j - i + bw] += e.v;
+  }
+  const x = Float64Array.from(b);
+  for (let k = 0; k < n; k++) {
+    const piv = a[k][bw];
+    if (Math.abs(piv) < 1e-18) throw new Error("Jacobiana singular na eliminação");
+    const rMax = Math.min(n - 1, k + bw);
+    for (let i = k + 1; i <= rMax; i++) {
+      const factor = a[i][k - i + bw] / piv;
+      if (factor === 0) continue;
+      const jMax = Math.min(n - 1, k + bw);
+      for (let j = k; j <= jMax; j++) a[i][j - i + bw] -= factor * a[k][j - k + bw];
+      x[i] -= factor * x[k];
+    }
+  }
+  for (let i = n - 1; i >= 0; i--) {
+    let s = x[i];
+    const jMax = Math.min(n - 1, i + bw);
+    for (let j = i + 1; j <= jMax; j++) s -= a[i][j - i + bw] * x[j];
+    x[i] = s / a[i][bw];
+  }
+  return { x, residual: residualOf(rows, x, b) };
+}
+
+function asymptoticOrder(hist) {
+  const h = hist.filter((v) => v > 0);
+  if (h.length < 3) return null;
+  const a = h[h.length - 3];
+  const b = h[h.length - 2];
+  const c = h[h.length - 1];
+  if (!(a > b && b > c && b < a)) return null;
+  return Math.log(b / c) / Math.log(a / b);
+}
 function residualOf(rows, x, b) {
   let s = 0;
   for (let i = 0; i < x.length; i++) {
@@ -238,20 +259,16 @@ export function newtonStep(op, told, dt, mesh, eps, tAmb) {
     hist.push(res);
     if (k === 0) radSample = sampleRadiation(mesh, T, eps, tAmb);
     const scale = Math.max(norm(op.bRobin), 1);
-    if (res / scale < 1e-8) break;
+    if (res / scale < 1e-12 || res < 1e-9) break;
     const rows = cloneRows(linear);
     for (const [i, j, v] of top.jac) addEntry(rows, i, j, v);
     const b = new Float64Array(op.n);
     for (let i = 0; i < op.n; i++) b[i] = -R[i];
-    const gs = gaussSeidel(rows, b, new Float64Array(op.n), 60, 1e-7);
-    lastInner = gs;
-    for (let i = 0; i < op.n; i++) T[i] += gs.x[i];
+    const solved = solveBand(rows, b);
+    lastInner = solved;
+    for (let i = 0; i < op.n; i++) T[i] += solved.x[i];
   }
-  let order = null;
-  if (hist.length >= 3 && hist[0] > 0 && hist[1] > 0 && hist[1] < hist[0]) {
-    order = Math.log(Math.max(hist[2], 1e-30) / hist[1]) / Math.log(hist[1] / hist[0]);
-  }
-  return { T: Array.from(T), hist, order, inner: lastInner, radSample };
+  return { T: Array.from(T), hist, order: asymptoticOrder(hist), linearResidual: lastInner ? lastInner.residual : null, radSample };
 }
 
 function sampleRadiation(mesh, T, eps, tAmb) {

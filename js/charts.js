@@ -1,5 +1,19 @@
 /** Gráficos. Não montam matriz. */
 
+const CORE_COLOR = { areia: "#e7e5e4", alumina: "#38bdf8", hematita: "#fb923c" };
+const CORE_LABEL = { areia: "Areia", alumina: "Alumina", hematita: "Hematita" };
+
+function trio(pack) {
+  if (!pack || !pack.byKey) return null;
+  return pack.keys.map((key) => ({ key, state: pack.byKey[key] }));
+}
+
+function frameAt(state, index) {
+  const frames = state.frames || [];
+  if (!frames.length) return null;
+  const i = Math.max(0, Math.min(index, frames.length - 1));
+  return frames[i];
+}
 const MAT = {
   ifb: "#fdba74",
   perlita: "#7dd3fc",
@@ -89,7 +103,84 @@ function paintElements(ctx, mesh, T, tmin, tmax, mapR, mapZ) {
   }
 }
 
-export function drawField(canvas, state, frame) {
+export function drawField(canvas, pack, frameOrIndex) {
+  const list = trio(pack);
+  if (list) {
+    drawFieldTrio(canvas, list, typeof frameOrIndex === "number" ? frameOrIndex : 0);
+    return;
+  }
+  drawFieldOne(canvas, pack, frameOrIndex);
+}
+
+function drawFieldTrio(canvas, list, index) {
+  const W = canvas.clientWidth || 860;
+  const H = 520;
+  const ctx = fit(canvas, W, H);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, W, H);
+  const gap = 10;
+  const pw = (W - gap * (list.length - 1)) / list.length;
+  list.forEach((item, i) => {
+    const frame = frameAt(item.state, index);
+    if (!frame) return;
+    paintPanel(ctx, item.state.mesh, frame.T, item.key, i * (pw + gap), 8, pw, H - 16);
+  });
+}
+
+function paintPanel(ctx, mesh, T, key, x0, y0, w, h) {
+  let tmin = Infinity;
+  let tmax = -Infinity;
+  for (const v of T) {
+    if (v < tmin) tmin = v;
+    if (v > tmax) tmax = v;
+  }
+  if (tmax - tmin < 1) tmax = tmin + 1;
+  const rMax = mesh.rEdges[mesh.nr];
+  const zMax = mesh.zEdges[mesh.nz];
+  const pad = { l: 36, r: 8, t: 22, b: 28 };
+  const availW = w - pad.l - pad.r;
+  const availH = h - pad.t - pad.b;
+  const sc = Math.min(availW / (2 * rMax), availH / zMax);
+  const meshW = 2 * rMax * sc;
+  const meshH = zMax * sc;
+  const ox = x0 + pad.l + (availW - meshW) / 2;
+  const oy = y0 + pad.t + (availH - meshH) / 2;
+  const xr = (r) => ox + (r + rMax) * sc;
+  const yz = (z) => oy + (zMax - z) * sc;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(ox, oy, meshW / 2, meshH);
+  ctx.clip();
+  paintElements(ctx, mesh, T, tmin, tmax, (r) => xr(-r), yz);
+  ctx.restore();
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(ox + meshW / 2, oy, meshW / 2, meshH);
+  ctx.clip();
+  paintElements(ctx, mesh, T, tmin, tmax, xr, yz);
+  ctx.restore();
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(xr(-rMax), yz(zMax), 2 * rMax * sc, zMax * sc);
+  ctx.strokeStyle = "#fb923c";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(xr(-mesh.R), yz(mesh.zCoreTop), 2 * mesh.R * sc, (mesh.zCoreTop - mesh.zCore0) * sc);
+  ctx.strokeStyle = "#fef08a";
+  ctx.beginPath();
+  ctx.moveTo(xr(-mesh.R), yz(mesh.zCoreTop));
+  ctx.lineTo(xr(mesh.R), yz(mesh.zCoreTop));
+  ctx.stroke();
+  ctx.fillStyle = CORE_COLOR[key];
+  ctx.font = "13px IBM Plex Sans, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText(CORE_LABEL[key], x0 + 4, y0);
+  ctx.fillStyle = "#e7e5e4";
+  ctx.font = "11px IBM Plex Mono, monospace";
+  ctx.fillText(label(tmin) + "–" + label(tmax) + " °C", x0 + 4, y0 + h - 16);
+}
+
+function drawFieldOne(canvas, state, frame) {
   const W = canvas.clientWidth || 860;
   const H = 560;
   const ctx = fit(canvas, W, H);
@@ -267,7 +358,12 @@ export function drawVolume(canvas, pack) {
   ctx.fillText("V (m³) para a mesma energia da areia  ·  areia = 100%", W / 2, H - 8);
 }
 
-export function drawLosses(canvas, frame) {
+export function drawLosses(canvas, frameOrPack, index) {
+  if (frameOrPack && frameOrPack.byKey) {
+    drawLossTrio(canvas, frameOrPack, index || 0);
+    return;
+  }
+  const frame = frameOrPack;
   const W = canvas.clientWidth || 860;
   const H = 320;
   const ctx = fit(canvas, W, H);
@@ -325,6 +421,10 @@ export function drawLosses(canvas, frame) {
 }
 
 export function drawCharge(canvas, state) {
+  if (state && state.byKey) {
+    drawChargeTrio(canvas, state);
+    return;
+  }
   const W = canvas.clientWidth || 860;
   const H = 300;
   const ctx = fit(canvas, W, H);
@@ -388,6 +488,10 @@ function series(ctx, data, X, Y, color) {
 }
 
 export function drawResidual(canvas, state) {
+  if (state && state.byKey) {
+    drawResidualTrio(canvas, state);
+    return;
+  }
   const W = canvas.clientWidth || 860;
   const H = 300;
   const ctx = fit(canvas, W, H);
@@ -438,6 +542,10 @@ export function drawResidual(canvas, state) {
 }
 
 export function drawTemporal(canvas, state) {
+  if (state && state.byKey) {
+    drawTemporalTrio(canvas, state);
+    return;
+  }
   const W = canvas.clientWidth || 860;
   const H = 260;
   const ctx = fit(canvas, W, H);
@@ -470,4 +578,187 @@ export function drawTemporal(canvas, state) {
   ctx.font = "12px IBM Plex Sans, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("erro da sonda contra Δt = " + label(runs[2].dt) + " h  ·  ordem " + (state.temporal.p == null ? "—" : state.temporal.p.toFixed(2)), W / 2, H - 8);
+}
+
+function drawLossTrio(canvas, pack, index) {
+  const W = canvas.clientWidth || 860;
+  const H = 360;
+  const ctx = fit(canvas, W, H);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, W, H);
+  const list = trio(pack);
+  const layers = (frameAt(list[0].state, index).losses || []).map((r) => r.layer);
+  if (!layers.length) return;
+  const vals = [];
+  for (const item of list) {
+    const frame = frameAt(item.state, index);
+    for (const row of frame.losses || []) vals.push(row.Q / 1000);
+  }
+  let lo = Math.min(0, ...vals);
+  let hi = Math.max(0, ...vals);
+  if (hi - lo < 1e-6) hi = lo + 1;
+  hi += 0.12 * (hi - lo);
+  const padL = 168;
+  const padR = 16;
+  const top = 28;
+  const bot = 36;
+  const rowH = (H - top - bot) / layers.length;
+  const xOf = (q) => padL + (q - lo) / (hi - lo) * (W - padL - padR);
+  ctx.strokeStyle = "rgba(231,229,228,0.25)";
+  for (const tick of ticks(lo, hi, 5)) {
+    ctx.beginPath();
+    ctx.moveTo(xOf(tick), top);
+    ctx.lineTo(xOf(tick), H - bot);
+    ctx.stroke();
+    ctx.fillStyle = "#e7e5e4";
+    ctx.font = "11px IBM Plex Mono, monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(label(tick), xOf(tick), H - bot + 16);
+  }
+  layers.forEach((name, i) => {
+    const y0 = top + i * rowH;
+    ctx.fillStyle = "#e7e5e4";
+    ctx.font = "12px IBM Plex Sans, sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText(name, padL - 8, y0 + rowH / 2);
+    list.forEach((item, k) => {
+      const row = (frameAt(item.state, index).losses || []).find((r) => r.layer === name);
+      if (!row) return;
+      const bh = Math.max(4, (rowH - 8) / list.length);
+      const y = y0 + 4 + k * bh;
+      const x1 = xOf(0);
+      const x2 = xOf(row.Q / 1000);
+      ctx.fillStyle = CORE_COLOR[item.key];
+      ctx.fillRect(Math.min(x1, x2), y, Math.max(2, Math.abs(x2 - x1)), bh - 1);
+    });
+  });
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.textAlign = "left";
+  list.forEach((item, k) => {
+    ctx.fillStyle = CORE_COLOR[item.key];
+    ctx.fillText(CORE_LABEL[item.key], 12 + k * 90, 16);
+  });
+}
+
+function drawChargeTrio(canvas, pack) {
+  const W = canvas.clientWidth || 860;
+  const H = 300;
+  const ctx = fit(canvas, W, H);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, W, H);
+  const list = trio(pack);
+  let emax = 0;
+  let tmax = 1;
+  for (const item of list) {
+    for (const p of item.state.curve) emax = Math.max(emax, p.E / 1e9);
+    tmax = Math.max(tmax, item.state.days * 24);
+  }
+  emax = emax <= 0 ? 1 : emax * 1.08;
+  const pad = { l: 62, r: 18, t: 28, b: 40 };
+  const w = W - pad.l - pad.r;
+  const h = H - pad.t - pad.b;
+  const X = (t) => pad.l + (t / tmax) * w;
+  const Y = (e) => pad.t + (1 - e / emax) * h;
+  grid(ctx, pad.l, pad.t, w, h, ticks(0, tmax, 8).map(X), ticks(0, emax, 6).map(Y));
+  for (const item of list) {
+    ctx.strokeStyle = CORE_COLOR[item.key];
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    item.state.curve.forEach((p, i) => (i ? ctx.lineTo(X(p.tH), Y(p.E / 1e9)) : ctx.moveTo(X(p.tH), Y(p.E / 1e9))));
+    ctx.stroke();
+  }
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  list.forEach((item, k) => {
+    ctx.fillStyle = CORE_COLOR[item.key];
+    ctx.fillText(CORE_LABEL[item.key], pad.l + k * 90, 16);
+  });
+  ctx.fillStyle = "#e7e5e4";
+  ctx.font = "11px IBM Plex Mono, monospace";
+  ctx.textAlign = "center";
+  for (const t of ticks(0, tmax, 8)) ctx.fillText(label(t), X(t), pad.t + h + 4);
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.fillText("t (h)", pad.l + w / 2, pad.t + h + 20);
+  ctx.textAlign = "right";
+  ctx.font = "11px IBM Plex Mono, monospace";
+  for (const e of ticks(0, emax, 6)) ctx.fillText(label(e), pad.l - 6, Y(e));
+}
+
+function drawResidualTrio(canvas, pack) {
+  const W = canvas.clientWidth || 860;
+  const H = 300;
+  const ctx = fit(canvas, W, H);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, W, H);
+  const list = trio(pack);
+  const logs = [];
+  let n = 1;
+  for (const item of list) {
+    n = Math.max(n, item.state.newtonHist.length);
+    for (const v of item.state.newtonHist) logs.push(Math.log10(Math.max(v, 1e-16)));
+  }
+  if (!logs.length) return;
+  let lo = Math.min(...logs);
+  let hi = Math.max(...logs);
+  if (hi - lo < 0.3) { hi += 0.15; lo -= 0.15; }
+  const pad = { l: 62, r: 18, t: 28, b: 40 };
+  const w = W - pad.l - pad.r;
+  const h = H - pad.t - pad.b;
+  const X = (i) => pad.l + (n === 1 ? w / 2 : (i / (n - 1)) * w);
+  const Y = (v) => pad.t + (hi - v) / (hi - lo) * h;
+  grid(ctx, pad.l, pad.t, w, h, ticks(1, n, 6).map((v) => X(v - 1)), ticks(lo, hi, 6).map(Y));
+  for (const item of list) series(ctx, item.state.newtonHist, X, Y, CORE_COLOR[item.key]);
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  list.forEach((item, k) => {
+    const p = item.state.newtonOrder;
+    ctx.fillStyle = CORE_COLOR[item.key];
+    ctx.fillText(CORE_LABEL[item.key] + " p=" + (p == null ? "—" : p.toFixed(2)), pad.l + k * 150, 16);
+  });
+  ctx.fillStyle = "#e7e5e4";
+  ctx.font = "11px IBM Plex Mono, monospace";
+  ctx.textAlign = "center";
+  for (const it of ticks(1, n, 6)) ctx.fillText(String(Math.round(it)), X(it - 1), pad.t + h + 4);
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.fillText("iteração de Newton  ·  ordem nos três últimos resíduos", pad.l + w / 2, pad.t + h + 20);
+}
+
+function drawTemporalTrio(canvas, pack) {
+  const W = canvas.clientWidth || 860;
+  const H = 260;
+  const ctx = fit(canvas, W, H);
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, W, H);
+  const list = trio(pack);
+  const errs = list.map((item) => {
+    const runs = item.state.temporal.runs;
+    const ref = runs[2].T;
+    return [Math.abs(runs[0].T - ref), Math.abs(runs[1].T - ref)];
+  });
+  const flat = errs.flat();
+  const lo = Math.max(Math.min(...flat) * 0.5, 1e-4);
+  const hi = Math.max(...flat) * 1.35;
+  const pad = { l: 70, r: 16, t: 28, b: 48 };
+  const w = W - pad.l - pad.r;
+  const h = H - pad.t - pad.b;
+  const slot = w / 2;
+  const Y = (v) => pad.t + (Math.log10(hi) - Math.log10(Math.max(v, lo))) / (Math.log10(hi) - Math.log10(lo)) * h;
+  ctx.strokeStyle = "#e7e5e4";
+  ctx.strokeRect(pad.l, pad.t, w, h);
+  errs.forEach((pair, i) => {
+    pair.forEach((e, j) => {
+      const x = pad.l + j * slot + slot * (0.22 + i * 0.2);
+      ctx.fillStyle = CORE_COLOR[list[i].key];
+      ctx.fillRect(x, Y(e), 18, pad.t + h - Y(e));
+    });
+  });
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  list.forEach((item, k) => {
+    ctx.fillStyle = CORE_COLOR[item.key];
+    const p = item.state.temporal.p;
+    ctx.fillText(CORE_LABEL[item.key] + " p=" + (p == null ? "—" : p.toFixed(2)), pad.l + k * 150, 16);
+  });
+  ctx.fillStyle = "#e7e5e4";
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("erro da sonda (°C, escala log) contra o Δt mais fino", W / 2, H - 8);
 }

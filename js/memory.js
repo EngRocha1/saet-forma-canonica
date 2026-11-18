@@ -1,12 +1,71 @@
 /** Memória: fórmula, substituição, resultado e só então a referência. */
 
 import { SIGMA } from "./galerkin.js";
+import { stackLayers } from "./materials.js";
+import { seriesBreakdown } from "./formulas.js";
 
 function n(v, d) {
   if (!Number.isFinite(v)) return "—";
   const a = Math.abs(v);
   if (a !== 0 && (a >= 1e5 || a < 1e-3)) return v.toExponential(4);
   return v.toFixed(d);
+}
+
+function resistanceText(s) {
+  const kMap = s.kIns;
+  const faces = [
+    ["Topo", "top"],
+    ["Lateral", "lat"],
+    ["Base", "base"]
+  ];
+  const lines = ["Resistência equivalente, camada por camada. A malha continua resolvida; U só confere a pilha."];
+  lines.push("Fórmula da camada: R\" = e / k.  Fórmula da face: R\"_total = Σ R\" + 1/h.  U = 1 / R\"_total.");
+  for (const [title, side] of faces) {
+    const layers = stackLayers(side, s.thick, kMap);
+    if (side === "base") {
+      layers[0].name = "IFB";
+      layers[1].name = "silicato de cálcio";
+      layers[2].name = "vermiculita";
+    } else {
+      layers[0].name = "IFB interno";
+      layers[1].name = "perlita";
+      layers[2].name = "IFB externo";
+    }
+    const pack = seriesBreakdown(layers, s.hExt);
+    lines.push(title);
+    for (const row of pack.rows) {
+      lines.push("Substituição, " + row.name + ": " + n(row.e, 3) + " / " + n(row.k, 4) + " = " + n(row.R, 4) + " m²·K/W");
+    }
+    lines.push("Soma das camadas = " + n(pack.Rcond, 4) + " m²·K/W");
+    lines.push("Substituição da convecção: 1 / " + n(s.hExt, 2) + " = " + n(pack.Rconv, 4) + " m²·K/W");
+    lines.push("R\"_total = " + n(pack.Rcond, 4) + " + " + n(pack.Rconv, 4) + " = " + n(pack.Rtot, 4) + " m²·K/W");
+    lines.push("U_" + title.toLowerCase() + " = 1 / " + n(pack.Rtot, 4) + " = " + n(pack.U, 6) + " W/(m²·K)");
+  }
+  lines.push("Incropera et al. (2014), parede plana composta. Topo e lateral usam a mesma pilha, por isso U coincide.");
+  return lines.join("\n");
+}
+
+export function buildTrioMemory(pack) {
+  const lines = ["Os três substratos usam a mesma malha, o mesmo passo e o mesmo isolamento. Mudam ρ, cp e k do núcleo."];
+  for (const key of pack.keys) {
+    const s = pack.byKey[key];
+    const last = s.curve[s.curve.length - 1];
+    lines.push("");
+    lines.push(s.core.name);
+    lines.push("Fórmula: ρ_leito = (1 − ε) ρ_sólido");
+    lines.push("Substituição: (1 − " + n(s.core.eps, 2) + ") · " + n(s.core.rhoSolid, 1) + " = " + n(s.core.rho, 2) + " kg/m³; cp = " + n(s.core.cp, 1) + " J/(kg·K); k = " + n(s.core.k, 3) + " W/(m·K)");
+    lines.push("E(" + n(last.tH, 1) + " h) = " + n(last.E / 1e9, 3) + " GJ; T_topo = " + n(last.Tt, 2) + " °C; T_base = " + n(last.Tb, 2) + " °C");
+    lines.push("Newton ‖R‖: " + (s.newtonHist || []).map((v) => n(v, 3)).join(" → "));
+    lines.push("Ordem assintótica, três últimos resíduos: " + (s.newtonOrder == null ? "—" : n(s.newtonOrder, 3)) + ". Resíduo da eliminação: " + (s.linearResidual == null ? "—" : s.linearResidual.toExponential(3)));
+    lines.push("Ordem temporal p = " + (s.temporal && s.temporal.p != null ? n(s.temporal.p, 3) : "—"));
+  }
+  lines.push("");
+  lines.push(resistanceText(pack.byKey[pack.keys[0]]));
+  if (pack.volumeNote) {
+    lines.push("");
+    lines.push(pack.volumeNote);
+  }
+  return lines.join("\n");
 }
 
 export function buildMemory(s) {
@@ -89,7 +148,8 @@ export function buildMemory(s) {
     "Passo 7 — Newton–Raphson",
     "R(T) = (C/Δt)(T − T_antigo) + K T − b + R_rad(T);   J δ = −R;   T ← T + δ",
     "No passo de " + (s.newtonAt == null ? "—" : n(s.newtonAt, 2)) + " h, ‖R‖ por iteração: " + (hist.length ? hist.map((v) => n(v, 3)).join(" → ") : "—"),
-    "A ordem assintótica não é declarada a partir da primeira queda. Perto da raiz, ‖R‖ cai mais rápido que uma razão constante. O Gauss–Seidel que resolve Jδ = −R é linear; a razão interna final foi " + (s.innerRate == null ? "—" : n(s.innerRate, 3)) + ".",
+    "A ordem é medida nos três últimos resíduos, já perto da raiz: p = ln(‖R‖ₙ₋₁/‖R‖ₙ) / ln(‖R‖ₙ₋₂/‖R‖ₙ₋₁). O valor neste passo foi " + (s.newtonOrder == null ? "—" : n(s.newtonOrder, 3)) + ". Dois não é garantido em todo passo; é o que a conta devolveu neste.",
+    "Jδ = −R é resolvido por eliminação de Gauss em banda, não por Gauss–Seidel. O resíduo linear restante foi " + (s.linearResidual == null ? "—" : s.linearResidual.toExponential(3)) + ".",
     "Bathe (2014). Sem a radiação, J não depende de T e Newton termina em uma iteração. Com εσT^4, J depende de T."
   );
 
@@ -128,6 +188,8 @@ export function buildMemory(s) {
   lines.push("Perdas: uma barra por subcamada, em kW.");
   lines.push("Newton: log10 ‖R‖ contra o número da iteração.");
   lines.push("Tempo: erro da sonda contra o Δt mais fino, na janela de " + (tempo ? n(tempo.hours, 2) : "—") + " h.");
+  lines.push("");
+  lines.push(resistanceText(s));
   if (s.volumeNote) {
     lines.push("");
     lines.push("Volume dos três substratos");

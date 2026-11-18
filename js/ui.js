@@ -1,10 +1,10 @@
 import { FORMULAS } from "./formulas.js";
 import { SOLIDS, INSULATORS, applyJson, coreProps } from "./materials.js";
-import { simulate } from "./simulate.js";
+import { simulateAll } from "./simulate.js";
 import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal, drawVolume } from "./charts.js";
 import { volumeCompare, volumeText, TMAX } from "./volume.js";
 import { createPlayer } from "./animate.js";
-import { buildMemory } from "./memory.js";
+import { buildTrioMemory } from "./memory.js";
 import { saveMemory } from "./pdf-memory.js";
 
 const $ = (id) => document.getElementById(id);
@@ -12,12 +12,13 @@ let state = null;
 
 const player = createPlayer({
   draw(i) {
-    if (!state) return;
-    const frame = state.frames[i];
-    drawField($("c-field"), state, frame);
-    drawLosses($("c-loss"), frame);
+    if (!state || !state.byKey) return;
+    const active = state.byKey[state.active];
+    const frame = active.frames[Math.min(i, active.frames.length - 1)];
+    drawField($("c-field"), state, i);
+    drawLosses($("c-loss"), state, i);
     $("v-prog").textContent = frame.tH.toFixed(1) + " h";
-    $("prog").value = String(Math.round(100 * i / Math.max(state.frames.length - 1, 1)));
+    $("prog").value = String(Math.round(100 * i / Math.max(active.frames.length - 1, 1)));
     $("s-tmax").textContent = frame.Tt.toFixed(1) + " °C";
     $("s-tbase").textContent = frame.Tb.toFixed(1) + " °C";
   },
@@ -120,7 +121,7 @@ function updateLabels() {
 }
 
 function comparison(input) {
-  const lines = ["Capacidade do leito, ε = " + input.eps.toFixed(2) + ". O cilindro usa o núcleo selecionado; os três materiais ficam abaixo para comparação."];
+  const lines = ["Capacidade do leito, ε = " + input.eps.toFixed(2) + ". Os gráficos calculam os três substratos ao mesmo tempo."];
   for (const key of ["areia", "alumina", "hematita"]) {
     const c = coreProps(key, input.solids[key], input.eps);
     lines.push(c.name + ": ρ_s " + c.rhoSolid + " · ρ_leito " + c.rho.toFixed(0) + " · cp " + c.cp + " · k " + c.k.toFixed(2));
@@ -129,18 +130,17 @@ function comparison(input) {
 }
 
 function terminal() {
-  const m = state.mesh;
-  const last = state.newtonHist[state.newtonHist.length - 1];
-  $("term-log").textContent = [
-    "Newton–Raphson · Galerkin Q1 · Euler implícito",
-    "malha " + m.nr + "×" + m.nz + " · nós " + m.nn + " · menor camada " + m.minLayerM.toFixed(3) + " m",
-    "Δt = " + state.dtHours + " h · passos = " + state.steps,
-    "‖R‖ Newton: " + state.newtonHist.map((v) => v.toExponential(2)).join(" → "),
-    "Gauss–Seidel interno, razão " + (state.innerRate == null ? "—" : state.innerRate.toFixed(3)) + " (linear)",
-    "ordem temporal p = " + (state.temporal.p == null ? "—" : state.temporal.p.toFixed(2)) + " na janela de " + state.temporal.hours + " h",
-    "E_útil = " + (state.eUseful / 1e9).toFixed(3) + " GJ"
-  ].join("\n");
-  $("term-status").textContent = last < 1e-4 ? "Newton ok" : "ver resíduo";
+  const lines = ["Três substratos. Jδ = −R por eliminação em banda. A ordem usa os três últimos resíduos."];
+  for (const key of state.keys) {
+    const s = state.byKey[key];
+    const last = s.newtonHist[s.newtonHist.length - 1];
+    const e = s.curve[s.curve.length - 1].E / 1e9;
+    lines.push(s.core.name + ": p_Newton " + (s.newtonOrder == null ? "—" : s.newtonOrder.toFixed(3)) + " · p_tempo " + (s.temporal.p == null ? "—" : s.temporal.p.toFixed(2)) + " · E " + e.toFixed(2) + " GJ · ‖R‖ " + last.toExponential(2));
+  }
+  $("term-log").textContent = lines.join("\n");
+  const active = state.byKey[state.active];
+  const tail = active.newtonHist[active.newtonHist.length - 1];
+  $("term-status").textContent = tail < 1e-4 ? "Newton ok" : "ver resíduo";
 }
 
 function run() {
@@ -151,16 +151,19 @@ function run() {
   $("term-log").textContent = "Calculando…";
   window.setTimeout(() => {
     try {
-      state = simulate(input);
+      const cores = {};
+      for (const key of ["areia", "alumina", "hematita"]) cores[key] = coreProps(key, input.solids[key], input.eps);
+      state = simulateAll(input, cores);
       state.volumeNote = volumeNote;
+      const active = state.byKey[state.active];
       drawCharge($("c-charge"), state);
       drawResidual($("c-res"), state);
       drawTemporal($("c-time"), state);
-      $("memory-box").textContent = buildMemory(state);
+      $("memory-box").textContent = buildTrioMemory(state);
       terminal();
-      player.last(state.frames.length);
-      $("s-n").textContent = String(state.mesh.nn);
-      $("s-mesh").textContent = state.mesh.nr + "×" + state.mesh.nz;
+      player.last(active.frames.length);
+      $("s-n").textContent = String(active.mesh.nn);
+      $("s-mesh").textContent = active.mesh.nr + "×" + active.mesh.nz;
     } catch (err) {
       console.error(err);
       $("term-log").textContent = "Erro: " + err.message;
@@ -192,9 +195,9 @@ function bind() {
     $(key + "-tmax").addEventListener("change", () => paintVolume(readInput()));
   }
   ["nr","nz","core-sel"].forEach((id) => $(id).addEventListener("change", run));
-  $("btn-play").addEventListener("click", () => state && player.toggle(state.frames.length));
-  $("btn-reset").addEventListener("click", () => state && player.show(0, state.frames.length));
-  $("prog").addEventListener("input", () => state && player.scrub(+$("prog").value / 100, state.frames.length));
+  $("btn-play").addEventListener("click", () => state && player.toggle(state.byKey[state.active].frames.length));
+  $("btn-reset").addEventListener("click", () => state && player.show(0, state.byKey[state.active].frames.length));
+  $("prog").addEventListener("input", () => state && player.scrub(+$("prog").value / 100, state.byKey[state.active].frames.length));
   $("btn-pdf").addEventListener("click", () => state && saveMemory(state));
   $("btn-formulas").addEventListener("click", () => $("formula-panel").showModal());
   $("formula-close").addEventListener("click", () => $("formula-panel").close());

@@ -103,6 +103,13 @@ function temporalOrder(prep, input) {
   return { hours, runs, p, d1, d2 };
 }
 
+export function simulateAll(input, cores) {
+  const keys = ["areia", "alumina", "hematita"];
+  const byKey = {};
+  for (const key of keys) byKey[key] = simulate({ ...input, core: cores[key] });
+  return { keys, byKey, active: input.core.key };
+}
+
 export function simulate(input) {
   const prep = prepare(input);
   const main = march(prep, input, input.dtHours, input.days * 24);
@@ -124,9 +131,9 @@ export function simulate(input) {
     newtonOrder: shown ? shown.order : null,
     newtonAt: shown ? shown.tH : null,
     lastNewton: main.lastStep ? main.lastStep.hist : [],
+    lastNewtonOrder: main.lastStep ? main.lastStep.order : null,
     lastNewtonAt: input.days * 24,
-    innerRate: shown && shown.inner ? shown.inner.rate : null,
-    innerHist: shown && shown.inner ? shown.inner.hist : [],
+    linearResidual: shown ? shown.linearResidual : null,
     radSample: shown ? shown.radSample : null,
     dtHours: input.dtHours,
     days: input.days,

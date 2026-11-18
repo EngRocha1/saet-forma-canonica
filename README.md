@@ -4,6 +4,8 @@ Demo: https://engrocha1.github.io/saet-forma-canonica/
 
 Protótipo de navegador para a qualificação no PPGEE-UFPI. Não é o código Python/SciPy da dissertação (lá k e cp podem depender de T e o solver da tese é outro). Este repositório implementa, em JavaScript, a forma fraca de Galerkin da mesma equação de difusão.
 
+O sistema linear de cada correção de Newton é resolvido por eliminação de Gauss em banda. A ordem escrita no gráfico usa os três últimos resíduos, não a primeira queda. Areia, alumina e hematita entram em todos os gráficos. A memória traz R″ = e/k de cada camada de isolamento, a soma e o U.
+
 ## Volume dos três substratos
 
 O primeiro gráfico compara areia, alumina e hematita para a mesma energia. Areia = 100%. Com a caixa isotérmica marcada, os três usam 150 °C a 573 °C. Desmarcada, cada um tem T mín e T máx. A areia não passa de 573 °C (inversão α–β do quartzo, 847 K). 575 °C não é o default. Alumina e hematita param em 1 000 °C.

@@ -15,7 +15,7 @@
     <div>
       <p class="kicker">XV CBPE · PPGEE-UFPI · Galerkin</p>
       <h1>SAET · condução axissimétrica com malha de camadas</h1>
-      <p class="lede">Corte do cilindro em escala real. Carga resistiva no topo do núcleo, sem gás no leito. Cada camada de isolamento tem nós próprios. O resíduo desenhado é o de Newton–Raphson, vindo da radiação εσT⁴.</p>
+      <p class="lede">Os três substratos são calculados juntos. O corte mostra o núcleo em laranja, o envelope em branco e a carga em amarelo, no centro, sob o isolamento. A ordem de Newton é a dos três últimos resíduos.</p>
     </div>
     <div class="actions">
       <button class="btn ghost" id="btn-formulas" type="button">Fórmulas</button>
@@ -114,33 +114,33 @@
         <pre id="vol-box">Calculando…</pre>
       </figure>
       <figure>
-        <figcaption>Corte do cilindro
-          <span>Escala real, eixo no centro. O retângulo laranja é o núcleo; o branco é o externo, com o isolamento em camadas. A linha amarela é a carga, sob o isolamento, de um lado ao outro do núcleo.</span>
+        <figcaption>Corte dos três substratos
+          <span>Mesma malha e mesmo instante. Laranja interno é o núcleo. Branco é o envelope. Amarelo é o plano de carga, no centro, sob o isolamento.</span>
         </figcaption>
         <canvas id="c-field" width="860" height="560"></canvas>
       </figure>
       <figure>
-        <figcaption>Perda na face interna de cada camada
-          <span>Materiais e espessuras diferentes. Positivo é calor saindo do núcleo. No transiente as faces da mesma pilha não coincidem, porque a camada acumula energia.</span>
+        <figcaption>Perda na face interna, três substratos
+          <span>Cada cor é um núcleo. A pilha de isolamento é a mesma. Positivo sai do núcleo.</span>
         </figcaption>
         <canvas id="c-loss" width="860" height="320"></canvas>
       </figure>
       <figure>
-        <figcaption>Energia armazenada no núcleo
-          <span>E(t) só no leito. O tracejado marca T<sub>base</sub> no limite escolhido.</span>
+        <figcaption>Energia no núcleo dos três substratos
+          <span>E(t) só no leito. Areia, alumina e hematita no mesmo eixo de tempo.</span>
         </figcaption>
         <canvas id="c-charge" width="860" height="280"></canvas>
         <p class="note" id="cmp-box"></p>
       </figure>
       <figure>
-        <figcaption>Resíduo de Newton–Raphson
-          <span>‖R(T)‖ a cada correção. A Jacobiana inclui ∂(εσT⁴)/∂T. O Gauss–Seidel que inverte a Jacobiana é linear e não é esta curva.</span>
+        <figcaption>Resíduo de Newton–Raphson dos três substratos
+          <span>‖R‖ por iteração. p é a ordem nos três últimos resíduos. Jδ = −R sai por eliminação em banda, não por Gauss–Seidel.</span>
         </figcaption>
         <canvas id="c-res" width="860" height="300"></canvas>
       </figure>
       <figure>
-        <figcaption>Convergência temporal
-          <span>Mesma malha, janela de 4 Δt. A barra é o erro da sonda contra o passo mais fino. Euler implícito é de ordem 1.</span>
+        <figcaption>Convergência temporal dos três substratos
+          <span>Erro da sonda contra o passo mais fino. Euler implícito é de ordem 1. p perto de 1 confirma o passo; não é a ordem de Newton.</span>
         </figcaption>
         <canvas id="c-time" width="860" height="260"></canvas>
       </figure>

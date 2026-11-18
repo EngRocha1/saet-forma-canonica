@@ -87,6 +87,19 @@ export function conductionDepth(alpha, tSeconds) {
   return Math.sqrt(Math.max(alpha, 0) * Math.max(tSeconds, 0));
 }
 
+export function seriesBreakdown(layers, hExt) {
+  const rows = layers.map((layer) => ({
+    name: layer.name,
+    e: layer.e,
+    k: layer.k,
+    R: layer.e / Math.max(layer.k, 1e-12)
+  }));
+  const Rcond = rows.reduce((sum, row) => sum + row.R, 0);
+  const Rconv = 1 / Math.max(hExt, 1e-12);
+  const Rtot = Rcond + Rconv;
+  return { rows, Rcond, Rconv, Rtot, U: 1 / Rtot };
+}
+
 export function seriesU(layers, hExt) {
   let R = 0;
   for (const layer of layers) R += layer.e / Math.max(layer.k, 1e-12);

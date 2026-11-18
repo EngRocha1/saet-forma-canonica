@@ -1,10 +1,10 @@
-import { buildMemory } from "./memory.js";
+import { buildMemory, buildTrioMemory } from "./memory.js";
 
 export function saveMemory(state) {
   const jsPDF = window.jspdf && window.jspdf.jsPDF;
   if (!jsPDF) { window.alert("jsPDF não carregou."); return; }
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const text = buildMemory(state).split("\n");
+  const text = (state.byKey ? buildTrioMemory(state) : buildMemory(state)).split("\n");
   let y = 16;
   doc.setFont("times", "normal");
   doc.setFontSize(11);
