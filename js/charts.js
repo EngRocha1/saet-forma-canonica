@@ -10,6 +10,46 @@ function trio(pack) {
   return pack.keys.map((key) => ({ key, state: pack.byKey[key] }));
 }
 
+function remember(canvas, W, H, hits) {
+  canvas._plot = { W, H, hits };
+}
+
+export function bindPlotHover(canvas, tip) {
+  if (canvas.dataset.hover === "1") return;
+  canvas.dataset.hover = "1";
+  canvas.addEventListener("mousemove", (ev) => {
+    const plot = canvas._plot;
+    if (!plot || !plot.hits.length) { tip.hidden = true; return; }
+    const rect = canvas.getBoundingClientRect();
+    const x = (ev.clientX - rect.left) * (plot.W / rect.width);
+    const y = (ev.clientY - rect.top) * (plot.H / rect.height);
+    let best = null;
+    let dist = 22;
+    for (const hit of plot.hits) {
+      const d = Math.hypot(hit.x - x, hit.y - y);
+      if (d < dist) { dist = d; best = hit; }
+    }
+    if (!best) { tip.hidden = true; return; }
+    tip.hidden = false;
+    tip.textContent = best.text;
+    tip.style.left = (ev.clientX + 14) + "px";
+    tip.style.top = (ev.clientY + 14) + "px";
+  });
+  canvas.addEventListener("mouseleave", () => { tip.hidden = true; });
+}
+
+function yTicks(ctx, pad, ticksY, Y) {
+  ctx.fillStyle = "#f5f5f4";
+  ctx.font = "12px IBM Plex Mono, monospace";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  for (const v of ticksY) ctx.fillText(label(v), pad.l - 8, Y(v));
+  ctx.textBaseline = "alphabetic";
+}
+  if (!pack || !pack.byKey) return null;
+  return pack.keys.map((key) => ({ key, state: pack.byKey[key] }));
+}
+
 function frameAt(state, index) {
   const frames = state.frames || [];
   if (!frames.length) return null;
@@ -600,8 +640,8 @@ function drawLossTrio(canvas, pack, index) {
   let hi = Math.max(0, ...vals);
   if (hi - lo < 1e-6) hi = lo + 1;
   hi += 0.12 * (hi - lo);
-  const padL = 168;
-  const padR = 16;
+  const padL = 188;
+  const padR = 72;
   const top = 28;
   const bot = 36;
   const rowH = (H - top - bot) / layers.length;
@@ -633,13 +673,30 @@ function drawLossTrio(canvas, pack, index) {
       const x2 = xOf(row.Q / 1000);
       ctx.fillStyle = CORE_COLOR[item.key];
       ctx.fillRect(Math.min(x1, x2), y, Math.max(2, Math.abs(x2 - x1)), bh - 1);
+      ctx.fillStyle = "#f5f5f4";
+      ctx.font = "11px IBM Plex Mono, monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label(row.Q / 1000) + " kW", Math.max(x1, x2) + 4, y + bh / 2);
     });
   });
+  const hits = [];
+  layers.forEach((name, i) => {
+    list.forEach((item, k) => {
+      const row = (frameAt(item.state, index).losses || []).find((r) => r.layer === name);
+      if (!row) return;
+      const bh = Math.max(4, (rowH - 8) / list.length);
+      const y = top + i * rowH + 4 + k * bh;
+      hits.push({ x: xOf(row.Q / 1000), y: y + bh / 2, text: item.key + " · " + name + " · " + (row.Q / 1000).toFixed(3) + " kW" });
+    });
+  });
+  remember(canvas, W, H, hits);
   ctx.font = "12px IBM Plex Sans, sans-serif";
   ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
   list.forEach((item, k) => {
     ctx.fillStyle = CORE_COLOR[item.key];
-    ctx.fillText(CORE_LABEL[item.key], 12 + k * 90, 16);
+    ctx.fillText(CORE_LABEL[item.key], 12 + k * 100, 16);
   });
 }
 
@@ -717,6 +774,17 @@ function drawChargeTrio(canvas, pack) {
   for (const e of ticks(0, emax, 6)) ctx.fillText(label(e), pad.l - 6, Y(e));
   ctx.textAlign = "left";
   for (const tv of ticks(0, tbMax, 5)) ctx.fillText(label(tv), pad.l + w + 6, Yt(tv));
+  const hits = [];
+  for (const item of list) {
+    item.state.curve.forEach((p, i) => {
+      if (i % 4 !== 0 && i !== item.state.curve.length - 1) return;
+      hits.push({
+        x: X(p.tH), y: Y(p.E / 1e9),
+        text: CORE_LABEL[item.key] + " · t = " + p.tH.toFixed(1) + " h · E = " + (p.E / 1e9).toFixed(3) + " GJ · T_base = " + p.Tb.toFixed(2) + " °C"
+      });
+    });
+  }
+  remember(canvas, W, H, hits);
 }
 
 function drawResidualTrio(canvas, pack) {
@@ -742,6 +810,7 @@ function drawResidualTrio(canvas, pack) {
   const X = (i) => pad.l + (n === 1 ? w / 2 : (i / (n - 1)) * w);
   const Y = (v) => pad.t + (hi - v) / (hi - lo) * h;
   grid(ctx, pad.l, pad.t, w, h, ticks(1, n, 6).map((v) => X(v - 1)), ticks(lo, hi, 6).map(Y));
+  yTicks(ctx, pad, ticks(lo, hi, 6), Y);
   for (const item of list) series(ctx, item.state.newtonHist, X, Y, CORE_COLOR[item.key]);
   ctx.font = "12px IBM Plex Sans, sans-serif";
   list.forEach((item, k) => {
@@ -755,6 +824,13 @@ function drawResidualTrio(canvas, pack) {
   for (const it of ticks(1, n, 6)) ctx.fillText(String(Math.round(it)), X(it - 1), pad.t + h + 4);
   ctx.font = "12px IBM Plex Sans, sans-serif";
   ctx.fillText("iteração de Newton  ·  ordem nos três últimos resíduos", pad.l + w / 2, pad.t + h + 20);
+  const hits = [];
+  for (const item of list) {
+    item.state.newtonHist.forEach((v, i) => {
+      hits.push({ x: X(i), y: Y(Math.log10(Math.max(v, 1e-16))), text: CORE_LABEL[item.key] + " · iteração " + (i + 1) + " · ‖R‖ = " + v.toExponential(3) });
+    });
+  }
+  remember(canvas, W, H, hits);
 }
 
 function drawTemporalTrio(canvas, pack) {
@@ -779,11 +855,19 @@ function drawTemporalTrio(canvas, pack) {
   const Y = (v) => pad.t + (Math.log10(hi) - Math.log10(Math.max(v, lo))) / (Math.log10(hi) - Math.log10(lo)) * h;
   ctx.strokeStyle = "#e7e5e4";
   ctx.strokeRect(pad.l, pad.t, w, h);
+  const decades = ticks(Math.log10(lo), Math.log10(hi), 5).map((p) => Math.pow(10, p));
+  yTicks(ctx, pad, decades, Y);
+  const hits = [];
   errs.forEach((pair, i) => {
     pair.forEach((e, j) => {
       const x = pad.l + j * slot + slot * (0.22 + i * 0.2);
       ctx.fillStyle = CORE_COLOR[list[i].key];
       ctx.fillRect(x, Y(e), 18, pad.t + h - Y(e));
+      ctx.fillStyle = "#f5f5f4";
+      ctx.font = "11px IBM Plex Mono, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(e.toExponential(2), x + 9, Y(e) - 4);
+      hits.push({ x: x + 9, y: Y(e), text: CORE_LABEL[list[i].key] + " · Δt/" + (j === 0 ? "1" : "2") + " · erro = " + e.toExponential(3) + " °C" });
     });
   });
   ctx.font = "12px IBM Plex Sans, sans-serif";
@@ -796,6 +880,7 @@ function drawTemporalTrio(canvas, pack) {
   ctx.font = "12px IBM Plex Sans, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("erro da sonda (°C, escala log) contra o Δt mais fino", W / 2, H - 8);
+  remember(canvas, W, H, hits);
 }
 
 function lastFrame(state, index) {
@@ -862,7 +947,7 @@ function drawAlong(canvas, pack, index, spec) {
   if (xmax - xmin < 1e-6) xmax = xmin + 1;
   if (ymax - ymin < 1) ymax = ymin + 1;
   ymin = Math.min(ymin, 0);
-  const pad = { l: 58, r: 16, t: 28, b: 42 };
+  const pad = { l: 72, r: 16, t: 36, b: 48 };
   const w = W - pad.l - pad.r;
   const h = H - pad.t - pad.b;
   const X = (x) => pad.l + (x - xmin) / (xmax - xmin) * w;
@@ -889,6 +974,7 @@ function drawAlong(canvas, pack, index, spec) {
     ctx.globalAlpha = 1;
   }
   grid(ctx, pad.l, pad.t, w, h, ticks(xmin, xmax, 6).map(X), ticks(ymin, ymax, 6).map(Y));
+  yTicks(ctx, pad, ticks(ymin, ymax, 6), Y);
   for (const s of series) {
     ctx.strokeStyle = CORE_COLOR[s.key];
     ctx.lineWidth = 2;
@@ -923,4 +1009,9 @@ function drawAlong(canvas, pack, index, spec) {
   ctx.rotate(-Math.PI / 2);
   ctx.fillText(spec.yTitle, 0, 0);
   ctx.restore();
+  const hits = [];
+  for (const s of series) {
+    s.pts.forEach((p) => hits.push({ x: X(p.x), y: Y(p.y), text: CORE_LABEL[s.key] + " · x = " + p.x.toFixed(3) + " m · T = " + p.y.toFixed(2) + " °C" }));
+  }
+  remember(canvas, W, H, hits);
 }

@@ -1,7 +1,7 @@
 import { FORMULAS } from "./formulas.js";
 import { SOLIDS, INSULATORS, applyJson, coreProps } from "./materials.js";
 import { simulateAll } from "./simulate.js";
-import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal, drawVolume, drawDepth, drawWall, drawBase } from "./charts.js";
+import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal, drawVolume, drawDepth, drawWall, drawBase, bindPlotHover } from "./charts.js";
 import { frontReport } from "./profiles.js";
 import { volumeCompare, volumeText, TMAX } from "./volume.js";
 import { createPlayer } from "./animate.js";
@@ -25,6 +25,7 @@ const player = createPlayer({
     $("prog").value = String(Math.round(100 * i / Math.max(active.frames.length - 1, 1)));
     $("s-tmax").textContent = frame.Tt.toFixed(1) + " °C";
     $("s-tbase").textContent = frame.Tb.toFixed(1) + " °C";
+    if (state) writeReadouts(state, i);
   },
   onPlay(playing) { $("btn-play").textContent = playing ? "Pausa" : "Play"; }
 });
@@ -147,7 +148,40 @@ function energyReport(pack) {
   return lines.join("\n");
 }
 
+function writeReadouts(pack, index) {
+  const h = pack.byKey.hematita;
+  const i = index == null ? h.frames.length - 1 : Math.min(index, h.frames.length - 1);
+  const frame = h.frames[i];
+  const loss = (frame.losses || []).map((r) => r.layer + " " + (r.Q / 1000).toFixed(3) + " kW").join(" · ");
+  $("r-field").textContent = "Instante " + frame.tH.toFixed(1) + " h. Hematita: T_topo = " + frame.Tt.toFixed(2) + " °C, T_base = " + frame.Tb.toFixed(2) + " °C, E = " + (frame.E / 1e9).toFixed(4) + " GJ. Passe o cursor sobre a curva ou a barra para ler o ponto.";
+  $("r-loss").textContent = "Perda na face interna, hematita, " + frame.tH.toFixed(1) + " h: " + loss;
+  $("r-res").textContent = "Hematita, passo de maior resíduo inicial em " + h.newtonAt + " h. ‖R‖ = " + h.newtonHist.map((v) => v.toExponential(3)).join(" → ") + ". Ordem nos três últimos = " + (h.newtonOrder == null ? "—" : h.newtonOrder.toFixed(3)) + ".";
+  $("r-time").textContent = "Ordem temporal: areia " + fmtP(pack.byKey.areia) + ", alumina " + fmtP(pack.byKey.alumina) + ", hematita " + fmtP(pack.byKey.hematita) + ". O eixo vertical é o erro da sonda, em °C, em escala logarítmica.";
+  const front = frontReport(h.mesh, frame.T, h);
+  $("r-depth").textContent = "Hematita no eixo: T_topo = " + front.Tt.toFixed(2) + " °C, T_base = " + front.Tb.toFixed(2) + " °C, frente da média a " + (front.zHalf == null ? "—" : front.zHalf.toFixed(3) + " m") + ", isoterma de " + h.tlim.toFixed(0) + " °C a " + (front.zLim == null ? "—" : front.zLim.toFixed(3) + " m") + ".";
+  $("r-wall").textContent = "Corte na cota do topo do núcleo. O número ao lado do ponto e o cursor dão T em °C e r em m. Hematita no default: cerca de 978 °C em r = 6,00 m e 39 °C na face externa.";
+  $("r-base").textContent = "Base no eixo, a partir do núcleo. Se a frente não chegou, a curva fica em T0. No default de 4 dias a hematita permanece a 25 °C em toda a fundação.";
+  if ($("r-vol")) $("r-vol").textContent = "Mesmo salto, 150 °C a 573 °C: hematita = 56,92% do volume da areia (redução de 43,08%). Custo do sólido, preços da dissertação: areia 0,346 USD/kWh, hematita 0,780 USD/kWh, alumina 3,882 USD/kWh.";
+}
+}
+
+function fmtP(s) {
+  return s.temporal && s.temporal.p != null ? s.temporal.p.toFixed(3) : "—";
+}
+
 function terminal() {
+  const lines = ["Três substratos. Jδ = −R por eliminação em banda. A ordem usa os três últimos resíduos."];
+  for (const key of state.keys) {
+    const s = state.byKey[key];
+    const last = s.newtonHist[s.newtonHist.length - 1];
+    const e = s.curve[s.curve.length - 1].E / 1e9;
+    lines.push(s.core.name + ": p_Newton " + (s.newtonOrder == null ? "—" : s.newtonOrder.toFixed(3)) + " · p_tempo " + (s.temporal.p == null ? "—" : s.temporal.p.toFixed(2)) + " · E " + e.toFixed(2) + " GJ · ‖R‖ " + last.toExponential(2));
+  }
+  $("term-log").textContent = lines.join("\n");
+  const active = state.byKey[state.active];
+  const tail = active.newtonHist[active.newtonHist.length - 1];
+  $("term-status").textContent = tail < 1e-4 ? "Newton ok" : "ver resíduo";
+}
   const lines = ["Três substratos. Jδ = −R por eliminação em banda. A ordem usa os três últimos resíduos."];
   for (const key of state.keys) {
     const s = state.byKey[key];
@@ -179,6 +213,7 @@ function run() {
       drawTemporal($("c-time"), state);
       $("memory-box").textContent = buildTrioMemory(state);
       $("cmp-box").textContent = energyReport(state);
+      writeReadouts(state, null);
       terminal();
       player.last(active.frames.length);
       $("s-n").textContent = String(active.mesh.nn);
@@ -227,6 +262,9 @@ function bind() {
 }
 
 renderFormulas();
+for (const id of ["c-vol", "c-field", "c-loss", "c-charge", "c-depth", "c-wall", "c-base", "c-res", "c-time"]) {
+  bindPlotHover($(id), $("tip"));
+}
 bind();
 updateLabels();
 fetch("materiais.json").then((r) => r.json()).then(applyJson).catch(() => {}).finally(run);

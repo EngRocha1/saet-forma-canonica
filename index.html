@@ -100,6 +100,7 @@
           <span>Areia de sílica = 100%. A fórmula, a substituição e o percentual ficam logo abaixo do gráfico.</span>
         </figcaption>
         <canvas id="c-vol" width="860" height="280"></canvas>
+        <p class="note" id="r-vol"></p>
         <label class="check"><input id="iso" type="checkbox" checked/> Comparação isotérmica: os três usam 150 °C a 573 °C</label>
         <div id="ranges" class="ranges" hidden>
           <div class="mat"><h2>Areia · teto 573 °C</h2>
@@ -123,12 +124,14 @@
           <span>Mesma malha e mesmo instante. Laranja interno é o núcleo. Branco é o envelope. Amarelo é o plano de carga, no centro, sob o isolamento.</span>
         </figcaption>
         <canvas id="c-field" width="860" height="560"></canvas>
+        <p class="note" id="r-field"></p>
       </figure>
       <figure>
         <figcaption>Perda na face interna, três substratos
           <span>Cada cor é um núcleo. A pilha de isolamento é a mesma. Positivo sai do núcleo.</span>
         </figcaption>
-        <canvas id="c-loss" width="860" height="320"></canvas>
+        <canvas id="c-loss" width="860" height="360"></canvas>
+        <p class="note" id="r-loss"></p>
       </figure>
       <figure>
         <figcaption>Energia no núcleo e temperatura da base
@@ -142,30 +145,35 @@
           <span>Profundidade zero é a face quente do núcleo. A distância da frente é o ponto em que a temperatura cai à média entre o topo e a base.</span>
         </figcaption>
         <canvas id="c-depth" width="860" height="320"></canvas>
+        <p class="note" id="r-depth"></p>
       </figure>
       <figure>
         <figcaption>Isolamento lateral, camada por camada
           <span>Corte na cota do topo do núcleo, do raio interno para fora. A queda segue a malha, não uma resistência concentrada.</span>
         </figcaption>
         <canvas id="c-wall" width="860" height="320"></canvas>
+        <p class="note" id="r-wall"></p>
       </figure>
       <figure>
         <figcaption>Isolamento da base, camada por camada
           <span>Espessura medida a partir do núcleo, no eixo. Se o horizonte for curto, a base inteira permanece na temperatura inicial: a frente ainda não chegou.</span>
         </figcaption>
         <canvas id="c-base" width="860" height="320"></canvas>
+        <p class="note" id="r-base"></p>
       </figure>
       <figure>
         <figcaption>Resíduo de Newton–Raphson dos três substratos
           <span>‖R‖ por iteração. p é a ordem nos três últimos resíduos. Jδ = −R sai por eliminação em banda, não por Gauss–Seidel.</span>
         </figcaption>
-        <canvas id="c-res" width="860" height="300"></canvas>
+        <canvas id="c-res" width="860" height="320"></canvas>
+        <p class="note" id="r-res"></p>
       </figure>
       <figure>
         <figcaption>Convergência temporal dos três substratos
           <span>Erro da sonda contra o passo mais fino. Euler implícito é de ordem 1. p perto de 1 confirma o passo; não é a ordem de Newton.</span>
         </figcaption>
-        <canvas id="c-time" width="860" height="260"></canvas>
+        <canvas id="c-time" width="860" height="280"></canvas>
+        <p class="note" id="r-time"></p>
       </figure>
       <section class="sheet">
         <h2>Memória do cálculo</h2>
@@ -179,7 +187,7 @@
     </div>
   </div>
 </main>
-<dialog id="formula-panel">
+<div id="tip" hidden></div>
   <button class="btn ghost" id="formula-close" type="button">Fechar</button>
   <h2>Fórmulas deste demonstrador</h2>
   <div id="formula-list"></div>
