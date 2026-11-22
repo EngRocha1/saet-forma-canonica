@@ -5,8 +5,7 @@ import { drawField, drawCharge, drawResidual, drawLosses, drawTemporal, drawVolu
 import { frontReport } from "./profiles.js";
 import { volumeCompare, volumeText, TMAX } from "./volume.js";
 import { createPlayer } from "./animate.js";
-import { buildTrioMemory } from "./memory.js";
-import { saveMemory } from "./pdf-memory.js";
+import { renderMemorial } from "./memorial.js";
 
 const $ = (id) => document.getElementById(id);
 let state = null;
@@ -198,7 +197,7 @@ function run() {
       drawCharge($("c-charge"), state);
       drawResidual($("c-res"), state);
       drawTemporal($("c-time"), state);
-      $("memory-box").textContent = buildTrioMemory(state);
+      renderMemorial($("memorial"), state);
       $("cmp-box").textContent = energyReport(state);
       writeReadouts(state, null);
       terminal();
@@ -243,7 +242,7 @@ function bind() {
   $("btn-play").addEventListener("click", () => state && player.toggle(state.byKey[state.active].frames.length));
   $("btn-reset").addEventListener("click", () => state && player.show(0, state.byKey[state.active].frames.length));
   $("prog").addEventListener("input", () => state && player.scrub(+$("prog").value / 100, state.byKey[state.active].frames.length));
-  $("btn-pdf").addEventListener("click", () => state && saveMemory(state));
+  $("btn-pdf").addEventListener("click", () => window.print());
   $("btn-formulas").addEventListener("click", () => $("formula-panel").showModal());
   $("formula-close").addEventListener("click", () => $("formula-panel").close());
 }

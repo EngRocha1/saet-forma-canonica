@@ -245,12 +245,22 @@ function residualOf(rows, x, b) {
   return Math.sqrt(s);
 }
 
+function diagonalOf(rows) {
+  const d = new Float64Array(rows.length);
+  for (let i = 0; i < rows.length; i++) {
+    for (const e of rows[i]) if (e.j === i) d[i] += e.v;
+  }
+  return d;
+}
+
 export function newtonStep(op, told, dt, mesh, eps, tAmb) {
   const linear = baseRows(op, dt);
   let T = Float64Array.from(told);
   const hist = [];
   let lastInner = null;
   let radSample = null;
+  let lastDiag = null;
+  let lastR = null;
   for (let k = 0; k < 8; k++) {
     const top = radiation(mesh, T, eps, tAmb);
     const R = applyLinear(op, linear, T, told, dt);
@@ -258,17 +268,24 @@ export function newtonStep(op, told, dt, mesh, eps, tAmb) {
     const res = norm(R);
     hist.push(res);
     if (k === 0) radSample = sampleRadiation(mesh, T, eps, tAmb);
-    const scale = Math.max(norm(op.bRobin), 1);
-    if (res / scale < 1e-12 || res < 1e-9) break;
     const rows = cloneRows(linear);
     for (const [i, j, v] of top.jac) addEntry(rows, i, j, v);
+    lastDiag = diagonalOf(rows);
+    lastR = Array.from(R);
+    const scale = Math.max(norm(op.bRobin), 1);
+    if (res / scale < 1e-12 || res < 1e-9) break;
     const b = new Float64Array(op.n);
     for (let i = 0; i < op.n; i++) b[i] = -R[i];
     const solved = solveBand(rows, b);
     lastInner = solved;
     for (let i = 0; i < op.n; i++) T[i] += solved.x[i];
   }
-  return { T: Array.from(T), hist, order: asymptoticOrder(hist), linearResidual: lastInner ? lastInner.residual : null, radSample };
+  return {
+    T: Array.from(T), hist, order: asymptoticOrder(hist),
+    linearResidual: lastInner ? lastInner.residual : null, radSample,
+    diag: lastDiag ? Array.from(lastDiag) : null,
+    nodeR: lastR
+  };
 }
 
 function sampleRadiation(mesh, T, eps, tAmb) {

@@ -93,3 +93,143 @@ dialog .ref { color: var(--muted); font-size: 12px; margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+.memorial {
+  background: #fff;
+  color: #102033;
+  font: 15px/1.45 "Source Serif 4", Georgia, serif;
+  padding: 0 0 24px;
+}
+.inst {
+  background: #0B2545;
+  color: #fff;
+  padding: 18px 18px 14px;
+  border-top: 6px solid #C4A35A;
+  border-bottom: 4px solid #00A8E8;
+}
+.inst h1 {
+  color: #fff;
+  font-size: 1.25rem;
+  letter-spacing: 0.01em;
+  margin: 6px 0 8px;
+}
+.inst-kicker {
+  margin: 0;
+  color: #00A8E8;
+  font: 700 11px/1.4 "IBM Plex Sans", sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.inst-meta p { margin: 2px 0; font: 13px/1.4 "IBM Plex Sans", sans-serif; color: #e8eef7; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.kpi {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(0,168,232,0.45);
+  padding: 8px 10px;
+  min-height: 52px;
+}
+.kpi span { display: block; font: 600 10px/1.2 "IBM Plex Sans", sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: #9bd7f5; }
+.kpi strong { display: block; margin-top: 3px; font: 700 14px/1.2 "IBM Plex Sans", sans-serif; color: #fff; }
+.sec { margin: 14px 0; padding-bottom: 8px; }
+.sec-title {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0;
+  padding: 8px 12px;
+  color: #fff;
+  font: 700 16px/1.3 "IBM Plex Sans", sans-serif;
+}
+.sec-no {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.16);
+  font-variant-numeric: tabular-nums;
+}
+.petroleo .sec-title { background: #134074; }
+.esmeralda .sec-title { background: #1B5E20; }
+.indigo .sec-title { background: #283593; }
+.ardosia .sec-title { background: #006064; }
+.ambar .sec-title { background: #8D4004; }
+.vinho .sec-title { background: #6A1B4D; }
+.grafite .sec-title { background: #263238; }
+.petroleo { background: #F0F5FA; }
+.esmeralda { background: #F1F8F2; }
+.indigo { background: #F2F4FB; }
+.ardosia { background: #EFF8F9; }
+.ambar { background: #FDF6F0; }
+.vinho { background: #FAF0F6; }
+.grafite { background: #F4F6F8; }
+.deduction {
+  margin: 10px 12px;
+  padding: 8px 12px 10px;
+  background: #fff;
+  border-left: 5px solid currentColor;
+}
+.petroleo .deduction { color: #134074; border-left-color: #134074; }
+.esmeralda .deduction { color: #1B5E20; border-left-color: #1B5E20; }
+.indigo .deduction { color: #283593; border-left-color: #283593; }
+.ardosia .deduction { color: #006064; border-left-color: #006064; }
+.ambar .deduction { color: #8D4004; border-left-color: #8D4004; }
+.vinho .deduction { color: #6A1B4D; border-left-color: #6A1B4D; }
+.grafite .deduction { color: #263238; border-left-color: #263238; }
+.deduction h3 {
+  margin: 8px 0 2px;
+  font: 700 12px/1.2 "IBM Plex Sans", sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.deduction p, .sec .after, .sec .subhead, .caption, .tabcap {
+  color: #102033;
+  font: 14.5px/1.45 "Source Serif 4", Georgia, serif;
+  margin: 0 0 6px;
+}
+.sec .after, .sec .subhead { margin: 8px 12px; }
+.sec .subhead { font: 700 15px/1.3 "IBM Plex Sans", sans-serif; }
+.formula { margin: 6px 0 8px; overflow-x: auto; color: #102033; font: 14px/1.4 "IBM Plex Mono", monospace; }
+.table-wrap { margin: 8px 12px 12px; overflow-x: auto; }
+.tabcap { font-weight: 700; margin: 0 0 4px; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td {
+  border: 1px solid #d5dde6;
+  padding: 4px 6px;
+  text-align: right;
+  font: 12px/1.35 "IBM Plex Sans", sans-serif;
+  vertical-align: top;
+}
+th:first-child, td:first-child, td:nth-child(5), td:nth-child(6), td:nth-child(7) { text-align: left; }
+.petroleo th { background: #134074; color: #fff; }
+.esmeralda th { background: #1B5E20; color: #fff; }
+.indigo th { background: #283593; color: #fff; }
+.ardosia th { background: #006064; color: #fff; }
+.ambar th { background: #8D4004; color: #fff; }
+.vinho th { background: #6A1B4D; color: #fff; }
+.grafite th { background: #263238; color: #fff; }
+table.dense { font-size: 11px; }
+.plate { margin: 10px 12px 16px; background: #fff; border: 1px solid #d5dde6; padding: 8px; }
+.fig { width: 100%; height: auto; display: block; }
+.caption { margin: 6px 0 0; font-size: 12.5px; }
+@media (max-width: 800px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+}
+@media print {
+  @page { size: A4; margin: 12mm 10mm 14mm 10mm; }
+  html, body { background: #fff !important; }
+  .no-print, header.brand, aside, .term-wrap, figure, dialog, #tip { display: none !important; }
+  .layout { display: block !important; }
+  main { max-width: none; padding: 0; }
+  .sheet { border: 0; padding: 0; background: #fff; }
+  .memorial, .memorial * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .kpis { grid-template-columns: repeat(4, 1fr); }
+  .sec-title, .deduction, .kpi, .plate, tr { break-inside: avoid; }
+  thead { display: table-header-group; }
+  .table-wrap { overflow: visible; }
+  table.dense th, table.dense td { font-size: 8px; padding: 1px 3px; }
+  .formula { font-size: 12px; }
+}

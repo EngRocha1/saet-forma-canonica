@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>SAET · Galerkin · demonstrador XV CBPE</title>
 <link rel="stylesheet" href="css/app.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,650&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -19,7 +21,7 @@
     </div>
     <div class="actions">
       <button class="btn ghost" id="btn-formulas" type="button">Fórmulas</button>
-      <button class="btn" id="btn-pdf" type="button">Memória PDF</button>
+      <button class="btn" id="btn-pdf" type="button">Imprimir memória</button>
       <a class="btn ghost" href="https://github.com/EngRocha1/saet-forma-canonica">GitHub</a>
     </div>
   </header>
@@ -175,10 +177,10 @@
         <canvas id="c-time" width="860" height="280"></canvas>
         <p class="note" id="r-time"></p>
       </figure>
-      <section class="sheet">
-        <h2>Memória do cálculo</h2>
-        <p class="note">Fórmula, substituição dos números e resultado. A referência vem depois do valor. O PDF usa o mesmo texto.</p>
-        <pre id="memory-box">Calculando…</pre>
+      <section class="sheet" id="memorial-sheet">
+        <h2 class="no-print">Memória de cálculo</h2>
+        <p class="note no-print">Treze seções, do escopo às figuras. O botão Imprimir memória abre o PDF do navegador e conserva as cores. Os números acompanham os controles. O solver não muda.</p>
+        <article id="memorial" class="memorial" aria-live="polite">Calculando…</article>
       </section>
     </div>
     <div class="term-wrap">

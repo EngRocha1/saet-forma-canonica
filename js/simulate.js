@@ -59,6 +59,7 @@ function march(prep, input, dtHours, hours) {
   const keep = Math.max(1, Math.floor(steps / 36));
   let worst = null;
   let lastStep = null;
+  const stepLog = [];
   const eps = input.epsRad;
   const P0 = chargePower(mesh, T, input.hTop, input.Tcharge);
   let Qin = 0;
@@ -80,6 +81,7 @@ function march(prep, input, dtHours, hours) {
     const step = newtonStep(op, T, dt, mesh, eps, TAMB);
     T = step.T;
     lastStep = step;
+    stepLog.push({ tH: tH + dtHours, hist: step.hist, order: step.order });
     if (!worst || step.hist[0] > worst.hist[0]) worst = { ...step, tH: tH + dtHours };
     const qIn = chargePower(mesh, T, input.hTop, input.Tcharge);
     const lost = surfaceLoss(mesh, T, input.hExt, eps, TAMB, TSOLO);
@@ -91,7 +93,7 @@ function march(prep, input, dtHours, hours) {
   const Pfinal = chargePower(mesh, T, input.hTop, input.Tcharge);
   const closure = Qin - Qout - Edomain;
   return {
-    frames, curve, T, tBreak, eUseful, steps, worst, lastStep,
+    frames, curve, T, tBreak, eUseful, steps, worst, lastStep, stepLog,
     balance: { Qin, Qout, Edomain, Ecore, closure, P0, Pfinal, T0, TAMB, TSOLO }
   };
 }
@@ -175,6 +177,9 @@ export function simulate(input) {
     tlim: input.tlim,
     thick, kIns: input.kIns,
     sample,
-    temporal
+    temporal,
+    stepLog: main.stepLog,
+    finalDiag: main.lastStep ? main.lastStep.diag : null,
+    finalNodeR: main.lastStep ? main.lastStep.nodeR : null
   };
 }

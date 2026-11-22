@@ -53,7 +53,7 @@ O volume isotérmico, 150 °C a 573 °C, deixa a hematita com 56,92% do volume d
 
 Não dimensiona curtailment, não lê o ONS e não calcula R$/kWh. Não recalcula h = 2r com U diferente em cada face: o U de topo e de lateral, neste default, é 0,084006 W/(m²·K) e o da base é 0,057914 W/(m²·K). Não há ensaio de hematita, não há k(T) e não há rendimento eletricidade–eletricidade. O ciclo de potência não entra no leito.
 
-Um build anterior deste mesmo endereço usava volumes finitos, iteração só na diagonal e um fator axial. Esse fator não existe neste código. Quem ler um PDF antigo da memória de cálculo não está lendo este commit.
+A memória na página está nas seções 0 a 13. O botão Imprimir memória usa a impressão do navegador. Para o PDF sair colorido, marque gráficos de segundo plano.
 
 ## Pastas
 
@@ -68,7 +68,8 @@ Um build anterior deste mesmo endereço usava volumes finitos, iteração só na
 | `js/simulate.js` | Os três substratos, o tempo e o balanço |
 | `js/profiles.js` | Eixo, parede e base, lidos dos nós |
 | `js/charts.js` | Canvas. Não monta matriz |
-| `js/memory.js` | Fórmula, substituição, resultado |
+| `js/memory.js` | Texto curto ainda exportado. A página usa `js/memorial.js` |
+| `js/memorial.js` | Memória nas seções 0 a 13, com impressão colorida |
 | `js/volume.js` | Comparação de volume |
 | `js/animate.js` | Play. Não calcula física |
 | `js/ui.js` | Liga o controle ao cálculo |
