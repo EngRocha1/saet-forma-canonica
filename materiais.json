@@ -54,7 +54,6 @@
   },
   "leito": {
     "eps": 0.4,
-    "relacao": "rho_leito=(1-eps)*rho_solido",
-    "keff": null
+    "relacao": "rho_leito=(1-eps)*rho_solido"
   }
 }

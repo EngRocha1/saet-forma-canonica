@@ -23,7 +23,7 @@ export const FORMULAS = [
     id: "solver",
     title: "Newton–Raphson",
     expr: "R(T) = C/Δt (T − T_antigo) + K T − b + R_rad(T). J δ = −R.",
-    ref: "Bathe (2014). J inclui ∂(εσT^4)/∂T. A queda de ‖R‖ é a de Newton. O Gauss–Seidel interno, que resolve Jδ = −R, é linear."
+    ref: "Bathe (2014). J inclui ∂(εσT^4)/∂T. Jδ = −R é resolvido por eliminação de Gauss em banda, não por Gauss–Seidel."
   },
   {
     id: "eps",
@@ -47,7 +47,7 @@ export const FORMULAS = [
     id: "U",
     title: "Resistência equivalente da camada",
     expr: "1/U = Σ (e_i / k_i) + 1/h_ext",
-    ref: "Incropera et al. (2014), parede composta em série. Usada só no modo resistência equivalente."
+    ref: "Incropera et al. (2014), parede composta em série. É conferência da pilha. A malha não é substituída por esse U."
   },
   {
     id: "robin",
@@ -60,6 +60,18 @@ export const FORMULAS = [
     title: "Energia no núcleo",
     expr: "E = ∫_núcleo ρ_leito cp (T − T0) 2π r dr dz",
     ref: "Balanço de energia no volume do leito. Não inclui o isolante."
+  },
+  {
+    id: "potencia",
+    title: "Potência da carga resistiva",
+    expr: "P = ∫_topo h (T_carga − T) 2π r dr",
+    ref: "Robin no topo do núcleo. Em t = 0, com T = T0, P = h (T_carga − T0) π R². Não é potência contratada de usina."
+  },
+  {
+    id: "balanco",
+    title: "Balanço do domínio",
+    expr: "∫ P dt = E_domínio + ∫ (q_conv + q_rad) dA dt + resíduo numérico",
+    ref: "E_domínio inclui núcleo e isolamento. E do gráfico é só o núcleo. A base não irradia; troca com T_solo por convecção."
   },
   {
     id: "biot",

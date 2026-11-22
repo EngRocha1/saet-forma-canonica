@@ -3,12 +3,16 @@ import { stackLayers, INSULATORS } from "./materials.js";
 import { buildMesh } from "./mesh.js";
 import {
   assembleOperators, newtonStep, coreEnergy, faceMean,
-  insulationLosses, surfaceLoss, discretizationSample
+  insulationLosses, surfaceLoss, discretizationSample, chargePower, domainEnergy
 } from "./galerkin.js";
 
-const T0 = 25;
-const TAMB = 37;
-const TSOLO = 25;
+function temps(input) {
+  return {
+    T0: input.T0 == null ? 25 : input.T0,
+    TAMB: input.Tamb == null ? 37 : input.Tamb,
+    TSOLO: input.Tsolo == null ? 25 : input.Tsolo
+  };
+}
 
 function prepare(input) {
   const core = input.core;
@@ -31,11 +35,12 @@ function prepare(input) {
     ifb: props.ifb.k, perlita: props.perlita.k,
     silicato: props.silicato.k, vermiculita: props.vermiculita.k
   };
+  const env = temps(input);
   const bc = {
     carga: { h: input.hTop, Tref: input.Tcharge },
-    "ext-top": { h: input.hExt, Tref: TAMB },
-    "ext-base": { h: input.hExt, Tref: TSOLO },
-    "ext-lat": { h: input.hExt, Tref: TAMB }
+    "ext-top": { h: input.hExt, Tref: env.TAMB },
+    "ext-base": { h: input.hExt, Tref: env.TSOLO },
+    "ext-lat": { h: input.hExt, Tref: env.TAMB }
   };
   const op = assembleOperators(mesh, props, bc);
   return { mesh, props, op, kMap, core };
@@ -43,6 +48,7 @@ function prepare(input) {
 
 function march(prep, input, dtHours, hours) {
   const { mesh, props, op } = prep;
+  const { T0, TAMB, TSOLO } = temps(input);
   const dt = dtHours * 3600;
   const steps = Math.max(1, Math.round(hours / dtHours));
   let T = new Array(mesh.nn).fill(T0);
@@ -54,6 +60,9 @@ function march(prep, input, dtHours, hours) {
   let worst = null;
   let lastStep = null;
   const eps = input.epsRad;
+  const P0 = chargePower(mesh, T, input.hTop, input.Tcharge);
+  let Qin = 0;
+  let Qout = 0;
 
   for (let s = 0; s <= steps; s++) {
     const tH = s * dtHours;
@@ -72,8 +81,19 @@ function march(prep, input, dtHours, hours) {
     T = step.T;
     lastStep = step;
     if (!worst || step.hist[0] > worst.hist[0]) worst = { ...step, tH: tH + dtHours };
+    const qIn = chargePower(mesh, T, input.hTop, input.Tcharge);
+    const lost = surfaceLoss(mesh, T, input.hExt, eps, TAMB, TSOLO);
+    Qin += qIn * dt;
+    Qout += (lost.conv + lost.rad) * dt;
   }
-  return { frames, curve, T, tBreak, eUseful, steps, worst, lastStep };
+  const Edomain = domainEnergy(mesh, props, T, T0);
+  const Ecore = coreEnergy(mesh, props, T, T0);
+  const Pfinal = chargePower(mesh, T, input.hTop, input.Tcharge);
+  const closure = Qin - Qout - Edomain;
+  return {
+    frames, curve, T, tBreak, eUseful, steps, worst, lastStep,
+    balance: { Qin, Qout, Edomain, Ecore, closure, P0, Pfinal, T0, TAMB, TSOLO }
+  };
 }
 
 function probeTemp(mesh, T) {
@@ -112,6 +132,7 @@ export function simulateAll(input, cores) {
 
 export function simulate(input) {
   const prep = prepare(input);
+  const env = temps(input);
   const main = march(prep, input, input.dtHours, input.days * 24);
   const temporal = temporalOrder(prep, input);
   const alpha = diffusivity(input.core.k, input.core.rho, input.core.cp);
@@ -143,7 +164,8 @@ export function simulate(input) {
     Utop: seriesU(stackLayers("top", thick, kMap), input.hExt),
     Ulat: seriesU(stackLayers("lat", thick, kMap), input.hExt),
     Ubase: seriesU(stackLayers("base", thick, kMap), input.hExt),
-    T0, TAMB, TSOLO,
+    T0: env.T0, TAMB: env.TAMB, TSOLO: env.TSOLO,
+    balance: main.balance,
     core: input.core,
     mode: "refinada",
     Tcharge: input.Tcharge,

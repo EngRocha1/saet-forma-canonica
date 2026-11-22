@@ -1,4 +1,4 @@
-/** Galerkin Q1, Euler implícito, Newton–Raphson na radiação, Gauss–Seidel no sistema linear. */
+/** Galerkin Q1, Euler implícito, Newton–Raphson na radiação, eliminação em banda. */
 
 const GP = 1 / Math.sqrt(3);
 const GS = [-GP, GP];
@@ -284,6 +284,47 @@ function sampleRadiation(mesh, T, eps, tAmb) {
     q: eps * SIGMA * (tk ** 4 - tink ** 4),
     dq: eps * SIGMA * 4 * tk ** 3
   };
+}
+
+export function chargePower(mesh, T, h, tCharge) {
+  let Q = 0;
+  for (const face of mesh.faces) {
+    if (face.kind !== "carga") continue;
+    const rA = mesh.nodeR(face.n0);
+    const zA = mesh.nodeZ(face.n0);
+    const rB = mesh.nodeR(face.n1);
+    const zB = mesh.nodeZ(face.n1);
+    const len = Math.hypot(rB - rA, zB - zA);
+    const N0 = face.n0;
+    const N1 = face.n1;
+    for (const xi of GS) {
+      const N = edgeN(xi);
+      const r = Math.max(rA + ((xi + 1) / 2) * (rB - rA), 1e-6);
+      const dA = 2 * Math.PI * r * (len / 2);
+      const ts = N[0] * T[N0] + N[1] * T[N1];
+      Q += h * (tCharge - ts) * dA;
+    }
+  }
+  return Q;
+}
+
+export function domainEnergy(mesh, props, T, T0) {
+  let E = 0;
+  for (const el of mesh.elements) {
+    const p = props[el.mat];
+    if (!p) continue;
+    const r0 = mesh.rEdges[el.i];
+    const r1 = mesh.rEdges[el.i + 1];
+    const z0 = mesh.zEdges[el.j];
+    const z1 = mesh.zEdges[el.j + 1];
+    let tBar = 0;
+    for (const node of el.n) tBar += T[node];
+    tBar /= 4;
+    const rc = 0.5 * (r0 + r1);
+    const dV = 2 * Math.PI * rc * (r1 - r0) * (z1 - z0);
+    E += p.rho * p.cp * (tBar - T0) * dV;
+  }
+  return E;
 }
 
 export function coreEnergy(mesh, props, T, T0) {

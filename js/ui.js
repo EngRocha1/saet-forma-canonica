@@ -91,6 +91,9 @@ function readInput() {
     Tcharge: num("tc"),
     hTop: num("ht"),
     hExt: num("hext"),
+    Tamb: num("tamb"),
+    Tsolo: num("tsolo"),
+    T0: num("t0"),
     epsRad: num("epsr"),
     core: coreProps(key, sliders[key], eps),
     thick: {
@@ -114,6 +117,9 @@ function updateLabels() {
   $("v-tc").textContent = $("tc").value + " °C";
   $("v-ht").textContent = $("ht").value;
   $("v-hext").textContent = $("hext").value;
+  $("v-tamb").textContent = $("tamb").value + " °C";
+  $("v-tsolo").textContent = $("tsolo").value + " °C";
+  $("v-t0").textContent = $("t0").value + " °C";
   $("v-epsr").textContent = (+$("epsr").value).toFixed(2);
   $("v-eps").textContent = (+$("eps").value).toFixed(2);
   ["e1","e2","e3","eb1","eb2","eb3"].forEach((id) => { $("v-" + id).textContent = $(id).value + " cm"; });
@@ -134,6 +140,9 @@ function energyReport(pack) {
     const where = r.zLim == null ? "a isoterma de " + s.tlim.toFixed(1) + " °C não aparece no núcleo" : "a isoterma de " + s.tlim.toFixed(1) + " °C está a " + r.zLim.toFixed(3) + " m da face quente; restam " + r.remaining.toFixed(3) + " m de núcleo abaixo dela";
     const base = r.reached ? "T_base = " + r.Tb.toFixed(3) + " °C e já passou do limite" : "T_base = " + r.Tb.toFixed(3) + " °C e ainda está abaixo do limite";
     lines.push(s.core.name + ": E = " + r.E.toExponential(8) + " J = " + (r.E / 1e9).toFixed(6) + " GJ; T_médio da energia = " + r.Tmean.toFixed(3) + " °C; T_topo = " + r.Tt.toFixed(3) + " °C; " + front + "; " + where + "; " + base);
+    const b = s.balance;
+    const rel = b.closure / Math.max(Math.abs(b.Qin), 1);
+    lines.push("  P(t=0) = " + (b.P0 / 1e6).toFixed(3) + " MW; P(final) = " + (b.Pfinal / 1e6).toFixed(3) + " MW; ∫P dt = " + (b.Qin / 1e9).toFixed(4) + " GJ; E domínio = " + (b.Edomain / 1e9).toFixed(4) + " GJ; perdas de pele = " + (b.Qout / 1e9).toFixed(4) + " GJ; fechamento = " + (rel * 100).toFixed(2) + "% de ∫P dt. T0 = " + s.T0.toFixed(0) + " °C, T ambiente = " + s.TAMB.toFixed(0) + " °C, T solo = " + s.TSOLO.toFixed(0) + " °C.");
   }
   return lines.join("\n");
 }
@@ -174,6 +183,10 @@ function run() {
       player.last(active.frames.length);
       $("s-n").textContent = String(active.mesh.nn);
       $("s-mesh").textContent = active.mesh.nr + "×" + active.mesh.nz;
+      const b = active.balance;
+      $("s-p0").textContent = (b.P0 / 1e6).toFixed(2) + " MW";
+      const rel = b.closure / Math.max(Math.abs(b.Qin), 1);
+      $("s-bal").textContent = (rel * 100).toFixed(1) + "%";
     } catch (err) {
       console.error(err);
       $("term-log").textContent = "Erro: " + err.message;
@@ -194,7 +207,7 @@ function renderFormulas() {
 }
 
 function bind() {
-  const ids = ["R","L","days","dt","tlim","tc","ht","hext","epsr","eps","e1","e2","e3","eb1","eb2","eb3","ka","ra","cpa","kal","ral","cpal","kh","rh","cph","ki","kp","ks","kv"];
+  const ids = ["R","L","days","dt","tlim","tc","ht","hext","tamb","tsolo","t0","epsr","eps","e1","e2","e3","eb1","eb2","eb3","ka","ra","cpa","kal","ral","cpal","kh","rh","cph","ki","kp","ks","kv"];
   for (const id of ids) {
     $(id).addEventListener("input", updateLabels);
     $(id).addEventListener("change", run);

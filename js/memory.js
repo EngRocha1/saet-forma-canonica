@@ -59,6 +59,11 @@ export function buildTrioMemory(pack) {
     lines.push("E exata = " + front.E.toExponential(8) + " J = " + n(front.E / 1e9, 6) + " GJ");
     lines.push("T_médio da energia = T0 + E / (ρ cp V) = " + n(front.Tmean, 3) + " °C");
     lines.push("Frente, profundidade em que T cai à média entre topo e base: " + (front.zHalf == null ? "não houve cruzamento" : n(front.zHalf, 3) + " m") + ". T_base no eixo = " + n(front.Tb, 3) + " °C. Limite = " + n(s.tlim, 1) + " °C. " + (front.reached ? "A base já cruzou o limite." : "A base ainda não cruzou o limite."));
+    const b = s.balance;
+    const area = Math.PI * s.mesh.R * s.mesh.R;
+    lines.push("Potência inicial: P = h (T_carga − T0) π R² = " + n(s.hTop, 1) + " · (" + n(s.Tcharge, 1) + " − " + n(s.T0, 1) + ") · π · " + n(s.mesh.R, 2) + "² = " + n(b.P0 / 1e6, 3) + " MW. Área do topo do núcleo = " + n(area, 2) + " m². Isso é o fluxo de Robin em t = 0. Não é potência de uma usina.");
+    lines.push("No fim do horizonte, P = " + n(b.Pfinal / 1e6, 3) + " MW. ∫P dt = " + n(b.Qin / 1e9, 4) + " GJ. Energia do domínio (núcleo + isolamento) = " + n(b.Edomain / 1e9, 4) + " GJ. Perdas nas faces externas = " + n(b.Qout / 1e9, 4) + " GJ. Resíduo do balanço = " + n(b.closure / 1e9, 4) + " GJ.");
+    lines.push("T ambiente = " + n(s.TAMB, 1) + " °C nas faces de topo e lateral. T do solo = " + n(s.TSOLO, 1) + " °C na base, só por convecção. A base não irradia. T inicial do sólido = " + n(s.T0, 1) + " °C.");
     lines.push("Newton ‖R‖: " + (s.newtonHist || []).map((v) => n(v, 3)).join(" → "));
     lines.push("Ordem assintótica, três últimos resíduos: " + (s.newtonOrder == null ? "—" : n(s.newtonOrder, 3)) + ". Resíduo da eliminação: " + (s.linearResidual == null ? "—" : s.linearResidual.toExponential(3)));
     lines.push("Ordem temporal p = " + (s.temporal && s.temporal.p != null ? n(s.temporal.p, 3) : "—"));

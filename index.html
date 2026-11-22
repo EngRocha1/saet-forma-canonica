@@ -46,6 +46,9 @@
       <label>T de carga resistiva <span id="v-tc">1000 °C</span><input id="tc" type="range" min="200" max="1000" step="10" value="1000"/></label>
       <label>h de injeção <span id="v-ht">100</span><input id="ht" type="range" min="20" max="300" step="5" value="100"/></label>
       <label>h externo <span id="v-hext">10</span><input id="hext" type="range" min="2" max="25" step="1" value="10"/></label>
+      <label>T ambiente <span id="v-tamb">37 °C</span><input id="tamb" type="range" min="15" max="45" step="1" value="37"/></label>
+      <label>T do solo <span id="v-tsolo">25 °C</span><input id="tsolo" type="range" min="10" max="40" step="1" value="25"/></label>
+      <label>T inicial do sólido <span id="v-t0">25 °C</span><input id="t0" type="range" min="10" max="40" step="1" value="25"/></label>
       <label>Emissividade ε <span id="v-epsr">0.80</span><input id="epsr" type="range" min="0" max="0.95" step="0.01" value="0.80"/></label>
       <label>Porosidade ε <span id="v-eps">0.40</span><input id="eps" type="range" min="0.20" max="0.60" step="0.01" value="0.40"/></label>
       <p class="note">ε = 0,40 é o da Eq. (2) da dissertação. ρ do leito = (1−ε) ρ sólido.</p>
@@ -87,6 +90,8 @@
         <dt>Malha</dt><dd id="s-mesh">—</dd>
         <dt>T topo</dt><dd id="s-tmax">—</dd>
         <dt>T base</dt><dd id="s-tbase">—</dd>
+        <dt>P inicial</dt><dd id="s-p0">—</dd>
+        <dt>Balanço</dt><dd id="s-bal">—</dd>
       </dl>
     </aside>
     <div>
