@@ -163,25 +163,12 @@ function writeReadouts(pack, index) {
   $("r-base").textContent = "Base no eixo, a partir do núcleo. Se a frente não chegou, a curva fica em T0. No default de 4 dias a hematita permanece a 25 °C em toda a fundação.";
   if ($("r-vol")) $("r-vol").textContent = "Mesmo salto, 150 °C a 573 °C: hematita = 56,92% do volume da areia (redução de 43,08%). Custo do sólido, preços da dissertação: areia 0,346 USD/kWh, hematita 0,780 USD/kWh, alumina 3,882 USD/kWh.";
 }
-}
 
 function fmtP(s) {
   return s.temporal && s.temporal.p != null ? s.temporal.p.toFixed(3) : "—";
 }
 
 function terminal() {
-  const lines = ["Três substratos. Jδ = −R por eliminação em banda. A ordem usa os três últimos resíduos."];
-  for (const key of state.keys) {
-    const s = state.byKey[key];
-    const last = s.newtonHist[s.newtonHist.length - 1];
-    const e = s.curve[s.curve.length - 1].E / 1e9;
-    lines.push(s.core.name + ": p_Newton " + (s.newtonOrder == null ? "—" : s.newtonOrder.toFixed(3)) + " · p_tempo " + (s.temporal.p == null ? "—" : s.temporal.p.toFixed(2)) + " · E " + e.toFixed(2) + " GJ · ‖R‖ " + last.toExponential(2));
-  }
-  $("term-log").textContent = lines.join("\n");
-  const active = state.byKey[state.active];
-  const tail = active.newtonHist[active.newtonHist.length - 1];
-  $("term-status").textContent = tail < 1e-4 ? "Newton ok" : "ver resíduo";
-}
   const lines = ["Três substratos. Jδ = −R por eliminação em banda. A ordem usa os três últimos resíduos."];
   for (const key of state.keys) {
     const s = state.byKey[key];

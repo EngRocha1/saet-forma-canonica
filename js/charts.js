@@ -46,9 +46,6 @@ function yTicks(ctx, pad, ticksY, Y) {
   for (const v of ticksY) ctx.fillText(label(v), pad.l - 8, Y(v));
   ctx.textBaseline = "alphabetic";
 }
-  if (!pack || !pack.byKey) return null;
-  return pack.keys.map((key) => ({ key, state: pack.byKey[key] }));
-}
 
 function frameAt(state, index) {
   const frames = state.frames || [];
@@ -156,17 +153,19 @@ export function drawField(canvas, pack, frameOrIndex) {
 
 function drawFieldTrio(canvas, list, index) {
   const W = canvas.clientWidth || 860;
-  const H = 520;
+  const H = canvas.clientHeight || 560;
   const ctx = fit(canvas, W, H);
   ctx.fillStyle = "#111";
   ctx.fillRect(0, 0, W, H);
-  const gap = 10;
+  const gap = 8;
   const pw = (W - gap * (list.length - 1)) / list.length;
+  const hits = [];
   list.forEach((item, i) => {
     const frame = frameAt(item.state, index);
     if (!frame) return;
-    paintPanel(ctx, item.state.mesh, frame.T, item.key, i * (pw + gap), 8, pw, H - 16);
+    hits.push(...paintPanel(ctx, item.state.mesh, frame.T, item.key, i * (pw + gap), 4, pw, H - 8));
   });
+  remember(canvas, W, H, hits);
 }
 
 function paintPanel(ctx, mesh, T, key, x0, y0, w, h) {
@@ -179,7 +178,7 @@ function paintPanel(ctx, mesh, T, key, x0, y0, w, h) {
   if (tmax - tmin < 1) tmax = tmin + 1;
   const rMax = mesh.rEdges[mesh.nr];
   const zMax = mesh.zEdges[mesh.nz];
-  const pad = { l: 36, r: 8, t: 22, b: 28 };
+  const pad = { l: 46, r: 8, t: 22, b: 42 };
   const availW = w - pad.l - pad.r;
   const availH = h - pad.t - pad.b;
   const sc = Math.min(availW / (2 * rMax), availH / zMax);
@@ -218,8 +217,44 @@ function paintPanel(ctx, mesh, T, key, x0, y0, w, h) {
   ctx.textBaseline = "top";
   ctx.fillText(CORE_LABEL[key], x0 + 4, y0);
   ctx.fillStyle = "#e7e5e4";
+  ctx.font = "10px IBM Plex Mono, monospace";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  for (const r of ticks(-rMax, rMax, 3)) {
+    const x = xr(r);
+    if (x < x0 + pad.l + 10 || x > x0 + w - pad.r - 6) continue;
+    ctx.fillText(label(r), x, oy + meshH + 2);
+  }
+  ctx.font = "11px IBM Plex Sans, sans-serif";
+  ctx.fillText("r (m)", x0 + pad.l + availW / 2, y0 + h - 14);
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
+  ctx.font = "10px IBM Plex Mono, monospace";
+  for (const z of ticks(0, zMax, 4)) ctx.fillText(label(z), ox - 3, yz(z));
+  ctx.save();
+  ctx.translate(x0 + 11, oy + meshH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.font = "11px IBM Plex Sans, sans-serif";
+  ctx.fillStyle = "#e7e5e4";
+  ctx.fillText("z (m)", 0, 0);
+  ctx.restore();
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
   ctx.font = "11px IBM Plex Mono, monospace";
-  ctx.fillText(label(tmin) + "–" + label(tmax) + " °C", x0 + 4, y0 + h - 16);
+  ctx.fillText(label(tmin) + "–" + label(tmax) + " °C", x0 + 28, y0 + h - 14);
+  const hits = [];
+  for (const el of mesh.elements) {
+    let t = 0;
+    for (const n of el.n) t += T[n];
+    t /= 4;
+    const rm = 0.5 * (mesh.rEdges[el.i] + mesh.rEdges[el.i + 1]);
+    const zm = 0.5 * (mesh.zEdges[el.j] + mesh.zEdges[el.j + 1]);
+    const text = CORE_LABEL[key] + " · r = " + rm.toFixed(2) + " m · z = " + zm.toFixed(2) + " m · T = " + t.toFixed(1) + " °C · " + (el.core ? "núcleo" : (el.layer || el.mat));
+    hits.push({ x: xr(rm), y: yz(zm), text });
+    hits.push({ x: xr(-rm), y: yz(zm), text });
+  }
+  return hits;
 }
 
 function drawFieldOne(canvas, state, frame) {
@@ -395,6 +430,12 @@ export function drawVolume(canvas, pack) {
     ctx.fillText(r.V.toFixed(1) + " m³", x + bw / 2, y - 16);
     ctx.fillText(r.pct.toFixed(1) + "%", x + bw / 2, y - 2);
   });
+  const hits = rows.map((r, i) => {
+    const x = pad.l + i * slot + slot * 0.22;
+    const bw = slot * 0.56;
+    return { x: x + bw / 2, y: Y(r.V), text: r.name + " · V = " + r.V.toFixed(2) + " m³ · " + r.pct.toFixed(2) + "% da areia · ΔT = " + r.dT + " K" };
+  });
+  remember(canvas, W, H, hits);
   ctx.font = "12px IBM Plex Sans, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("V (m³) para a mesma energia da areia  ·  areia = 100%", W / 2, H - 8);
@@ -774,6 +815,22 @@ function drawChargeTrio(canvas, pack) {
   for (const e of ticks(0, emax, 6)) ctx.fillText(label(e), pad.l - 6, Y(e));
   ctx.textAlign = "left";
   for (const tv of ticks(0, tbMax, 5)) ctx.fillText(label(tv), pad.l + w + 6, Yt(tv));
+  ctx.save();
+  ctx.translate(14, pad.t + h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.fillStyle = "#e7e5e4";
+  ctx.fillText("E (GJ)", 0, 0);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(W - 12, pad.t + h / 2);
+  ctx.rotate(Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#e7e5e4";
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.fillText("T_base (°C)", 0, 0);
+  ctx.restore();
   const hits = [];
   for (const item of list) {
     item.state.curve.forEach((p, i) => {
@@ -824,6 +881,14 @@ function drawResidualTrio(canvas, pack) {
   for (const it of ticks(1, n, 6)) ctx.fillText(String(Math.round(it)), X(it - 1), pad.t + h + 4);
   ctx.font = "12px IBM Plex Sans, sans-serif";
   ctx.fillText("iteração de Newton  ·  ordem nos três últimos resíduos", pad.l + w / 2, pad.t + h + 20);
+  ctx.save();
+  ctx.translate(16, pad.t + h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#e7e5e4";
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.fillText("log10 ‖R‖", 0, 0);
+  ctx.restore();
   const hits = [];
   for (const item of list) {
     item.state.newtonHist.forEach((v, i) => {
@@ -877,9 +942,14 @@ function drawTemporalTrio(canvas, pack) {
     ctx.fillText(CORE_LABEL[item.key] + " p=" + (p == null ? "—" : p.toFixed(2)), pad.l + k * 150, 16);
   });
   ctx.fillStyle = "#e7e5e4";
-  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.font = "11px IBM Plex Mono, monospace";
   ctx.textAlign = "center";
-  ctx.fillText("erro da sonda (°C, escala log) contra o Δt mais fino", W / 2, H - 8);
+  ctx.textBaseline = "top";
+  const dts = list[0].state.temporal.runs;
+  ctx.fillText("Δt = " + label(dts[0].dt) + " h", pad.l + slot * 0.5, pad.t + h + 4);
+  ctx.fillText("Δt = " + label(dts[1].dt) + " h", pad.l + slot * 1.5, pad.t + h + 4);
+  ctx.font = "12px IBM Plex Sans, sans-serif";
+  ctx.fillText("erro da sonda (°C, escala log) contra Δt = " + label(dts[2].dt) + " h", W / 2, H - 8);
   remember(canvas, W, H, hits);
 }
 
